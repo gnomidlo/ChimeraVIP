@@ -1,115 +1,161 @@
 # ChimeraVIP
 
-Nakładka do oficjalnych skryptów Chimera MUD dla Mudleta. Projekt **nie modyfikuje kodu upstreamu**; korzysta z publicznych eventów, GMCP i struktur oficjalnych skryptów.
+Nakładka do oficjalnych skryptów **Chimera MUD** dla Mudleta. Projekt nie modyfikuje kodu upstreamu; korzysta z jego GMCP, eventów i publicznych struktur.
 
-Aktualna wersja: **0.70**.
+Serwer: `chimera.co.pl:2300`  
+Aktualna wersja ChimeraVIP: **0.71**  
+Wersja upstreamu używana przy rozwoju: **2.6**
 
-## Moduły 0.70
+## Instalacja
 
-- `core/bootstrap` – namespace, kolejność startu i wspólne handlery.
-- `theme/pastel` – pastelowy motyw i ponowne nakładanie po restarcie UI.
-- `ui/quiet_footer` – responsywny footer: kompas, wyjścia specjalne, KOND/SIŁY/MANA, SYTOŚĆ/WODA, OBC, UPI i EXP.
-- `features/auto_support` – auto-wsparcie drużyny z przełącznikiem ON/OFF.
-- `features/xp_tracker` – licznik doświadczenia, wydajności XP/h, trendów i statystyk mobów.
-- `features/stats` – formatowanie postępów i cech oraz podsumowanie Fiz/Ment/Odw/Łącznie.
-- `features/progression` – trwała historia cech i XP przypisana osobno do każdej postaci po GMCP `Char.Name`.
-- `ui/footer_controls` – mini-przyciski do wybranych funkcji oficjalnego footera.
-- `packages/CHIMERA_damage_prefixes.xml` – obecny pakiet prefixów obrażeń zachowany jako osobny komponent.
-- `core/updater` – sprawdzanie i pobieranie aktualizacji z tego repozytorium.
+Najprostsza instalacja odbywa się bez ręcznego tworzenia skryptów. W linii poleceń Mudleta wpisz:
 
-## XP tracker
+```lua
+lua installPackage("https://raw.githubusercontent.com/gnomidlo/ChimeraVIP/main/packages/ChimeraVIP.xml")
+```
 
-Tracker łapie komunikaty zabicia z `[...xp]`, rozróżnia własne i drużynowe zabicia oraz liczy wydajność sesji i aktywnego expienia.
+Pakiet tworzy w profilu jedynie trwały loader `ChimeraVIP/loader`. Loader pobiera aktualną wersję do:
 
-Komendy:
+```text
+getMudletHomeDir()/ChimeraVIP/
+```
 
-- `/xp` – podsumowanie sesji,
-- `/xp mobs` – statystyki mobów,
-- `/xp mob <nazwa>` – szczegóły konkretnej klasyfikacji,
-- `/xp last [N]` – ostatnie N zabójstw,
-- `/xp rules` – reguły klasyfikacji,
-- `/xp add nazwa#forma` – dodanie ręcznej reguły,
-- `/xp del nazwa` – usunięcie reguł,
-- `/xp reset` – nowa sesja,
-- `/xp help` – pomoc.
+Dane użytkownika są przechowywane osobno w:
 
-Reguły użytkownika są przechowywane w `getMudletHomeDir()/ChimeraVIP-data/xp_mobs.lua`, więc aktualizacja ChimeraVIP ich nie nadpisuje. Starszy plik `chimera_xp_mobs.lua` jest wykrywany i migrowany automatycznie.
+```text
+getMudletHomeDir()/ChimeraVIP-data/
+```
 
-## Cechy
+Po instalacji wpisz:
 
-Moduł `features/stats` przechwytuje standardowy wynik cech, porządkuje kolorystykę i wyświetla podsumowanie:
+```text
+/cvip
+```
+
+aby zobaczyć pełną pomoc.
+
+### Aktualizacja istniejącej instalacji
+
+```text
+/cvip sprawdz
+/cvip aktualizuj
+```
+
+Updater pobiera całą nową wersję do katalogu stagingowego i dopiero po kompletnym pobraniu podmienia lokalne pliki. Aktualizacja nie nadpisuje danych użytkownika.
+
+### Instalacja ręczna
+
+Jeżeli instalacja pakietu URL nie jest dostępna w używanej wersji Mudleta, można utworzyć ręcznie jeden trwały Script i wkleić do niego zawartość `loader.lua`.
+
+## Co robi ChimeraVIP
+
+### Interfejs
+
+- pastelowy motyw oficjalnego UI,
+- responsywny Quiet Footer,
+- kompas i wyjścia specjalne z GMCP,
+- KOND / SIŁY / MANA,
+- SYTOŚĆ / WODA,
+- OBC / UPI,
+- pasek EXP,
+- panel auto-wsparcia,
+- mini-przyciski oficjalnych funkcji Chimery: UKR, PRZ, ATK, ZBI, LAM, WAL i ZAS.
+
+### Integracja z oficjalną Chimerą
+
+Po uruchomieniu ChimeraVIP wyłącza oficjalny folder skryptów:
+
+```text
+chimera/skrypty/ui/gags
+```
+
+Kod oficjalnego pakietu nie jest edytowany. ChimeraVIP używa `disableScript()` do dezaktywacji folderu w profilu.
+
+### Auto-wsparcie
+
+Obserwuje GMCP drużyny i walki. Jeżeli członek drużyny walczy, a Twoja postać jeszcze nie uczestniczy w walce, wysyła `wesprzyj`. Przełącznik ON/OFF znajduje się w prawej części footera.
+
+### Tracker XP
+
+Łapie komunikaty zabicia z `[...xp]`, rozróżnia własne i drużynowe zabójstwa oraz liczy XP/h, aktywny czas, trend i statystyki mobów.
+
+Najważniejsze komendy:
+
+```text
+/xp
+/xp mobs
+/xp mob <nazwa>
+/xp last [N]
+/xp rules
+/xp add nazwa#forma
+/xp del <nazwa>
+/xp reset
+/xp help
+```
+
+Reguły klasyfikacji są przechowywane w `ChimeraVIP-data/xp_mobs.lua`.
+
+### Cechy
+
+`features/stats` przechwytuje standardowy wynik cech, poprawia czytelność i wylicza:
 
 - `Fiz` = Siła + Zręczność + Wytrzymałość,
 - `Ment` = Intelekt + Mądrość,
 - `Odw` = Odwaga,
 - `Łącznie` = suma wszystkich cech.
 
-Po pełnym odczycie ostatni snapshot jest dostępny jako `chimera_vip.stats.last`, a moduł podnosi event `chimeraVipStatsUpdated`.
+### Progres postaci
 
-## Progres postaci
-
-`features/progression` łączy snapshoty cech z eventami XP i zapisuje historię **osobno dla każdej postaci**.
-
-Identyfikacja postaci:
+Historia progresji łączy snapshoty cech z XP i zapisuje dane osobno dla każdej postaci. Postać jest identyfikowana przez:
 
 1. `gmcp.Char.Name.fullname`,
-2. jeśli brak – `gmcp.Char.Name.name`.
+2. fallback: `gmcp.Char.Name.name`.
 
-Dane są przechowywane poza katalogiem aktualizowanym przez repozytorium w:
+Dane są zapisywane w `ChimeraVIP-data/progression.lua`.
 
-`getMudletHomeDir()/ChimeraVIP-data/progression.lua`
+```text
+/progres
+/progres historia [N]
+/progres postacie
+/progres help
+/cechy info
+/cechy historia [N]
+```
 
-Pierwsze sprawdzenie cech tworzy punkt bazowy. Kolejne sprawdzenia bez zmiany cech nie zerują licznika XP. Gdy zmieni się co najmniej jedna cecha, moduł zapisuje różnicę oraz ilość XP zdobytą od poprzedniej zmiany.
+## Pomoc
 
-Komendy:
+`/cvip` jest głównym centrum pomocy i wyświetla opis wszystkich modułów w kategoriach.
 
-- `/progres` – aktualny stan progresji bieżącej postaci,
-- `/progres historia [N]` – ostatnie N wpisów historii,
-- `/progres postacie` – lista wszystkich zapisanych postaci,
-- `/progres help` – pomoc,
-- `/cechy info` – alias do `/progres`,
-- `/cechy historia [N]` – alias historii.
+```text
+/cvip
+/cvip pomoc
+/cvip pomoc xp
+/cvip pomoc progres
+/cvip pomoc ui
+```
 
-Moduł przechowuje do 100 wpisów historii na postać i podnosi event `chimeraVipProgressionUpdated` dla przyszłych modułów UI.
+Komendy systemowe:
 
-## Instalacja
+```text
+/cvip status
+/cvip sprawdz
+/cvip aktualizuj
+/cvip przeladuj
+```
 
-### 1. Loader
-
-W Mudlet → Scripts utwórz **jeden** trwały skrypt, np. `ChimeraVIP loader`, i wklej zawartość `loader.lua` z repozytorium.
-
-Loader trzyma właściwe pliki w:
-
-`getMudletHomeDir()/ChimeraVIP/`
-
-Przy pierwszym uruchomieniu pobierze manifest i wszystkie moduły. Przy kolejnych startach uruchomi lokalną kopię.
-
-### 2. Komendy
-
-Po instalacji:
-
-- `/cvip` – status i wersja,
-- `/cvip sprawdz` – sprawdź, czy jest nowa wersja,
-- `/cvip aktualizuj` – pobierz i uruchom najnowszą wersję,
-- `/cvip przeladuj` – przeładuj lokalne moduły bez pobierania.
-
-Updater wykonuje także ciche sprawdzenie wersji po starcie profilu. Nie instaluje aktualizacji automatycznie bez komendy użytkownika.
+Moduły zachowują również własne krótsze pomoce, np. `/xp help` i `/progres help`.
 
 ## Aktualizacje
 
-Źródłem wersji jest `manifest.lua`. Każda wersja ma wpis w `CHANGELOG.md`.
+Źródłem wersji jest `manifest.lua`. Przy publikacji nowej wersji aktualizowane są:
 
-Przy publikacji nowej wersji:
+1. `VERSION`,
+2. `manifest.lua`,
+3. `CHANGELOG.md`,
+4. `releases/<wersja>.md`,
+5. zmienione moduły.
 
-1. zmień `VERSION`,
-2. zmień `version` w `manifest.lua`,
-3. opisz zmiany w `CHANGELOG.md`,
-4. zaktualizuj pliki źródłowe,
-5. użytkownik wykonuje `/cvip aktualizuj`.
-
-## Zgodność
-
-Wersja 0.70 rozwijana jest względem oficjalnych skryptów Chimera **2.6**. Upstream może się zmieniać; integracje z jego strukturami powinny być sprawdzane przy kolejnych wydaniach.
+Updater obejmuje również lokalny `loader.lua`, dzięki czemu infrastruktura startowa może być rozwijana razem z resztą projektu.
 
 ## Struktura
 
@@ -120,22 +166,31 @@ ChimeraVIP/
 ├── README.md
 ├── loader.lua
 ├── manifest.lua
-├── src/
-│   ├── init.lua
-│   ├── core/
-│   │   ├── bootstrap.lua
-│   │   ├── util.lua
-│   │   └── updater.lua
-│   ├── theme/
-│   │   └── pastel.lua
-│   ├── ui/
-│   │   ├── quiet_footer.lua
-│   │   └── footer_controls.lua
-│   └── features/
-│       ├── auto_support.lua
-│       ├── xp_tracker.lua
-│       ├── stats.lua
-│       └── progression.lua
-└── packages/
-    └── CHIMERA_damage_prefixes.xml
+├── releases/
+├── packages/
+│   ├── ChimeraVIP.xml
+│   └── CHIMERA_damage_prefixes.xml
+└── src/
+    ├── init.lua
+    ├── core/
+    │   ├── bootstrap.lua
+    │   ├── util.lua
+    │   ├── help.lua
+    │   └── updater.lua
+    ├── integrations/
+    │   └── chimera.lua
+    ├── theme/
+    │   └── pastel.lua
+    ├── ui/
+    │   ├── quiet_footer.lua
+    │   └── footer_controls.lua
+    └── features/
+        ├── auto_support.lua
+        ├── xp_tracker.lua
+        ├── stats.lua
+        └── progression.lua
 ```
+
+## Zgodność
+
+ChimeraVIP jest nakładką zależną od oficjalnych skryptów Chimery. Integracje z ich strukturami powinny być sprawdzane po zmianach upstreamu.
