@@ -2,17 +2,36 @@
 
 Nakładka do oficjalnych skryptów Chimera MUD dla Mudleta. Projekt **nie modyfikuje kodu upstreamu**; korzysta z publicznych eventów, GMCP i struktur oficjalnych skryptów.
 
-Aktualna wersja: **0.67**.
+Aktualna wersja: **0.68**.
 
-## Moduły 0.67
+## Moduły 0.68
 
 - `core/bootstrap` – namespace, kolejność startu i wspólne handlery.
 - `theme/pastel` – pastelowy motyw i ponowne nakładanie po restarcie UI.
 - `ui/quiet_footer` – responsywny footer: kompas, wyjścia specjalne, KOND/SIŁY/MANA, SYTOŚĆ/WODA, OBC, UPI i EXP.
 - `features/auto_support` – auto-wsparcie drużyny z przełącznikiem ON/OFF.
+- `features/xp_tracker` – licznik doświadczenia, wydajności XP/h, trendów i statystyk mobów.
 - `ui/footer_controls` – mini-przyciski do wybranych funkcji oficjalnego footera.
 - `packages/CHIMERA_damage_prefixes.xml` – obecny pakiet prefixów obrażeń zachowany jako osobny komponent.
 - `core/updater` – sprawdzanie i pobieranie aktualizacji z tego repozytorium.
+
+## XP tracker
+
+Tracker łapie komunikaty zabicia z `[...xp]`, rozróżnia własne i drużynowe zabicia oraz liczy wydajność sesji i aktywnego expienia.
+
+Komendy:
+
+- `/xp` – podsumowanie sesji,
+- `/xp mobs` – statystyki mobów,
+- `/xp mob <nazwa>` – szczegóły konkretnej klasyfikacji,
+- `/xp last [N]` – ostatnie N zabójstw,
+- `/xp rules` – reguły klasyfikacji,
+- `/xp add nazwa#forma` – dodanie ręcznej reguły,
+- `/xp del nazwa` – usunięcie reguł,
+- `/xp reset` – nowa sesja,
+- `/xp help` – pomoc.
+
+Reguły użytkownika są przechowywane w `getMudletHomeDir()/ChimeraVIP-data/xp_mobs.lua`, więc aktualizacja ChimeraVIP ich nie nadpisuje. Starszy plik `chimera_xp_mobs.lua` jest wykrywany i migrowany automatycznie.
 
 ## Instalacja
 
@@ -51,7 +70,7 @@ Przy publikacji nowej wersji:
 
 ## Zgodność
 
-Wersja 0.67 powstała na bazie oficjalnych skryptów Chimera **2.6**. Upstream może się zmieniać; integracje z jego strukturami powinny być sprawdzane przy kolejnych wydaniach.
+Wersja 0.68 rozwijana jest względem oficjalnych skryptów Chimera **2.6**. Upstream może się zmieniać; integracje z jego strukturami powinny być sprawdzane przy kolejnych wydaniach.
 
 ## Struktura
 
@@ -74,7 +93,8 @@ ChimeraVIP/
 │   │   ├── quiet_footer.lua
 │   │   └── footer_controls.lua
 │   └── features/
-│       └── auto_support.lua
+│       ├── auto_support.lua
+│       └── xp_tracker.lua
 └── packages/
     └── CHIMERA_damage_prefixes.xml
 ```
