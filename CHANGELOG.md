@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.73 — 2026-08-26
+
+Przebudowano mini-przyciski Quiet Footera tak, aby ich etykiety i zachowanie odzwierciedlały rzeczywisty stan oficjalnych funkcji Chimery.
+
+### Zmieniono
+- `UKR` pokazuje stan ukrycia: brak znacznika dla postaci nieukrytej, `●` dla poprawnego ukrycia albo wartość liczbową, jeśli upstream ją udostępnia,
+- `PRZ` pokazuje aktualny tryb przemykania: `OFF`, `JA` albo `DRU`; na węższym footerze przechodzi w kompaktowe `PRZ 1/2/3`,
+- `ATK` pokazuje numer aktualnego `ateam.attack_mode`, a pełna oficjalna nazwa trybu pozostaje w tooltipie,
+- `ZBI` pokazuje numer aktualnego `scripts.inv.collect.current_mode`, a pełna oficjalna nazwa trybu pozostaje w tooltipie,
+- `LAM` używa `●` dla zapalonej i `○` dla zgaszonej lampy,
+- `WAL` dynamicznie zmienia się na `WALKA ●` podczas walki oraz pokazuje stan/czas po walce, jeśli upstream go udostępnia,
+- `ZAS` pokazuje `✓` gdy akcja zasłony jest gotowa, wartość odnowienia gdy nie jest gotowa oraz `—` gdy jest niedostępna,
+- niedostępna `ZAS` nie wykonuje akcji po kliknięciu i nie dostaje aktywnego efektu hover,
+- tooltipy opisują teraz typ kontrolki, aktualny stan oraz dokładny efekt kliknięcia,
+- szerokość przycisków jest responsywna; przy małej ilości miejsca etykiety automatycznie przechodzą w krótszą postać,
+- odświeżenie stanu po kliknięciu odbywa się dwukrotnie (krótkie i opóźnione), aby poprawnie łapać moduły upstreamu aktualizujące stan asynchronicznie.
+
+### Architektura
+- logika akcji nadal pozostaje po stronie oficjalnych skryptów Chimery; ChimeraVIP jedynie prezentuje stan i deleguje kliknięcia do istniejących funkcji upstreamu,
+- nie wprowadzono własnych nazw trybów `ATK` i `ZBI`; numer jest pokazywany na przycisku, a oficjalny tekst Chimery w tooltipie, co ogranicza ryzyko rozjazdu po aktualizacji upstreamu.
+
 ## 0.72 — 2026-08-26
 
 Dodano pełnoprawny moduł kolorowania walki, który przejmuje prezentację obrażeń po wyłączeniu oficjalnego folderu `chimera/skrypty/ui/gags`.
