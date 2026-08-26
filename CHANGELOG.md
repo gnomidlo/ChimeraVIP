@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.70 — 2026-08-26
+
+Dodano trwałą historię progresji przypisaną do konkretnej postaci po GMCP `Char.Name`.
+
+### Dodano
+- `src/features/progression.lua`,
+- rozpoznawanie aktualnej postaci przez `gmcp.Char.Name.fullname`, z fallbackiem do `gmcp.Char.Name.name`,
+- osobne dane progresji dla każdej postaci używanej w tym samym profilu Mudleta,
+- trwały zapis w `getMudletHomeDir()/ChimeraVIP-data/progression.lua`,
+- licznik całego XP śledzonego dla postaci,
+- licznik XP zdobytego od ostatniej rzeczywistej zmiany cech,
+- historię maksymalnie 100 snapshotów bazowych/zmian,
+- zapis różnic cech pomiędzy kolejnymi zmianami,
+- powiązanie `chimeraVipXpGained` z `chimeraVipStatsUpdated`,
+- event `chimeraVipProgressionUpdated` dla przyszłego UI,
+- komendy `/progres`, `/progres historia [N]`, `/progres postacie`, `/progres help`,
+- aliasy `/cechy info` i `/cechy historia [N]`.
+
+### Zachowanie
+- pierwszy pełny odczyt cech tworzy punkt bazowy,
+- zwykłe ponowne sprawdzenie cech bez zmiany nie zeruje licznika XP,
+- dopiero faktyczna zmiana którejkolwiek cechy zapisuje wpis historii i zeruje licznik `XP od zmiany`,
+- gdy kilka cech zmieni się jednocześnie, XP jest raportowane dla całego przedziału między snapshotami; moduł nie próbuje sztucznie przypisywać części XP do jednej cechy,
+- XP otrzymane zanim GMCP poda nazwę postaci jest chwilowo buforowane i przypisywane po pojawieniu się `gmcp.Char.Name`.
+
 ## 0.69 — 2026-08-26
 
 Dodano moduł formatowania i podsumowania cech postaci.
