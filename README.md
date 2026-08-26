@@ -3,7 +3,7 @@
 Nakładka do oficjalnych skryptów **Chimera MUD** dla Mudleta. Projekt nie modyfikuje kodu upstreamu; korzysta z jego GMCP, eventów i publicznych struktur.
 
 Serwer: `chimera.co.pl:2300`  
-Aktualna wersja ChimeraVIP: **0.72**  
+Aktualna wersja ChimeraVIP: **0.73**  
 Wersja upstreamu używana przy rozwoju: **2.6**
 
 ## Instalacja
@@ -59,7 +59,19 @@ Jeżeli instalacja pakietu URL nie jest dostępna w używanej wersji Mudleta, mo
 - OBC / UPI,
 - pasek EXP,
 - panel auto-wsparcia,
-- mini-przyciski oficjalnych funkcji Chimery: UKR, PRZ, ATK, ZBI, LAM, WAL i ZAS.
+- dynamiczne mini-przyciski oficjalnych funkcji Chimery: UKR, PRZ, ATK, ZBI, LAM, WAL i ZAS.
+
+Mini-przyciski pokazują stan funkcji zamiast być wyłącznie skrótami:
+
+- `UKR` — stan ukrycia (`●` albo wartość, jeśli upstream ją udostępnia),
+- `PRZ` — aktualny tryb przemykania (`OFF`, `JA`, `DRU`),
+- `ATK N` — numer oficjalnego trybu ataku; pełna nazwa jest w tooltipie,
+- `ZBI N` — numer oficjalnego trybu zbierania; pełna nazwa jest w tooltipie,
+- `LAM ●/○` — lampa zapalona/zgaszona,
+- `WALKA ●` / `WAL Ns` — stan walki lub okres po walce,
+- `ZAS ✓` / `ZAS N` / `ZAS —` — zasłona gotowa, w odnowieniu albo niedostępna.
+
+Niedostępne akcje nie wykonują kliknięcia. Na węższym footerze etykiety automatycznie przechodzą w krótszą postać.
 
 ### Integracja z oficjalną Chimerą
 
