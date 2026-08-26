@@ -33,7 +33,7 @@ local function start_local()
     local init = C.root_dir .. "/src/init.lua"
     if not exists(init) then return false end
     local version_file = io.open(C.root_dir .. "/VERSION", "rb")
-    if version_file then C.version = (version_file:read("*l") or "0.67"); version_file:close() end
+    if version_file then C.version = (version_file:read("*l") or "0.68"); version_file:close() end
     local ok, err = pcall(dofile, init)
     if not ok then cecho("\n<orange>[ChimeraVIP]<reset> Blad startu: " .. tostring(err) .. "\n") end
     return ok
