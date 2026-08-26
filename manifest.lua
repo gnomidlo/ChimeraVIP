@@ -1,6 +1,6 @@
 return {
     name = "ChimeraVIP",
-    version = "0.68",
+    version = "0.69",
     tested_upstream = "2.6",
     raw_base = "https://raw.githubusercontent.com/gnomidlo/ChimeraVIP/main/",
     files = {
@@ -12,6 +12,7 @@ return {
         "src/ui/quiet_footer.lua",
         "src/features/auto_support.lua",
         "src/features/xp_tracker.lua",
+        "src/features/stats.lua",
         "src/ui/footer_controls.lua",
     },
 }
