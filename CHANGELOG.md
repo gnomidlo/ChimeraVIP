@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.69 — 2026-08-26
+
+Dodano moduł formatowania i podsumowania cech postaci.
+
+### Dodano
+- `src/features/stats.lua`,
+- formatowanie nagłówka postępów i wszystkich linii cech,
+- automatyczne podsumowanie: Fiz, Ment, Odw i Łącznie,
+- zapamiętywanie ostatniego pełnego odczytu cech w `chimera_vip.stats.last`,
+- event `chimeraVipStatsUpdated` po zebraniu pełnego zestawu cech, przygotowany pod przyszłe integracje UI i historię.
+
+### Zmieniono
+- parser cech został przeniesiony do namespace ChimeraVIP i obsługuje hot reload bez dublowania triggerów,
+- kolorystyka została dopasowana do pastelowego motywu ChimeraVIP,
+- moduł jest ładowany przez `src/init.lua` i aktualizowany przez standardowy updater ChimeraVIP.
+
 ## 0.68 — 2026-08-26
 
 Dodano tracker doświadczenia i wydajności expienia jako pełnoprawny moduł ChimeraVIP.
