@@ -148,14 +148,28 @@ function UP:reload()
     else out("Blad przeladowania: " .. tostring(err), "orange") end
 end
 
+function UP:show_status()
+    out("Wersja " .. tostring(C.version) .. " | upstream " .. tostring(C:get_upstream_version()) .. ".", "light_grey")
+end
+
 function UP:command(arg)
     arg = tostring(arg or ""):lower():gsub("^%s+", ""):gsub("%s+$", "")
+
     if arg == "" then
-        out("Wersja " .. tostring(C.version) .. " | upstream " .. tostring(C:get_upstream_version()) .. ". Komendy: /cvip sprawdz, /cvip aktualizuj, /cvip przeladuj.", "light_grey")
+        if C.help and type(C.help.show) == "function" then C.help:show() else self:show_status() end
+        return
+    end
+
+    local help_section = arg:match("^(?:pomoc|help)%s+(.+)$")
+    if arg == "pomoc" or arg == "help" then
+        if C.help and type(C.help.show) == "function" then C.help:show() else self:show_status() end
+    elseif help_section then
+        if C.help and type(C.help.show) == "function" then C.help:show(help_section) else self:show_status() end
+    elseif arg == "status" or arg == "wersja" or arg == "version" then self:show_status()
     elseif arg == "sprawdz" or arg == "check" then self:check(false)
     elseif arg == "aktualizuj" or arg == "update" then self:update()
     elseif arg == "przeladuj" or arg == "reload" then self:reload()
-    else out("Nieznana komenda. Uzyj /cvip.", "yellow") end
+    else out("Nieznana komenda. Uzyj /cvip, aby zobaczyc pelna pomoc.", "yellow") end
 end
 
 if UP.alias_id then pcall(killAlias, UP.alias_id) end
