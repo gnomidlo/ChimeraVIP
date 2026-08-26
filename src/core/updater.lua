@@ -160,7 +160,7 @@ function UP:command(arg)
         return
     end
 
-    local help_section = arg:match("^(?:pomoc|help)%s+(.+)$")
+    local help_section = arg:match("^pomoc%s+(.+)$") or arg:match("^help%s+(.+)$")
     if arg == "pomoc" or arg == "help" then
         if C.help and type(C.help.show) == "function" then C.help:show() else self:show_status() end
     elseif help_section then
