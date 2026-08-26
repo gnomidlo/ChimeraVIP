@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.71 — 2026-08-26
+
+Nowy system instalacji i pomocy oraz dodatkowa integracja z oficjalnym pakietem Chimery.
+
+### Dodano
+- `packages/ChimeraVIP.xml` — instalator Mudleta uruchamiany jedną komendą `installPackage(...)`,
+- trwały skrypt `ChimeraVIP/loader` instalowany jako pakiet; przy pierwszym uruchomieniu pobiera repozytoryjny `loader.lua`,
+- `src/core/help.lua` — centralną, kategoryzowaną pomoc wszystkich modułów,
+- `/cvip` jako pełne centrum pomocy,
+- `/cvip pomoc [sekcja]`, np. `xp`, `progres` lub `ui`,
+- `/cvip status` do szybkiego sprawdzania wersji nakładki i upstreamu,
+- `src/integrations/chimera.lua` — warstwę integracji z oficjalnym pakietem,
+- automatyczne wyłączanie folderu skryptów `chimera/skrypty/ui/gags` po starcie ChimeraVIP.
+
+### Zmieniono
+- `loader.lua` został dodany do manifestu i od wersji 0.71 jest aktualizowany razem z resztą runtime,
+- `src/init.lua` ładuje centralną pomoc i integrację z oficjalną Chimerą przed modułami funkcjonalnymi,
+- README opisuje instalację jedną komendą oraz nowe centrum pomocy,
+- `/cvip` nie pokazuje już wyłącznie krótkiego statusu; bez argumentów wyświetla pełną, opisaną pomoc dla nowego użytkownika.
+
+### Instalacja
+
+```lua
+lua installPackage("https://raw.githubusercontent.com/gnomidlo/ChimeraVIP/main/packages/ChimeraVIP.xml")
+```
+
 ## 0.70 — 2026-08-26
 
 Dodano trwałą historię progresji przypisaną do konkretnej postaci po GMCP `Char.Name`.
