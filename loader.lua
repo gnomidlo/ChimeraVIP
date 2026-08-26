@@ -1,5 +1,6 @@
 -- ChimeraVIP persistent loader
--- Wklej ten plik RAZ jako zwykly Script w Mudlecie.
+-- Preferowana instalacja: packages/ChimeraVIP.xml przez installPackage(URL).
+-- Ten plik moze tez zostac wklejony recznie jako pojedynczy Script w Mudlecie.
 
 chimera_vip = chimera_vip or {}
 local C = chimera_vip
@@ -33,7 +34,7 @@ local function start_local()
     local init = C.root_dir .. "/src/init.lua"
     if not exists(init) then return false end
     local version_file = io.open(C.root_dir .. "/VERSION", "rb")
-    if version_file then C.version = (version_file:read("*l") or "0.68"); version_file:close() end
+    if version_file then C.version = (version_file:read("*l") or "0.71"); version_file:close() end
     local ok, err = pcall(dofile, init)
     if not ok then cecho("\n<orange>[ChimeraVIP]<reset> Blad startu: " .. tostring(err) .. "\n") end
     return ok
@@ -87,7 +88,7 @@ local function install_files(manifest)
         local vf = io.open(C.root_dir .. "/VERSION", "wb")
         if vf then vf:write(tostring(manifest.version) .. "\n"); vf:close() end
         C.version = tostring(manifest.version)
-        cecho("\n<aquamarine>[ChimeraVIP]<reset> Zainstalowano wersje " .. C.version .. ".\n")
+        cecho("\n<aquamarine>[ChimeraVIP]<reset> Zainstalowano wersje " .. C.version .. ". Wpisz /cvip, aby zobaczyc pomoc.\n")
         tempTimer(0.1, start_local)
     end)
     error_id = registerAnonymousEventHandler("sysDownloadError", function(_, err, filename)
