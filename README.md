@@ -3,7 +3,7 @@
 Nakładka do oficjalnych skryptów **Chimera MUD** dla Mudleta. Projekt nie modyfikuje kodu upstreamu; korzysta z jego GMCP, eventów i publicznych struktur.
 
 Serwer: `chimera.co.pl:2300`  
-Aktualna wersja ChimeraVIP: **0.71**  
+Aktualna wersja ChimeraVIP: **0.72**  
 Wersja upstreamu używana przy rozwoju: **2.6**
 
 ## Instalacja
@@ -71,6 +71,39 @@ chimera/skrypty/ui/gags
 
 Kod oficjalnego pakietu nie jest edytowany. ChimeraVIP używa `disableScript()` do dezaktywacji folderu w profilu.
 
+### Kolory walki
+
+`features/combat_colors` przejmuje prezentację siły obrażeń po wyłączeniu oficjalnego `gags` i dodaje pastelowe prefiksy `0/3`–`3/3`.
+
+Obsługiwane są cztery grupy kolorów:
+
+- `zadane_*` — obrażenia zadawane przez Twoją postać,
+- `otrzymane_*` — obrażenia otrzymywane przez Twoją postać,
+- `innych_zadane_*` — obrażenia zadawane w walce osób postronnych,
+- `innych_otrzymane_*` — obrażenia otrzymywane w walce osób postronnych.
+
+Moduł automatycznie uczy się aktualnych ustawień z wyniku komendy gry:
+
+```text
+kolory
+```
+
+Wartość `-1` oznacza `bez koloru` i dla takiej kategorii nie jest tworzony trigger ANSI. Prefiks jest dodawany wyłącznie do linii mających co najmniej 50 znaków i zawierających co najmniej jedną literę.
+
+Ustawienia są zapisywane w:
+
+```text
+getMudletHomeDir()/ChimeraVIP-data/combat_colors.lua
+```
+
+Starszy plik `chimera_damage_colors.lua` jest automatycznie wykrywany i migrowany. Stare triggery z pakietu `CHIMERA_damage_prefixes.xml` są wyłączane, aby nie tworzyć podwójnych prefiksów.
+
+Pomoc:
+
+```text
+/cvip pomoc walka
+```
+
 ### Auto-wsparcie
 
 Obserwuje GMCP drużyny i walki. Jeżeli członek drużyny walczy, a Twoja postać jeszcze nie uczestniczy w walce, wysyła `wesprzyj`. Przełącznik ON/OFF znajduje się w prawej części footera.
@@ -129,6 +162,7 @@ Dane są zapisywane w `ChimeraVIP-data/progression.lua`.
 ```text
 /cvip
 /cvip pomoc
+/cvip pomoc walka
 /cvip pomoc xp
 /cvip pomoc progres
 /cvip pomoc ui
@@ -169,7 +203,7 @@ ChimeraVIP/
 ├── releases/
 ├── packages/
 │   ├── ChimeraVIP.xml
-│   └── CHIMERA_damage_prefixes.xml
+│   └── CHIMERA_damage_prefixes.xml   # legacy
 └── src/
     ├── init.lua
     ├── core/
@@ -185,6 +219,7 @@ ChimeraVIP/
     │   ├── quiet_footer.lua
     │   └── footer_controls.lua
     └── features/
+        ├── combat_colors.lua
         ├── auto_support.lua
         ├── xp_tracker.lua
         ├── stats.lua
