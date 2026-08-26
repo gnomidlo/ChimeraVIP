@@ -6,10 +6,18 @@ chimera_overlay = chimera_overlay or chimera_vip
 
 local C = chimera_vip
 local U = C.util
+local legacy_damage = rawget(_G, "chimera_damage")
 
 C.combat_colors = C.combat_colors or {}
 chimera_overlay.combat_colors = C.combat_colors
 local D = C.combat_colors
+
+-- Przy przejsciu ze starego standalone skryptu usuwamy jego tymczasowe
+-- triggery, zeby nie dostac podwojnych prefiksow w tej samej sesji.
+if legacy_damage and legacy_damage ~= D then
+    for _, id in ipairs(legacy_damage.damage_triggers or {}) do pcall(killTrigger, id) end
+    if legacy_damage.learn_trigger then pcall(killTrigger, legacy_damage.learn_trigger) end
+end
 
 -- Kompatybilnosc ze starszym standalone skryptem i stringowymi callbackami.
 chimera_damage = D
@@ -96,6 +104,21 @@ end
 
 local function ensure_data_dir()
     if U and U.ensure_dir then U.ensure_dir(data_dir) end
+end
+
+function D:disable_legacy_package_triggers()
+    if type(disableTrigger) ~= "function" then return end
+    local names = {
+        "CHIMERA+ obrazenia - zadane 0/3",
+        "CHIMERA+ obrazenia - zadane 1/3",
+        "CHIMERA+ obrazenia - zadane 2/3",
+        "CHIMERA+ obrazenia - zadane 3/3",
+        "CHIMERA+ obrazenia - otrzymane 0/3",
+        "CHIMERA+ obrazenia - otrzymane 1/3",
+        "CHIMERA+ obrazenia - otrzymane 2/3",
+        "CHIMERA+ obrazenia - otrzymane 3/3",
+    }
+    for _, name in ipairs(names) do pcall(disableTrigger, name) end
 end
 
 function D:save_colors()
@@ -280,6 +303,7 @@ D.learn_trigger = tempRegexTrigger(
     [[chimera_damage:learn_color(matches[2], matches[3])]]
 )
 
+D:disable_legacy_package_triggers()
 D:load_colors()
 D:rebuild_damage_triggers()
 
