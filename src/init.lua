@@ -19,6 +19,7 @@ load("src/core/bootstrap.lua")
 load("src/theme/pastel.lua")
 load("src/ui/quiet_footer.lua")
 load("src/features/auto_support.lua")
+load("src/features/xp_tracker.lua")
 load("src/ui/footer_controls.lua")
 load("src/core/updater.lua")
 
