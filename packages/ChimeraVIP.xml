@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MudletPackage>
+<MudletPackage version="1.001">
+  <ScriptPackage>
+    <ScriptGroup isActive="yes" isFolder="yes">
+      <name>ChimeraVIP</name>
+      <packageName>ChimeraVIP</packageName>
+      <script></script>
+      <eventHandlerList/>
+      <Script isActive="yes" isFolder="no">
+        <name>loader</name>
+        <packageName>ChimeraVIP</packageName>
+        <script><![CDATA[
+chimera_vip_package = chimera_vip_package or {}
+local I = chimera_vip_package
+
+I.root = getMudletHomeDir() .. "/ChimeraVIP"
+I.loader = I.root .. "/loader.lua"
+I.url = "https://raw.githubusercontent.com/gnomidlo/ChimeraVIP/main/loader.lua"
+I.handlers = I.handlers or {}
+
+local function ensure_dir(path)
+    local ok, lfs = pcall(require, "lfs")
+    if not ok then return false end
+    local sep = package.config:sub(1, 1)
+    local current, prefix = "", ""
+    if path:match("^%a:[/\\]") then
+        prefix = path:sub(1, 2) .. sep
+        path = path:sub(4)
+    elseif path:sub(1, 1) == sep then
+        prefix = sep
+        path = path:sub(2)
+    end
+    current = prefix
+    for part in path:gmatch("[^/\\]+") do
+        if current ~= "" and current:sub(-1) ~= sep then current = current .. sep end
+        current = current .. part
+        lfs.mkdir(current)
+    end
+    return true
+end
+
+local function exists(path)
+    local f = io.open(path, "rb")
+    if f then f:close(); return true end
+    return false
+end
+
+local function cleanup()
+    if I.handlers.done then pcall(killAnonymousEventHandler, I.handlers.done) end
+    if I.handlers.error then pcall(killAnonymousEventHandler, I.handlers.error) end
+    I.handlers.done, I.handlers.error = nil, nil
+end
+
+local function run_loader()
+    local ok, err = pcall(dofile, I.loader)
+    if not ok then
+        cecho("\n<orange>[ChimeraVIP]<reset> Nie udalo sie uruchomic loadera: " .. tostring(err) .. "\n")
+    end
+end
+
+if exists(I.loader) then
+    run_loader()
+else
+    ensure_dir(I.root)
+    cleanup()
+    cecho("\n<aquamarine>[ChimeraVIP]<reset> Instalacja - pobieram loader...\n")
+
+    I.handlers.done = registerAnonymousEventHandler("sysDownloadDone", function(_, filename)
+        if filename ~= I.loader then return end
+        cleanup()
+        run_loader()
+    end)
+
+    I.handlers.error = registerAnonymousEventHandler("sysDownloadError", function(_, err, filename)
+        if filename ~= I.loader then return end
+        cleanup()
+        cecho("\n<orange>[ChimeraVIP]<reset> Nie udalo sie pobrac loadera: " .. tostring(err) .. "\n")
+    end)
+
+    downloadFile(I.loader, I.url)
+end
+        ]]></script>
+        <eventHandlerList/>
+      </Script>
+    </ScriptGroup>
+  </ScriptPackage>
+</MudletPackage>
