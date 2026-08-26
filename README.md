@@ -2,9 +2,9 @@
 
 Nakładka do oficjalnych skryptów Chimera MUD dla Mudleta. Projekt **nie modyfikuje kodu upstreamu**; korzysta z publicznych eventów, GMCP i struktur oficjalnych skryptów.
 
-Aktualna wersja: **0.69**.
+Aktualna wersja: **0.70**.
 
-## Moduły 0.69
+## Moduły 0.70
 
 - `core/bootstrap` – namespace, kolejność startu i wspólne handlery.
 - `theme/pastel` – pastelowy motyw i ponowne nakładanie po restarcie UI.
@@ -12,6 +12,7 @@ Aktualna wersja: **0.69**.
 - `features/auto_support` – auto-wsparcie drużyny z przełącznikiem ON/OFF.
 - `features/xp_tracker` – licznik doświadczenia, wydajności XP/h, trendów i statystyk mobów.
 - `features/stats` – formatowanie postępów i cech oraz podsumowanie Fiz/Ment/Odw/Łącznie.
+- `features/progression` – trwała historia cech i XP przypisana osobno do każdej postaci po GMCP `Char.Name`.
 - `ui/footer_controls` – mini-przyciski do wybranych funkcji oficjalnego footera.
 - `packages/CHIMERA_damage_prefixes.xml` – obecny pakiet prefixów obrażeń zachowany jako osobny komponent.
 - `core/updater` – sprawdzanie i pobieranie aktualizacji z tego repozytorium.
@@ -43,7 +44,33 @@ Moduł `features/stats` przechwytuje standardowy wynik cech, porządkuje kolorys
 - `Odw` = Odwaga,
 - `Łącznie` = suma wszystkich cech.
 
-Po pełnym odczycie ostatni snapshot jest dostępny jako `chimera_vip.stats.last`, a moduł podnosi event `chimeraVipStatsUpdated`. Dzięki temu późniejsze moduły UI lub historii nie muszą ponownie parsować tekstu gry.
+Po pełnym odczycie ostatni snapshot jest dostępny jako `chimera_vip.stats.last`, a moduł podnosi event `chimeraVipStatsUpdated`.
+
+## Progres postaci
+
+`features/progression` łączy snapshoty cech z eventami XP i zapisuje historię **osobno dla każdej postaci**.
+
+Identyfikacja postaci:
+
+1. `gmcp.Char.Name.fullname`,
+2. jeśli brak – `gmcp.Char.Name.name`.
+
+Dane są przechowywane poza katalogiem aktualizowanym przez repozytorium w:
+
+`getMudletHomeDir()/ChimeraVIP-data/progression.lua`
+
+Pierwsze sprawdzenie cech tworzy punkt bazowy. Kolejne sprawdzenia bez zmiany cech nie zerują licznika XP. Gdy zmieni się co najmniej jedna cecha, moduł zapisuje różnicę oraz ilość XP zdobytą od poprzedniej zmiany.
+
+Komendy:
+
+- `/progres` – aktualny stan progresji bieżącej postaci,
+- `/progres historia [N]` – ostatnie N wpisów historii,
+- `/progres postacie` – lista wszystkich zapisanych postaci,
+- `/progres help` – pomoc,
+- `/cechy info` – alias do `/progres`,
+- `/cechy historia [N]` – alias historii.
+
+Moduł przechowuje do 100 wpisów historii na postać i podnosi event `chimeraVipProgressionUpdated` dla przyszłych modułów UI.
 
 ## Instalacja
 
@@ -82,7 +109,7 @@ Przy publikacji nowej wersji:
 
 ## Zgodność
 
-Wersja 0.69 rozwijana jest względem oficjalnych skryptów Chimera **2.6**. Upstream może się zmieniać; integracje z jego strukturami powinny być sprawdzane przy kolejnych wydaniach.
+Wersja 0.70 rozwijana jest względem oficjalnych skryptów Chimera **2.6**. Upstream może się zmieniać; integracje z jego strukturami powinny być sprawdzane przy kolejnych wydaniach.
 
 ## Struktura
 
@@ -107,7 +134,8 @@ ChimeraVIP/
 │   └── features/
 │       ├── auto_support.lua
 │       ├── xp_tracker.lua
-│       └── stats.lua
+│       ├── stats.lua
+│       └── progression.lua
 └── packages/
     └── CHIMERA_damage_prefixes.xml
 ```
