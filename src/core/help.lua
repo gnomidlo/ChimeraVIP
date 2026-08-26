@@ -51,6 +51,23 @@ function H:register_defaults()
         },
     })
 
+    self:register("combat", {
+        title = "WALKA I KOLORY",
+        description = {
+            "Moduł Combat Colors zastępuje prezentację obrażeń z oficjalnego folderu gags i dodaje pastelowe prefiksy siły obrażeń 0/3–3/3.",
+            "Obsługuje obrażenia zadane i otrzymane przez Twoją postać oraz walkę osób postronnych: innych_zadane_* i innych_otrzymane_*.",
+            "Kolory ANSI są automatycznie odczytywane z wyniku komendy 'kolory'. Wartość -1 oznacza 'bez koloru' i wtedy ChimeraVIP nie tworzy triggera dla tej kategorii.",
+            "Prefiks pojawia się tylko na liniach mających co najmniej 50 znaków i zawierających przynajmniej jedną literę, dzięki czemu nie kolorujemy separatorów i technicznych linii UI.",
+            "Własne ustawienia kolorów są zapisywane w ChimeraVIP-data i nie są nadpisywane przez aktualizacje.",
+        },
+        commands = {
+            { "kolory", "wyświetl ustawienia kolorów w grze; ChimeraVIP zsynchronizuje się automatycznie" },
+            { "kolory <nazwa> <0-255>", "ustaw kolor danej kategorii w oficjalnej Chimerze" },
+            { "kolory <nazwa> domyslny", "przywróć domyślny kolor danej kategorii" },
+            { "/cvip pomoc walka", "pokaż tylko tę sekcję pomocy" },
+        },
+    })
+
     self:register("automation", {
         title = "AUTOMATYZACJA",
         description = {
@@ -107,7 +124,7 @@ function H:register_defaults()
         title = "INTEGRACJA Z OFICJALNĄ CHIMERĄ",
         description = {
             "ChimeraVIP działa jako nakładka i nie edytuje kodu oficjalnego pakietu.",
-            "Po uruchomieniu wyłącza oficjalny folder skryptów 'gags' z chimera/skrypty/ui/gags, aby jego działanie nie kolidowało z naszą prezentacją tekstu.",
+            "Po uruchomieniu wyłącza oficjalny folder skryptów 'gags' z chimera/skrypty/ui/gags. Combat Colors przejmuje wtedy prezentację siły obrażeń po naszej stronie.",
         },
     })
 
@@ -158,7 +175,10 @@ function H:show(section_id)
 
     local id = tostring(section_id or ""):lower():gsub("^%s+", ""):gsub("%s+$", "")
     if id ~= "" then
-        local aliases = { pomoc = "system", help = "system", cechy = "stats", progres = "progression", exp = "xp", ui = "interface" }
+        local aliases = {
+            pomoc = "system", help = "system", cechy = "stats", progres = "progression",
+            exp = "xp", ui = "interface", walka = "combat", kolory = "combat", combat = "combat",
+        }
         id = aliases[id] or id
         local section = self.sections[id]
         if not section then
@@ -176,7 +196,7 @@ function H:show(section_id)
     end
 
     print_line("", P.text)
-    print_line("Szybki start: /xp  |  /progres  |  /cvip sprawdz", P.peach)
+    print_line("Szybki start: /xp  |  /progres  |  kolory  |  /cvip sprawdz", P.peach)
 end
 
 H:register_defaults()
