@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.72 — 2026-08-26
+
+Dodano pełnoprawny moduł kolorowania walki, który przejmuje prezentację obrażeń po wyłączeniu oficjalnego folderu `chimera/skrypty/ui/gags`.
+
+### Dodano
+- `src/features/combat_colors.lua`,
+- pastelowe prefiksy siły obrażeń `0/3`–`3/3`,
+- obsługę nowych kategorii walki osób postronnych: `innych_zadane_*` oraz `innych_otrzymane_*`,
+- automatyczne uczenie wszystkich 16 kategorii z wyniku komendy `kolory`,
+- obsługę wartości `-1` jako `bez koloru` — bez tworzenia triggera ANSI,
+- eventy `chimeraVipCombatColorsReady` i `chimeraVipCombatColorsUpdated`,
+- sekcję `WALKA I KOLORY` w głównej pomocy `/cvip`, dostępną także przez `/cvip pomoc walka`.
+
+### Zmieniono
+- minimalna długość linii dla prefiksu wzrosła z 40 do 50 znaków,
+- linia musi dodatkowo zawierać przynajmniej jedną literę, dzięki czemu separatory i techniczne linie UI nie są prefixowane,
+- ustawienia kolorów są przechowywane w `getMudletHomeDir()/ChimeraVIP-data/combat_colors.lua`,
+- starszy `chimera_damage_colors.lua` jest automatycznie migrowany do nowej lokalizacji,
+- stare tymczasowe triggery standalone oraz znane triggery z legacy `CHIMERA_damage_prefixes.xml` są wyłączane przy starcie modułu, aby uniknąć podwójnych prefixów,
+- synchronizacja po komendzie `kolory` jest batchowana i przebudowuje triggery dopiero po odczytaniu listy, zamiast po każdej pojedynczej linii.
+
+### Domyślne kolory Chimery
+- `zadane_brak = -1`, `zadane_niskie = 176`, `zadane_srednie = 169`, `zadane_wysokie = 160`,
+- `otrzymane_brak = -1`, `otrzymane_niskie = 225`, `otrzymane_srednie = 203`, `otrzymane_wysokie = 196`,
+- `innych_zadane_brak = -1`, `innych_zadane_niskie = 108`, `innych_zadane_srednie = 71`, `innych_zadane_wysokie = 34`,
+- `innych_otrzymane_brak = -1`, `innych_otrzymane_niskie = 180`, `innych_otrzymane_srednie = 173`, `innych_otrzymane_wysokie = 166`.
+
 ## 0.71 — 2026-08-26
 
 Nowy system instalacji i pomocy oraz dodatkowa integracja z oficjalnym pakietem Chimery.
