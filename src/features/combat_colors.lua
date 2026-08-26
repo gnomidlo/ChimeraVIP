@@ -1,0 +1,288 @@
+-- ChimeraVIP / Combat Colors
+-- Pastelowe prefiksy sily obrazen na podstawie kolorow ANSI Chimery.
+
+chimera_vip = chimera_vip or {}
+chimera_overlay = chimera_overlay or chimera_vip
+
+local C = chimera_vip
+local U = C.util
+
+C.combat_colors = C.combat_colors or {}
+chimera_overlay.combat_colors = C.combat_colors
+local D = C.combat_colors
+
+-- Kompatybilnosc ze starszym standalone skryptem i stringowymi callbackami.
+chimera_damage = D
+
+D.min_line_length = 50
+D.damage_triggers = D.damage_triggers or {}
+D.learned_colors = D.learned_colors or {}
+D.sync_timer = D.sync_timer or nil
+
+D.defaults = {
+    zadane_brak = -1,
+    zadane_niskie = 176,
+    zadane_srednie = 169,
+    zadane_wysokie = 160,
+
+    otrzymane_brak = -1,
+    otrzymane_niskie = 225,
+    otrzymane_srednie = 203,
+    otrzymane_wysokie = 196,
+
+    innych_zadane_brak = -1,
+    innych_zadane_niskie = 108,
+    innych_zadane_srednie = 71,
+    innych_zadane_wysokie = 34,
+
+    innych_otrzymane_brak = -1,
+    innych_otrzymane_niskie = 180,
+    innych_otrzymane_srednie = 173,
+    innych_otrzymane_wysokie = 166,
+}
+
+D.order = {
+    "zadane_brak", "zadane_niskie", "zadane_srednie", "zadane_wysokie",
+    "otrzymane_brak", "otrzymane_niskie", "otrzymane_srednie", "otrzymane_wysokie",
+    "innych_zadane_brak", "innych_zadane_niskie", "innych_zadane_srednie", "innych_zadane_wysokie",
+    "innych_otrzymane_brak", "innych_otrzymane_niskie", "innych_otrzymane_srednie", "innych_otrzymane_wysokie",
+}
+
+D.prefix_colors = {
+    muted = "174,182,197",
+    mint = "168,220,194",
+    blue = "175,203,244",
+    lavender = "199,185,232",
+    yellow = "239,216,166",
+    peach = "242,196,160",
+    rose = "240,168,184",
+}
+
+-- Dla walki osob postronnych zachowujemy ten sam jezyk wizualny:
+-- zadawane = chlodniejsze pastele, otrzymywane = cieplejsze pastele.
+D.definitions = {
+    zadane_brak = { level = "0/3", color = "mint" },
+    zadane_niskie = { level = "1/3", color = "mint" },
+    zadane_srednie = { level = "2/3", color = "blue" },
+    zadane_wysokie = { level = "3/3", color = "lavender" },
+
+    otrzymane_brak = { level = "0/3", color = "mint" },
+    otrzymane_niskie = { level = "1/3", color = "yellow" },
+    otrzymane_srednie = { level = "2/3", color = "peach" },
+    otrzymane_wysokie = { level = "3/3", color = "rose" },
+
+    innych_zadane_brak = { level = "0/3", color = "mint" },
+    innych_zadane_niskie = { level = "1/3", color = "mint" },
+    innych_zadane_srednie = { level = "2/3", color = "blue" },
+    innych_zadane_wysokie = { level = "3/3", color = "lavender" },
+
+    innych_otrzymane_brak = { level = "0/3", color = "mint" },
+    innych_otrzymane_niskie = { level = "1/3", color = "yellow" },
+    innych_otrzymane_srednie = { level = "2/3", color = "peach" },
+    innych_otrzymane_wysokie = { level = "3/3", color = "rose" },
+}
+
+local data_dir = getMudletHomeDir() .. "/ChimeraVIP-data"
+D.storage_path = data_dir .. "/combat_colors.lua"
+D.legacy_storage_path = getMudletHomeDir() .. "/chimera_damage_colors.lua"
+D.game_colors = D.game_colors or {}
+
+local function file_exists(path)
+    if U and U.file_exists then return U.file_exists(path) end
+    local f = io.open(path, "rb")
+    if f then f:close(); return true end
+    return false
+end
+
+local function ensure_data_dir()
+    if U and U.ensure_dir then U.ensure_dir(data_dir) end
+end
+
+function D:save_colors()
+    ensure_data_dir()
+    local ok, err = pcall(table.save, self.storage_path, self.game_colors)
+    if not ok then
+        cecho("\n<red>[ChimeraVIP]<reset> Nie udalo sie zapisac kolorow walki: " .. tostring(err) .. "\n")
+        return false
+    end
+    return true
+end
+
+function D:load_colors()
+    self.game_colors = {}
+    for key, value in pairs(self.defaults) do self.game_colors[key] = value end
+
+    ensure_data_dir()
+    local source = nil
+    if file_exists(self.storage_path) then
+        source = self.storage_path
+    elseif file_exists(self.legacy_storage_path) then
+        source = self.legacy_storage_path
+    end
+
+    if not source then return end
+
+    local saved = {}
+    local ok, err = pcall(table.load, source, saved)
+    if not ok then
+        cecho("\n<orange>[ChimeraVIP]<reset> Nie udalo sie wczytac kolorow walki: " .. tostring(err) .. "\n")
+        return
+    end
+
+    for key, value in pairs(saved) do
+        local n = tonumber(value)
+        if self.defaults[key] ~= nil and n and (n == -1 or (n >= 0 and n <= 255)) then
+            self.game_colors[key] = n
+        end
+    end
+
+    if source == self.legacy_storage_path and self:save_colors() then
+        cecho("\n<light_grey>[ChimeraVIP]<reset> Przeniesiono ustawienia kolorow walki do ChimeraVIP-data.\n")
+    end
+end
+
+function D:is_eligible_line()
+    local current_line = tostring(line or "")
+
+    -- Nigdy nie prefixujemy listy ustawien z komendy 'kolory'.
+    if current_line:match("^%s*zadane_")
+        or current_line:match("^%s*otrzymane_")
+        or current_line:match("^%s*innych_zadane_")
+        or current_line:match("^%s*innych_otrzymane_")
+    then
+        return false
+    end
+
+    local length = nil
+    if utf8 and type(utf8.len) == "function" then
+        local ok, value = pcall(utf8.len, current_line)
+        if ok then length = value end
+    end
+    length = length or string.len(current_line)
+
+    if length < self.min_line_length then return false end
+
+    -- Linia musi zawierac przynajmniej jedna litere. To odcina dlugie
+    -- separatory, paski, liczby i inne techniczne linie UI.
+    if not current_line:find("[A-Za-z]") then return false end
+
+    return true
+end
+
+function D:show_prefix(key)
+    if not self:is_eligible_line() then return end
+
+    local definition = self.definitions[key]
+    if not definition then return end
+
+    local prefix_color = self.prefix_colors[definition.color]
+    if not prefix_color then return end
+
+    prefix(
+        "<" .. self.prefix_colors.muted .. ">["
+        .. "<" .. prefix_color .. ">" .. definition.level
+        .. "<" .. self.prefix_colors.muted .. ">]"
+        .. "<r> ",
+        decho
+    )
+end
+
+-- Stara nazwa zachowana dla istniejacych callbackow po hot reloadzie.
+D.showPrefix = D.show_prefix
+
+function D:clear_damage_triggers()
+    for _, trigger_id in ipairs(self.damage_triggers or {}) do
+        if trigger_id then pcall(killTrigger, trigger_id) end
+    end
+    self.damage_triggers = {}
+end
+
+function D:rebuild_damage_triggers()
+    self:clear_damage_triggers()
+
+    local used_colors = {}
+
+    for _, key in ipairs(self.order) do
+        local ansi = tonumber(self.game_colors[key])
+        local definition = self.definitions[key]
+
+        -- -1 oznacza oficjalne 'bez koloru': nie ma czego lapac ANSI.
+        if ansi and ansi >= 0 and ansi <= 255 and definition then
+            local previous_key = used_colors[ansi]
+
+            if not previous_key then
+                local code = string.format([[chimera_damage:show_prefix(%q)]], key)
+                local ok, trigger_id = pcall(tempAnsiColorTrigger, ansi, -2, code)
+
+                if ok and trigger_id then
+                    self.damage_triggers[#self.damage_triggers + 1] = trigger_id
+                    used_colors[ansi] = key
+                else
+                    cecho("\n<red>[ChimeraVIP]<reset> Nie udalo sie utworzyc triggera " .. key
+                        .. " (ANSI " .. tostring(ansi) .. ").\n")
+                end
+            else
+                local previous = self.definitions[previous_key]
+                if previous and (previous.level ~= definition.level or previous.color ~= definition.color) then
+                    cecho("\n<yellow>[ChimeraVIP]<reset> ANSI " .. tostring(ansi)
+                        .. " jest przypisany jednoczesnie do " .. previous_key .. " i " .. key
+                        .. "; sam kolor nie pozwala ich rozroznic.\n")
+                end
+            end
+        end
+    end
+end
+
+D.rebuildDamageTriggers = D.rebuild_damage_triggers
+D.clearDamageTriggers = D.clear_damage_triggers
+
+function D:finish_learning()
+    self.sync_timer = nil
+    self:save_colors()
+    self:rebuild_damage_triggers()
+
+    local learned = 0
+    for _, key in ipairs(self.order) do
+        if self.learned_colors[key] then learned = learned + 1 end
+    end
+
+    if learned > 0 then
+        cecho("\n<aquamarine>[ChimeraVIP]<reset> Kolory walki zsynchronizowane ("
+            .. tostring(learned) .. "/" .. tostring(#self.order) .. ").\n")
+    end
+
+    self.learned_colors = {}
+    raiseEvent("chimeraVipCombatColorsUpdated", self.game_colors)
+end
+
+function D:schedule_finish_learning()
+    if self.sync_timer then pcall(killTimer, self.sync_timer) end
+    self.sync_timer = tempTimer(0.25, function() D:finish_learning() end)
+end
+
+function D:learn_color(key, ansi)
+    ansi = tonumber(ansi)
+    if self.defaults[key] == nil or not ansi then return end
+    if ansi ~= -1 and (ansi < 0 or ansi > 255) then return end
+
+    self.game_colors[key] = ansi
+    self.learned_colors[key] = true
+    self:schedule_finish_learning()
+end
+
+D.learnColor = D.learn_color
+
+if D.learn_trigger then pcall(killTrigger, D.learn_trigger) end
+
+local keys = table.concat(D.order, "|")
+D.learn_trigger = tempRegexTrigger(
+    "^\\s*(" .. keys .. ")\\s+(-?\\d+)\\s+(?:przyklad.*|\\(bez koloru\\).*)$",
+    [[chimera_damage:learn_color(matches[2], matches[3])]]
+)
+
+D:load_colors()
+D:rebuild_damage_triggers()
+
+raiseEvent("chimeraVipCombatColorsReady", D.game_colors)
+
+return D
