@@ -99,7 +99,7 @@ function S:load()
 
     loaded.ui.condition_font_family = tostring(loaded.ui.condition_font_family or "")
     loaded.ui.condition_font_size = tonumber(loaded.ui.condition_font_size) or 10
-    loaded.ui.condition_font_size = math.max(8, math.min(12, math.floor(loaded.ui.condition_font_size + 0.5)))
+    loaded.ui.condition_font_size = math.max(8, math.min(11, math.floor(loaded.ui.condition_font_size + 0.5)))
     loaded.modules.combat_colors = loaded.modules.combat_colors ~= false
 
     self.data = loaded
@@ -221,7 +221,7 @@ function S:show()
     hecho("\n#2B303C--------------------------------------------------"
         .. "\n#D8DCE6/cvip ustawienia czcionka <nazwa>"
         .. "\n#D8DCE6/cvip ustawienia czcionka domyslna"
-        .. "\n#D8DCE6/cvip ustawienia rozmiar <8-12>"
+        .. "\n#D8DCE6/cvip ustawienia rozmiar <8-11>"
         .. "\n#D8DCE6/cvip ustawienia moduly"
         .. "\n#D8DCE6/cvip ustawienia modul <nazwa> on|off|toggle")
 end
@@ -250,8 +250,8 @@ function S:command(argument)
     local size = lower:match("^rozmiar%s+(%d+)$") or lower:match("^size%s+(%d+)$")
     if size then
         size = tonumber(size)
-        if size < 8 or size > 12 then
-            cecho("\n<yellow>[ChimeraVIP]<reset> Rozmiar czcionki musi byc w zakresie 8-12.\n")
+        if size < 8 or size > 11 then
+            cecho("\n<yellow>[ChimeraVIP]<reset> Rozmiar czcionki musi byc w zakresie 8-11.\n")
             return true
         end
         self:set("ui.condition_font_size", size)
