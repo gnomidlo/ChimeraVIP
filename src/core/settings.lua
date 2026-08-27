@@ -10,6 +10,7 @@ local S = C.settings
 S.data_dir = getMudletHomeDir() .. "/ChimeraVIP-data"
 S.data_file = S.data_dir .. "/settings.lua"
 S.data = S.data or {}
+S.module_defs = S.module_defs or {}
 
 S.defaults = {
     ui = {
@@ -20,14 +21,6 @@ S.defaults = {
         combat_colors = true,
     },
 }
-
-local function deep_copy(source)
-    local out = {}
-    for key, value in pairs(source or {}) do
-        if type(value) == "table" then out[key] = deep_copy(value) else out[key] = value end
-    end
-    return out
-end
 
 local function merge_defaults(target, defaults)
     for key, value in pairs(defaults or {}) do
@@ -67,6 +60,29 @@ local function normalize_module_id(id)
     return aliases[id] or id
 end
 
+function S:register_module(id, definition)
+    id = normalize_module_id(id)
+    if id == "" then return false end
+
+    definition = definition or {}
+    self.module_defs[id] = {
+        id = id,
+        title = tostring(definition.title or id),
+        description = tostring(definition.description or ""),
+        default = definition.default ~= false,
+    }
+
+    self.defaults.modules = self.defaults.modules or {}
+    if self.defaults.modules[id] == nil then self.defaults.modules[id] = self.module_defs[id].default end
+
+    if self.data and self.data.modules and self.data.modules[id] == nil then
+        self.data.modules[id] = self.module_defs[id].default
+        self:save()
+    end
+
+    return true
+end
+
 function S:load()
     if U and U.ensure_dir then U.ensure_dir(self.data_dir) end
 
@@ -83,7 +99,7 @@ function S:load()
 
     loaded.ui.condition_font_family = tostring(loaded.ui.condition_font_family or "")
     loaded.ui.condition_font_size = tonumber(loaded.ui.condition_font_size) or 10
-    loaded.ui.condition_font_size = math.max(8, math.min(11, math.floor(loaded.ui.condition_font_size + 0.5)))
+    loaded.ui.condition_font_size = math.max(8, math.min(12, math.floor(loaded.ui.condition_font_size + 0.5)))
     loaded.modules.combat_colors = loaded.modules.combat_colors ~= false
 
     self.data = loaded
@@ -132,6 +148,8 @@ function S:is_module_enabled(id, fallback)
     local value = self.data.modules and self.data.modules[id]
     if value == nil then
         if fallback ~= nil then return fallback == true end
+        local definition = self.module_defs[id]
+        if definition then return definition.default ~= false end
         local default = self.defaults.modules and self.defaults.modules[id]
         return default ~= false
     end
@@ -141,6 +159,10 @@ end
 function S:set_module_enabled(id, enabled)
     id = normalize_module_id(id)
     if id == "" then return false end
+
+    local definition = self.module_defs[id]
+    if not definition then return false end
+
     self.data.modules = self.data.modules or {}
     self.data.modules[id] = enabled == true
     if not self:save() then return false end
@@ -150,25 +172,33 @@ end
 
 function S:toggle_module(id)
     id = normalize_module_id(id)
-    local next_value = not self:is_module_enabled(id, true)
+    if not self.module_defs[id] then return nil end
+    local next_value = not self:is_module_enabled(id)
     self:set_module_enabled(id, next_value)
     return next_value
 end
 
 function S:show_modules()
-    local enabled = self:is_module_enabled("combat_colors", true)
-    hecho("\n\n#C7B9E8CHIMERAVIP — MODULY"
-        .. "\n#2B303C------------------------------------------"
-        .. "\n#AEB6C5Kolory walki       " .. (enabled and "#A8DCC2ON" or "#F0A8B8OFF")
-        .. "\n#AEB6C5  ON  = prefiksy ChimeraVIP, oficjalny gags wylaczony"
-        .. "\n#AEB6C5  OFF = prefiksy usuniete, oficjalny gags wlaczony")
+    hecho("\n\n#C7B9E8CHIMERAVIP — MODULY\n#2B303C------------------------------------------")
+
+    local ids = {}
+    for id in pairs(self.module_defs) do ids[#ids + 1] = id end
+    table.sort(ids, function(a, b)
+        return self.module_defs[a].title:lower() < self.module_defs[b].title:lower()
+    end)
+
+    for _, id in ipairs(ids) do
+        local definition = self.module_defs[id]
+        local enabled = self:is_module_enabled(id)
+        hecho("\n#AEB6C5" .. string.format("%-20s", definition.title)
+            .. (enabled and "#A8DCC2ON" or "#F0A8B8OFF"))
+        if definition.description ~= "" then hecho("\n  #AEB6C5" .. definition.description) end
+    end
 end
 
 function S:show()
     local family = trim(self:get("ui.condition_font_family", ""))
     local size = tonumber(self:get("ui.condition_font_size", 10)) or 10
-    local combat = self:is_module_enabled("combat_colors", true)
-
     if family == "" then family = "domyslna Mudleta" end
 
     hecho("\n\n#C7B9E8CHIMERAVIP — USTAWIENIA"
@@ -176,14 +206,24 @@ function S:show()
         .. "\n#AEB6C5Okno kondycji"
         .. "\n  #AEB6C5czcionka   #D8DCE6" .. family
         .. "\n  #AEB6C5rozmiar    #D8DCE6" .. tostring(size)
-        .. "\n\n#AEB6C5Moduly"
-        .. "\n  #AEB6C5kolory walki   " .. (combat and "#A8DCC2ON" or "#F0A8B8OFF")
-        .. "\n#2B303C--------------------------------------------------"
+        .. "\n\n#AEB6C5Moduly")
+
+    local ids = {}
+    for id in pairs(self.module_defs) do ids[#ids + 1] = id end
+    table.sort(ids)
+    for _, id in ipairs(ids) do
+        local definition = self.module_defs[id]
+        local enabled = self:is_module_enabled(id)
+        hecho("\n  #AEB6C5" .. string.format("%-18s", definition.title)
+            .. (enabled and "#A8DCC2ON" or "#F0A8B8OFF"))
+    end
+
+    hecho("\n#2B303C--------------------------------------------------"
         .. "\n#D8DCE6/cvip ustawienia czcionka <nazwa>"
         .. "\n#D8DCE6/cvip ustawienia czcionka domyslna"
-        .. "\n#D8DCE6/cvip ustawienia rozmiar <8-11>"
+        .. "\n#D8DCE6/cvip ustawienia rozmiar <8-12>"
         .. "\n#D8DCE6/cvip ustawienia moduly"
-        .. "\n#D8DCE6/cvip ustawienia modul kolory on|off|toggle")
+        .. "\n#D8DCE6/cvip ustawienia modul <nazwa> on|off|toggle")
 end
 
 function S:command(argument)
@@ -197,7 +237,11 @@ function S:command(argument)
     if family then
         family = unquote(family)
         local f_lower = family:lower()
-        if f_lower == "domyslna" or f_lower == "domyslny" or f_lower == "default" or f_lower == "system" then family = "" end
+        if f_lower == "domyslna" or f_lower == "domyślna" or f_lower == "domyslny"
+            or f_lower == "domyślny" or f_lower == "default" or f_lower == "system"
+        then
+            family = ""
+        end
         self:set("ui.condition_font_family", family)
         cecho("\n<aquamarine>[ChimeraVIP]<reset> Czcionka okna kondycji: " .. (family ~= "" and family or "domyslna Mudleta") .. ".\n")
         return true
@@ -206,8 +250,8 @@ function S:command(argument)
     local size = lower:match("^rozmiar%s+(%d+)$") or lower:match("^size%s+(%d+)$")
     if size then
         size = tonumber(size)
-        if size < 8 or size > 11 then
-            cecho("\n<yellow>[ChimeraVIP]<reset> Rozmiar czcionki musi byc w zakresie 8-11.\n")
+        if size < 8 or size > 12 then
+            cecho("\n<yellow>[ChimeraVIP]<reset> Rozmiar czcionki musi byc w zakresie 8-12.\n")
             return true
         end
         self:set("ui.condition_font_size", size)
@@ -218,8 +262,9 @@ function S:command(argument)
     local module_id, state = lower:match("^modul%s+(%S+)%s+(%S+)$")
     if module_id and state then
         module_id = normalize_module_id(module_id)
-        if module_id ~= "combat_colors" then
-            cecho("\n<yellow>[ChimeraVIP]<reset> Nie znam modulu '" .. tostring(module_id) .. "'.\n")
+        local definition = self.module_defs[module_id]
+        if not definition then
+            cecho("\n<yellow>[ChimeraVIP]<reset> Nie znam modulu '" .. tostring(module_id) .. "'. Uzyj /cvip moduly.\n")
             return true
         end
 
@@ -232,14 +277,23 @@ function S:command(argument)
             return true
         end
 
-        if state ~= "toggle" and state ~= "przelacz" and state ~= "przełącz" then self:set_module_enabled(module_id, enabled) end
-        cecho("\n<aquamarine>[ChimeraVIP]<reset> Kolory walki: " .. (enabled and "ON" or "OFF") .. ".\n")
+        if state ~= "toggle" and state ~= "przelacz" and state ~= "przełącz" then
+            self:set_module_enabled(module_id, enabled)
+        end
+
+        cecho("\n<aquamarine>[ChimeraVIP]<reset> " .. definition.title .. ": " .. (enabled and "ON" or "OFF") .. ".\n")
         return true
     end
 
     cecho("\n<yellow>[ChimeraVIP]<reset> Nieznane ustawienie. Uzyj /cvip ustawienia.\n")
     return false
 end
+
+S:register_module("combat_colors", {
+    title = "Kolory walki",
+    description = "Pastelowe prefiksy obrazen zamiast oficjalnego gags.",
+    default = true,
+})
 
 S:load()
 
