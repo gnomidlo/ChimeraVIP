@@ -76,8 +76,6 @@ function S:load()
     end
 
     loaded.ui = loaded.ui or {}
-    -- Migracja błędnie nazwanego ustawienia z 0.75: wartość zachowujemy,
-    -- ale od 0.76 dotyczy ona oficjalnych okien states_window/enemy_states_window.
     if loaded.ui.states_font_size == nil and loaded.ui.condition_font_size ~= nil then
         loaded.ui.states_font_size = loaded.ui.condition_font_size
     end
@@ -86,7 +84,7 @@ function S:load()
 
     merge_defaults(loaded, self.defaults)
     loaded.ui.states_font_size = tonumber(loaded.ui.states_font_size) or 10
-    loaded.ui.states_font_size = math.max(8, math.min(14, math.floor(loaded.ui.states_font_size + 0.5)))
+    loaded.ui.states_font_size = math.max(7, math.min(14, math.floor(loaded.ui.states_font_size + 0.5)))
     loaded.modules = loaded.modules or {}
     loaded.modules.combat_colors = loaded.modules.combat_colors ~= false
 
@@ -133,8 +131,8 @@ function S:set_states_font_size(size)
     size = tonumber(size)
     if not size then return false end
     size = math.floor(size + 0.5)
-    if size < 8 or size > 14 then
-        cecho("\n<yellow>[ChimeraVIP]<reset> Rozmiar czcionki musi byc w zakresie 8-14.\n")
+    if size < 7 or size > 14 then
+        cecho("\n<yellow>[ChimeraVIP]<reset> Rozmiar czcionki musi byc w zakresie 7-14.\n")
         return false
     end
     if not self:set("ui.states_font_size", size) then return false end
@@ -142,7 +140,6 @@ function S:set_states_font_size(size)
     return true
 end
 
--- Alias kompatybilności z panelem 0.75 podczas hot reloadu.
 S.set_condition_font_size = S.set_states_font_size
 
 function S:is_module_enabled(id, fallback)
@@ -195,8 +192,8 @@ function S:show()
     hecho("\n\n#C7B9E8CHIMERAVIP — USTAWIENIA"
         .. "\n#2B303C--------------------------------------------------"
         .. "\n#AEB6C5Rozmiar tekstu okna stanow   #D8DCE6" .. tostring(size)
-        .. "\n#AEB6C5Dostepne: #D8DCE68  9  10  11  12  13  14"
-        .. "\n\n#AEB6C5Uzyj /cvip ustawienia rozmiar <8-14>."
+        .. "\n#AEB6C5Dostepne: #D8DCE67  8  9  10  11  12  13  14"
+        .. "\n\n#AEB6C5Uzyj /cvip ustawienia rozmiar <7-14>."
         .. "\n#AEB6C5Moduly: /cvip moduly")
 end
 
