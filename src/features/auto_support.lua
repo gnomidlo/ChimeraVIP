@@ -9,7 +9,8 @@ chimera_overlay.auto_support = AS
 
 AS.enabled = AS.enabled ~= false
 AS.cooldown_ms = AS.cooldown_ms or 1500
-AS.cache = AS.cache or {team={}, my_id=nil, last_send=0}
+AS.confirm_delay = AS.confirm_delay or 0.18
+AS.cache = AS.cache or {team={}, my_id=nil, leader_id=nil, last_send=0, confirm_timer=nil}
 AS.handlers = AS.handlers or {}
 AS.ui = AS.ui or {}
 
@@ -18,39 +19,119 @@ local function colors()
     return {background_soft="#181C26",separator="#2B303C",text="#D8DCE6",text_muted="#AEB6C5",mint="#A8DCC2",rose="#F0A8B8",lavender="#C7B9E8"}
 end
 
+local function same_id(a,b)
+    if a==nil or b==nil then return false end
+    return tostring(a)==tostring(b)
+end
+
 function AS:update_group()
     if not gmcp or not gmcp.Chimera or not gmcp.Chimera.Group then return end
     local group = gmcp.Chimera.Group.State or gmcp.Chimera.Group
     if not group or type(group.members) ~= "table" then return end
-    self.cache.team = {}; self.cache.my_id = nil
+
+    self.cache.team = {}
+    self.cache.my_id = nil
+    self.cache.leader_id = group.leader
+
     for _,m in ipairs(group.members) do
-        if tonumber(m.self)==1 then self.cache.my_id=m.id
-        elseif m.id then self.cache.team[m.id]=true end
+        if tonumber(m.self)==1 then
+            self.cache.my_id=m.id
+        elseif m.id then
+            self.cache.team[m.id]=true
+        end
     end
+end
+
+function AS:relation_target(combat, actor_id)
+    if not actor_id or type(combat.relations)~="table" then return nil end
+    for _,rel in pairs(combat.relations) do
+        if type(rel)=="table" and same_id(rel.attacker,actor_id) and rel.defender~=nil then
+            return rel.defender
+        end
+    end
+    return nil
+end
+
+function AS:my_target(combat)
+    local target=self:relation_target(combat,self.cache.my_id)
+    if target~=nil and tostring(target)~="" then return target end
+    if combat.primary~=nil and tostring(combat.primary)~="" then return combat.primary end
+    return nil
+end
+
+function AS:leader_target(combat)
+    return self:relation_target(combat,self.cache.leader_id)
+end
+
+function AS:team_is_fighting(combat)
+    if type(combat.relations)~="table" then return false end
+    for _,rel in pairs(combat.relations) do
+        if type(rel)=="table" and (self.cache.team[rel.attacker] or self.cache.team[rel.defender]) then
+            return true
+        end
+    end
+    return false
+end
+
+function AS:send_support_pair()
+    local now = getEpochMs and getEpochMs() or (os.time()*1000)
+    self.cache.last_send=now
+
+    if self.cache.confirm_timer then pcall(killTimer,self.cache.confirm_timer) end
+    self.cache.confirm_timer=nil
+
+    send("wesprzyj",false)
+    self.cache.confirm_timer=tempTimer(self.confirm_delay,function()
+        AS.cache.confirm_timer=nil
+        if AS.enabled then send("wesprzyj",false) end
+    end)
 end
 
 function AS:combat()
     if not self.enabled then return end
+
     local now = getEpochMs and getEpochMs() or (os.time()*1000)
     if now-self.cache.last_send < self.cooldown_ms then return end
     if not gmcp or not gmcp.Chimera or not gmcp.Chimera.Combat then return end
+
     local combat=gmcp.Chimera.Combat.State or gmcp.Chimera.Combat
     if not combat then return end
-    if next(self.cache.team)==nil then self:update_group() end
+    if next(self.cache.team)==nil or not self.cache.my_id or not self.cache.leader_id then self:update_group() end
+
+    local leader_target=self:leader_target(combat)
+    local own_target=self:my_target(combat)
+
+    -- Jeśli możemy ustalić, kogo faktycznie bije lider, pilnujemy właśnie
+    -- tego celu. Dotyczy to także sytuacji, gdy sami już walczymy, ale z kimś innym.
+    if leader_target~=nil and tostring(leader_target)~="" then
+        if not same_id(own_target,leader_target) then
+            self:send_support_pair()
+        end
+        return
+    end
+
+    -- Fallback zachowuje wcześniejsze zachowanie, gdy GMCP nie daje jeszcze
+    -- relacji lider -> cel: dołączamy, jeśli drużyna walczy, a my jeszcze nie.
     local self_active=tonumber(combat.self_active) or 0
-    if self_active==1 or (combat.primary and combat.primary~="") then return end
-    local team_fighting=false
+    if self_active==1 or own_target~=nil then return end
+
     if type(combat.relations)=="table" then
-        for _,rel in ipairs(combat.relations) do
-            if self.cache.my_id and (rel.attacker==self.cache.my_id or rel.defender==self.cache.my_id) then return end
-            if self.cache.team[rel.attacker] or self.cache.team[rel.defender] then team_fighting=true; break end
+        for _,rel in pairs(combat.relations) do
+            if type(rel)=="table" and self.cache.my_id and (same_id(rel.attacker,self.cache.my_id) or same_id(rel.defender,self.cache.my_id)) then
+                return
+            end
         end
     end
-    if team_fighting then self.cache.last_send=now; send("wesprzyj",false) end
+
+    if self:team_is_fighting(combat) then self:send_support_pair() end
 end
 
 function AS:set_enabled(value,silent)
     self.enabled=value==true
+    if not self.enabled and self.cache.confirm_timer then
+        pcall(killTimer,self.cache.confirm_timer)
+        self.cache.confirm_timer=nil
+    end
     if self.enabled then self:update_group() end
     self:update_ui(); raiseEvent("chimeraAutoSupportChanged",self.enabled)
     if not silent then
@@ -74,7 +155,7 @@ function AS:update_ui()
     else text="<center><font color='"..P.text_muted.."'>AUTO-WSPARCIE</font>&nbsp;&nbsp;<font color='"..active.."'>● "..state.."</font></center>" end
     b:echo(text)
     b:setStyleSheet("QLabel {background-color:"..P.background_soft..";color:"..P.text..";border:1px solid "..P.separator..";border-radius:4px;padding:0px 6px;font-size:8px;} QLabel:hover {border-color:"..P.lavender..";}")
-    pcall(setLabelToolTip,b.name,"Auto-wsparcie drużyny<br>Kliknij, aby "..(self.enabled and "wyłączyć" or "włączyć")..".",8)
+    pcall(setLabelToolTip,b.name,"Auto-wsparcie drużyny<br>Podąża za celem lidera i wysyła wesprzyj dwukrotnie.<br>Kliknij, aby "..(self.enabled and "wyłączyć" or "włączyć")..".",8)
 end
 
 function AS:attach_ui()
