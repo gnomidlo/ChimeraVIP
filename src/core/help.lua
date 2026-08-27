@@ -42,29 +42,31 @@ function H:register_defaults()
         description = {
             "Pastelowy motyw upraszcza oficjalne UI, a Quiet Footer zbiera najważniejsze informacje w jednej belce.",
             "Footer pokazuje kompas i wyjścia specjalne, KOND/SIŁY/MANA, SYTOŚĆ/WODĘ, OBC, UPI oraz pasek EXP.",
-            "Po prawej stronie znajdują się auto-wsparcie oraz mini-przyciski oficjalnych funkcji Chimery. Najedź myszą na przycisk, aby zobaczyć opis i stan.",
+            "Po prawej stronie znajdują się auto-wsparcie, stanowe przyciski oficjalnych funkcji Chimery oraz przełącznik KOL dla modułu kolorowania walki.",
         },
         commands = {
             { "AUTO-WSPARCIE", "klikany przełącznik ON/OFF w prawej części footera" },
             { "UKR / PRZ / ATK / ZBI", "ukrywanie, przemykanie, tryb ataku i zbieranie" },
             { "LAM / WAL / ZAS", "lampa, akcja walki i zasłona" },
+            { "KOL ● / KOL ○", "włącz/wyłącz Combat Colors; stan jest zapamiętywany" },
         },
     })
 
     self:register("combat", {
         title = "WALKA I KOLORY",
         description = {
-            "Moduł Combat Colors zastępuje prezentację obrażeń z oficjalnego folderu gags i dodaje pastelowe prefiksy siły obrażeń 0/3–3/3.",
+            "Combat Colors dodaje pastelowe prefiksy siły obrażeń 0/3–3/3 i może zastąpić prezentację obrażeń z oficjalnego folderu gags.",
             "Obsługuje obrażenia zadane i otrzymane przez Twoją postać oraz walkę osób postronnych: innych_zadane_* i innych_otrzymane_*.",
             "Kolory ANSI są automatycznie odczytywane z wyniku komendy 'kolory'. Wartość -1 oznacza 'bez koloru' i wtedy ChimeraVIP nie tworzy triggera dla tej kategorii.",
-            "Prefiks pojawia się tylko na liniach mających co najmniej 50 znaków i zawierających przynajmniej jedną literę, dzięki czemu nie kolorujemy separatorów i technicznych linii UI.",
-            "Własne ustawienia kolorów są zapisywane w ChimeraVIP-data i nie są nadpisywane przez aktualizacje.",
+            "Prefiks pojawia się tylko na liniach mających co najmniej 50 znaków i zawierających przynajmniej jedną literę.",
+            "Gdy moduł jest ON, ChimeraVIP wyłącza oficjalny gags i uruchamia własne prefiksy. Gdy jest OFF, usuwa własne triggery i ponownie włącza oficjalny gags.",
         },
         commands = {
-            { "kolory", "wyświetl ustawienia kolorów w grze; ChimeraVIP zsynchronizuje się automatycznie" },
+            { "KOL ● / KOL ○", "szybki toggle w footerze" },
+            { "/cvip ustawienia modul kolory on|off|toggle", "sterowanie modułem z linii poleceń" },
+            { "kolory", "wyświetl ustawienia kolorów w grze; aktywny moduł zsynchronizuje się automatycznie" },
             { "kolory <nazwa> <0-255>", "ustaw kolor danej kategorii w oficjalnej Chimerze" },
             { "kolory <nazwa> domyslny", "przywróć domyślny kolor danej kategorii" },
-            { "/cvip pomoc walka", "pokaż tylko tę sekcję pomocy" },
         },
     })
 
@@ -120,11 +122,29 @@ function H:register_defaults()
         },
     })
 
+    self:register("settings", {
+        title = "USTAWIENIA I MODULY",
+        description = {
+            "Ustawienia ChimeraVIP są trwałe i zapisywane w ChimeraVIP-data/settings.lua, więc przeżywają restart Mudleta i aktualizacje nakładki.",
+            "Można zmienić rodzinę oraz rozmiar czcionki tekstowej części okna kondycji. Zmiana jest stosowana od razu.",
+            "Rejestr modułów jest przygotowany pod kolejne funkcje. W 0.74 przełączalnym modułem jest Combat Colors.",
+        },
+        commands = {
+            { "/cvip ustawienia", "pokaż wszystkie aktualne ustawienia" },
+            { "/cvip ustawienia czcionka <nazwa>", "ustaw font, np. JetBrains Mono" },
+            { "/cvip ustawienia czcionka domyslna", "wróć do domyślnej czcionki Mudleta" },
+            { "/cvip ustawienia rozmiar <8-11>", "ustaw rozmiar tekstu okna kondycji" },
+            { "/cvip ustawienia moduly", "pokaż stany przełączalnych modułów" },
+            { "/cvip ustawienia modul kolory on|off|toggle", "steruj Combat Colors" },
+            { "/cvip moduly", "krótka lista stanów modułów" },
+        },
+    })
+
     self:register("integration", {
         title = "INTEGRACJA Z OFICJALNĄ CHIMERĄ",
         description = {
             "ChimeraVIP działa jako nakładka i nie edytuje kodu oficjalnego pakietu.",
-            "Po uruchomieniu wyłącza oficjalny folder skryptów 'gags' z chimera/skrypty/ui/gags. Combat Colors przejmuje wtedy prezentację siły obrażeń po naszej stronie.",
+            "Stan oficjalnego folderu chimera/skrypty/ui/gags jest synchronizowany z Combat Colors: wyłączony dla KOL ON i włączony dla KOL OFF.",
         },
     })
 
@@ -136,7 +156,8 @@ function H:register_defaults()
         },
         commands = {
             { "/cvip", "pełna pomoc ChimeraVIP" },
-            { "/cvip pomoc [sekcja]", "pełna pomoc albo jedna sekcja, np. /cvip pomoc xp" },
+            { "/cvip pomoc [sekcja]", "pełna pomoc albo jedna sekcja, np. /cvip pomoc ustawienia" },
+            { "/cvip ustawienia", "trwała konfiguracja użytkownika" },
             { "/cvip status", "wersja ChimeraVIP i wersja upstreamu" },
             { "/cvip sprawdz", "sprawdź, czy jest dostępna aktualizacja" },
             { "/cvip aktualizuj", "pobierz i przeładuj najnowszą wersję" },
@@ -161,7 +182,7 @@ local function print_section(section)
     for _, item in ipairs(section.commands or {}) do
         local command = tostring(item[1] or "")
         local description = tostring(item[2] or "")
-        hecho("\n  " .. P.mint .. string.format("%-25s", command) .. P.text_muted .. description)
+        hecho("\n  " .. P.mint .. string.format("%-34s", command) .. P.text_muted .. description)
     end
 end
 
@@ -178,6 +199,7 @@ function H:show(section_id)
         local aliases = {
             pomoc = "system", help = "system", cechy = "stats", progres = "progression",
             exp = "xp", ui = "interface", walka = "combat", kolory = "combat", combat = "combat",
+            ustawienia = "settings", settings = "settings", moduly = "settings", modules = "settings",
         }
         id = aliases[id] or id
         local section = self.sections[id]
@@ -196,7 +218,7 @@ function H:show(section_id)
     end
 
     print_line("", P.text)
-    print_line("Szybki start: /xp  |  /progres  |  kolory  |  /cvip sprawdz", P.peach)
+    print_line("Szybki start: /xp  |  /progres  |  /cvip ustawienia  |  /cvip sprawdz", P.peach)
 end
 
 H:register_defaults()
