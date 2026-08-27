@@ -14,7 +14,7 @@ S.module_defs = S.module_defs or {}
 
 S.defaults = {
     ui = {
-        condition_font_size = 10,
+        states_font_size = 10,
     },
     modules = {
         combat_colors = true,
@@ -39,11 +39,8 @@ end
 local function normalize_module_id(id)
     id = trim(id):lower():gsub("%-", "_"):gsub("%s+", "_")
     local aliases = {
-        kolory = "combat_colors",
-        walka = "combat_colors",
-        combat = "combat_colors",
-        combatcolors = "combat_colors",
-        kolory_walki = "combat_colors",
+        kolory = "combat_colors", walka = "combat_colors", combat = "combat_colors",
+        combatcolors = "combat_colors", kolory_walki = "combat_colors",
     }
     return aliases[id] or id
 end
@@ -51,7 +48,6 @@ end
 function S:register_module(id, definition)
     id = normalize_module_id(id)
     if id == "" then return false end
-
     definition = definition or {}
     self.module_defs[id] = {
         id = id,
@@ -59,21 +55,17 @@ function S:register_module(id, definition)
         description = tostring(definition.description or ""),
         default = definition.default ~= false,
     }
-
     self.defaults.modules = self.defaults.modules or {}
     if self.defaults.modules[id] == nil then self.defaults.modules[id] = self.module_defs[id].default end
-
     if self.data and self.data.modules and self.data.modules[id] == nil then
         self.data.modules[id] = self.module_defs[id].default
         self:save()
     end
-
     return true
 end
 
 function S:load()
     if U and U.ensure_dir then U.ensure_dir(self.data_dir) end
-
     local loaded = {}
     if U and U.file_exists and U.file_exists(self.data_file) then
         local ok, err = pcall(table.load, self.data_file, loaded)
@@ -83,15 +75,19 @@ function S:load()
         end
     end
 
-    merge_defaults(loaded, self.defaults)
     loaded.ui = loaded.ui or {}
-
-    -- 0.75 usuwa wybór rodziny czcionki. Czyścimy starszy wpis z 0.74,
-    -- aby settings.lua odzwierciedlał wyłącznie aktywne ustawienia.
+    -- Migracja błędnie nazwanego ustawienia z 0.75: wartość zachowujemy,
+    -- ale od 0.76 dotyczy ona oficjalnych okien states_window/enemy_states_window.
+    if loaded.ui.states_font_size == nil and loaded.ui.condition_font_size ~= nil then
+        loaded.ui.states_font_size = loaded.ui.condition_font_size
+    end
+    loaded.ui.condition_font_size = nil
     loaded.ui.condition_font_family = nil
 
-    loaded.ui.condition_font_size = tonumber(loaded.ui.condition_font_size) or 10
-    loaded.ui.condition_font_size = math.max(8, math.min(14, math.floor(loaded.ui.condition_font_size + 0.5)))
+    merge_defaults(loaded, self.defaults)
+    loaded.ui.states_font_size = tonumber(loaded.ui.states_font_size) or 10
+    loaded.ui.states_font_size = math.max(8, math.min(14, math.floor(loaded.ui.states_font_size + 0.5)))
+    loaded.modules = loaded.modules or {}
     loaded.modules.combat_colors = loaded.modules.combat_colors ~= false
 
     self.data = loaded
@@ -122,33 +118,32 @@ function S:set(path, value)
     local parts = {}
     for part in tostring(path or ""):gmatch("[^%.]+") do parts[#parts + 1] = part end
     if #parts == 0 then return false end
-
     local node = self.data
     for i = 1, #parts - 1 do
         if type(node[parts[i]]) ~= "table" then node[parts[i]] = {} end
         node = node[parts[i]]
     end
     node[parts[#parts]] = value
-
     if not self:save() then return false end
     raiseEvent("chimeraVipSettingsChanged", path, value)
     return true
 end
 
-function S:set_condition_font_size(size)
+function S:set_states_font_size(size)
     size = tonumber(size)
     if not size then return false end
     size = math.floor(size + 0.5)
-
     if size < 8 or size > 14 then
         cecho("\n<yellow>[ChimeraVIP]<reset> Rozmiar czcionki musi byc w zakresie 8-14.\n")
         return false
     end
-
-    if not self:set("ui.condition_font_size", size) then return false end
-    cecho("\n<aquamarine>[ChimeraVIP]<reset> Rozmiar tekstu kondycji: " .. tostring(size) .. ".\n")
+    if not self:set("ui.states_font_size", size) then return false end
+    cecho("\n<aquamarine>[ChimeraVIP]<reset> Rozmiar tekstu okna stanow: " .. tostring(size) .. ".\n")
     return true
 end
+
+-- Alias kompatybilności z panelem 0.75 podczas hot reloadu.
+S.set_condition_font_size = S.set_states_font_size
 
 function S:is_module_enabled(id, fallback)
     id = normalize_module_id(id)
@@ -165,11 +160,7 @@ end
 
 function S:set_module_enabled(id, enabled)
     id = normalize_module_id(id)
-    if id == "" then return false end
-
-    local definition = self.module_defs[id]
-    if not definition then return false end
-
+    if id == "" or not self.module_defs[id] then return false end
     self.data.modules = self.data.modules or {}
     self.data.modules[id] = enabled == true
     if not self:save() then return false end
@@ -187,32 +178,23 @@ end
 
 function S:show_modules()
     hecho("\n\n#C7B9E8CHIMERAVIP — MODULY\n#2B303C------------------------------------------")
-
     local ids = {}
     for id in pairs(self.module_defs) do ids[#ids + 1] = id end
-    table.sort(ids, function(a, b)
-        return self.module_defs[a].title:lower() < self.module_defs[b].title:lower()
-    end)
-
+    table.sort(ids, function(a, b) return self.module_defs[a].title:lower() < self.module_defs[b].title:lower() end)
     for _, id in ipairs(ids) do
         local definition = self.module_defs[id]
         local enabled = self:is_module_enabled(id)
-        hecho("\n#AEB6C5" .. string.format("%-20s", definition.title)
-            .. (enabled and "#A8DCC2ON" or "#F0A8B8OFF"))
+        hecho("\n#AEB6C5" .. string.format("%-20s", definition.title) .. (enabled and "#A8DCC2ON" or "#F0A8B8OFF"))
         if definition.description ~= "" then hecho("\n  #AEB6C5" .. definition.description) end
     end
 end
 
 function S:show()
-    if C.settings_panel and type(C.settings_panel.open) == "function" then
-        C.settings_panel:open()
-        return
-    end
-
-    local size = tonumber(self:get("ui.condition_font_size", 10)) or 10
+    if C.settings_panel and type(C.settings_panel.open) == "function" then C.settings_panel:open(); return end
+    local size = tonumber(self:get("ui.states_font_size", 10)) or 10
     hecho("\n\n#C7B9E8CHIMERAVIP — USTAWIENIA"
         .. "\n#2B303C--------------------------------------------------"
-        .. "\n#AEB6C5Rozmiar tekstu kondycji   #D8DCE6" .. tostring(size)
+        .. "\n#AEB6C5Rozmiar tekstu okna stanow   #D8DCE6" .. tostring(size)
         .. "\n#AEB6C5Dostepne: #D8DCE68  9  10  11  12  13  14"
         .. "\n\n#AEB6C5Uzyj /cvip ustawienia rozmiar <8-14>."
         .. "\n#AEB6C5Moduly: /cvip moduly")
@@ -221,15 +203,11 @@ end
 function S:command(argument)
     local raw = trim(argument)
     local lower = raw:lower()
-
     if lower == "" then self:show(); return true end
     if lower == "moduly" or lower == "modules" then self:show_modules(); return true end
 
     local size = lower:match("^rozmiar%s+(%d+)$") or lower:match("^size%s+(%d+)$")
-    if size then
-        self:set_condition_font_size(size)
-        return true
-    end
+    if size then self:set_states_font_size(size); return true end
 
     local module_id, state = lower:match("^modul%s+(%S+)%s+(%S+)$")
     if module_id and state then
@@ -239,20 +217,12 @@ function S:command(argument)
             cecho("\n<yellow>[ChimeraVIP]<reset> Nie znam modulu '" .. tostring(module_id) .. "'. Uzyj /cvip moduly.\n")
             return true
         end
-
         local enabled
         if state == "on" or state == "wlacz" or state == "włącz" or state == "1" then enabled = true
         elseif state == "off" or state == "wylacz" or state == "wyłącz" or state == "0" then enabled = false
         elseif state == "toggle" or state == "przelacz" or state == "przełącz" then enabled = self:toggle_module(module_id)
-        else
-            cecho("\n<yellow>[ChimeraVIP]<reset> Uzyj on, off albo toggle.\n")
-            return true
-        end
-
-        if state ~= "toggle" and state ~= "przelacz" and state ~= "przełącz" then
-            self:set_module_enabled(module_id, enabled)
-        end
-
+        else cecho("\n<yellow>[ChimeraVIP]<reset> Uzyj on, off albo toggle.\n"); return true end
+        if state ~= "toggle" and state ~= "przelacz" and state ~= "przełącz" then self:set_module_enabled(module_id, enabled) end
         cecho("\n<aquamarine>[ChimeraVIP]<reset> " .. definition.title .. ": " .. (enabled and "ON" or "OFF") .. ".\n")
         return true
     end
@@ -268,5 +238,4 @@ S:register_module("combat_colors", {
 })
 
 S:load()
-
 return S
