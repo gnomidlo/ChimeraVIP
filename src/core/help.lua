@@ -73,8 +73,9 @@ function H:register_defaults()
     self:register("automation", {
         title = "AUTOMATYZACJA",
         description = {
-            "Auto-wsparcie obserwuje GMCP drużyny i walki. Gdy ktoś z drużyny walczy, a Twoja postać jeszcze nie, wysyła komendę 'wesprzyj'.",
-            "Mechanizm ma anty-spam 1,5 s i można go w dowolnej chwili wyłączyć przełącznikiem w footerze.",
+            "Auto-wsparcie obserwuje GMCP drużyny i walki. Jeśli można ustalić cel lidera, pilnuje aby Twoja postać biła ten sam cel; gdy cel się różni, ponawia 'wesprzyj'.",
+            "Każda próba wsparcia wysyła 'wesprzyj' dwukrotnie z krótkim odstępem 0,18 s, ponieważ część NPC wymaga potwierdzenia.",
+            "Cała para podlega anty-spamowi 1,5 s. Jeśli cel lidera nie jest jeszcze dostępny w GMCP, moduł zachowuje wcześniejszy fallback i dołącza do walki drużyny, gdy postać sama jeszcze nie walczy.",
         },
     })
 
@@ -126,13 +127,13 @@ function H:register_defaults()
         title = "USTAWIENIA I MODULY",
         description = {
             "Ustawienia ChimeraVIP są trwałe i zapisywane w ChimeraVIP-data/settings.lua, więc przeżywają restart Mudleta i aktualizacje nakładki.",
-            "/cvip ustawienia otwiera mały panel. Rozmiary 8–14 są klikalnymi próbkami renderowanymi w odpowiadającej im wielkości.",
-            "Po zmianie rozmiaru Quiet Footer jest przebudowywany, dzięki czemu nowy fontSize jest stosowany przy tworzeniu elementów Geysera.",
+            "/cvip ustawienia otwiera panel. Rozmiary 7–14 są klikalnymi próbkami dla oficjalnych okien stanów drużyny, wrogów i innych postaci.",
+            "Zmiana działa natychmiast na states_window i enemy_states_window oraz nie zmienia czcionki Quiet Footera.",
             "Rejestr modułów jest przygotowany pod kolejne funkcje. Obecnie przełączalnym modułem jest Combat Colors.",
         },
         commands = {
             { "/cvip ustawienia", "otwórz panel ustawień z klikalnymi rozmiarami i modułami" },
-            { "/cvip ustawienia rozmiar <8-14>", "ustaw rozmiar tekstu kondycji także z klawiatury" },
+            { "/cvip ustawienia rozmiar <7-14>", "ustaw rozmiar tekstu oficjalnych okien stanów" },
             { "/cvip ustawienia moduly", "pokaż stany przełączalnych modułów" },
             { "/cvip ustawienia modul kolory on|off|toggle", "steruj Combat Colors" },
             { "/cvip moduly", "krótka lista stanów modułów" },
