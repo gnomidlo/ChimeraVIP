@@ -19,6 +19,10 @@ local function out(text, color)
     cecho("\n<" .. (color or "light_grey") .. ">[ChimeraVIP]<reset> " .. tostring(text) .. "\n")
 end
 
+local function trim(value)
+    return tostring(value or ""):gsub("^%s+", ""):gsub("%s+$", "")
+end
+
 function UP:cleanup_handlers()
     if self.handlers.done then pcall(killAnonymousEventHandler, self.handlers.done) end
     if self.handlers.error then pcall(killAnonymousEventHandler, self.handlers.error) end
@@ -152,8 +156,9 @@ function UP:show_status()
     out("Wersja " .. tostring(C.version) .. " | upstream " .. tostring(C:get_upstream_version()) .. ".", "light_grey")
 end
 
-function UP:command(arg)
-    arg = tostring(arg or ""):lower():gsub("^%s+", ""):gsub("%s+$", "")
+function UP:command(argument)
+    local raw = trim(argument)
+    local arg = raw:lower()
 
     if arg == "" then
         if C.help and type(C.help.show) == "function" then C.help:show() else self:show_status() end
@@ -165,6 +170,16 @@ function UP:command(arg)
         if C.help and type(C.help.show) == "function" then C.help:show() else self:show_status() end
     elseif help_section then
         if C.help and type(C.help.show) == "function" then C.help:show(help_section) else self:show_status() end
+    elseif arg == "ustawienia" or arg == "settings" then
+        if C.settings and type(C.settings.command) == "function" then C.settings:command("")
+        else out("Modul ustawien nie jest dostepny.", "yellow") end
+    elseif arg:match("^ustawienia%s+") or arg:match("^settings%s+") then
+        local rest = raw:match("^%S+%s+(.+)$") or ""
+        if C.settings and type(C.settings.command) == "function" then C.settings:command(rest)
+        else out("Modul ustawien nie jest dostepny.", "yellow") end
+    elseif arg == "moduly" or arg == "modules" then
+        if C.settings and type(C.settings.show_modules) == "function" then C.settings:show_modules()
+        else out("Modul ustawien nie jest dostepny.", "yellow") end
     elseif arg == "status" or arg == "wersja" or arg == "version" then self:show_status()
     elseif arg == "sprawdz" or arg == "check" then self:check(false)
     elseif arg == "aktualizuj" or arg == "update" then self:update()
