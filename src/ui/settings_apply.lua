@@ -37,7 +37,7 @@ function A:apply()
     if not HUD or not S then return end
 
     local main = tonumber(S:get("ui.condition_font_size", 10)) or 10
-    main = math.max(8, math.min(11, math.floor(main + 0.5)))
+    main = math.max(8, math.min(12, math.floor(main + 0.5)))
     local small = math.max(6, main - 3)
     local family = tostring(S:get("ui.condition_font_family", "") or "")
 
