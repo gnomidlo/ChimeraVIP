@@ -12,6 +12,11 @@ I.handlers = I.handlers or {}
 I.gags_disabled = I.gags_disabled or false
 I.gags_warning_shown = I.gags_warning_shown or false
 
+I.gags_candidates = {
+    "chimera/skrypty/ui/gags",
+    "gags",
+}
+
 local function exists_script(name)
     if type(getScript) ~= "function" then return nil end
     local ok, result = pcall(getScript, name)
@@ -19,55 +24,74 @@ local function exists_script(name)
     return result ~= -1
 end
 
-function I:disable_official_gags()
-    if type(disableScript) ~= "function" then return false end
+function I:set_official_gags_enabled(enabled)
+    local fn = enabled and _G.enableScript or _G.disableScript
+    if type(fn) ~= "function" then return false end
 
-    -- Mudlet's public script API works on element names rather than a tree path.
-    -- We first try the path supplied by the official package layout, then the
-    -- actual folder name used in the script tree.
-    local candidates = {
-        "chimera/skrypty/ui/gags",
-        "gags",
-    }
-
-    local found = false
-    for _, name in ipairs(candidates) do
+    local changed = false
+    for _, name in ipairs(self.gags_candidates) do
         local exists = exists_script(name)
         if exists == true then
-            local ok = pcall(disableScript, name)
-            if ok then found = true end
+            local ok, result = pcall(fn, name)
+            if ok and result ~= false then changed = true end
         end
     end
 
-    -- Some Mudlet versions do not resolve grouped paths through getScript().
-    -- Calling disableScript("gags") is harmless if no such element exists.
-    if not found then
-        local ok, result = pcall(disableScript, "gags")
-        if ok and result ~= false then found = true end
+    -- Część wersji Mudleta nie rozwiązuje pełnej ścieżki grupy przez getScript().
+    -- Fallback na nazwę folderu zachowuje zgodność z dotychczasową integracją.
+    if not changed then
+        local ok, result = pcall(fn, "gags")
+        if ok and result ~= false then changed = true end
     end
 
-    self.gags_disabled = found
-
-    if not found and not self.gags_warning_shown then
+    if changed then
+        self.gags_disabled = not enabled
+        self.gags_warning_shown = false
+    elseif C.ready and not self.gags_warning_shown then
         self.gags_warning_shown = true
-        cecho("\n<yellow>[ChimeraVIP]<reset> Nie udalo sie potwierdzic wylaczenia oficjalnego folderu gags.\n")
+        cecho("\n<yellow>[ChimeraVIP]<reset> Nie udalo sie potwierdzic "
+            .. (enabled and "wlaczenia" or "wylaczenia")
+            .. " oficjalnego folderu gags.\n")
     end
 
-    return found
+    return changed
 end
 
-local function schedule_disable(delay)
-    tempTimer(delay or 0, function()
-        I:disable_official_gags()
-    end)
+function I:disable_official_gags()
+    return self:set_official_gags_enabled(false)
+end
+
+function I:enable_official_gags()
+    return self:set_official_gags_enabled(true)
+end
+
+function I:combat_colors_enabled()
+    if C.settings and type(C.settings.is_module_enabled) == "function" then
+        return C.settings:is_module_enabled("combat_colors", true)
+    end
+    return true
+end
+
+function I:sync_gags()
+    if self:combat_colors_enabled() then
+        return self:disable_official_gags()
+    end
+    return self:enable_official_gags()
+end
+
+local function schedule_sync(delay)
+    tempTimer(delay or 0, function() I:sync_gags() end)
 end
 
 if U and U.replace_handler then
-    U.replace_handler(I, "vip_ready", "chimeraVipReady", function() schedule_disable(0) end)
-    U.replace_handler(I, "scripts_loaded", "scriptsLoaded", function() schedule_disable(0.05) end)
-    U.replace_handler(I, "sys_load", "sysLoadEvent", function() schedule_disable(0.15) end)
+    U.replace_handler(I, "vip_ready", "chimeraVipReady", function() schedule_sync(0) end)
+    U.replace_handler(I, "scripts_loaded", "scriptsLoaded", function() schedule_sync(0.05) end)
+    U.replace_handler(I, "sys_load", "sysLoadEvent", function() schedule_sync(0.15) end)
+    U.replace_handler(I, "module_changed", "chimeraVipModuleChanged", function(_, id)
+        if tostring(id) == "combat_colors" then schedule_sync(0) end
+    end)
 end
 
-if scripts_loaded == true or C.ready then schedule_disable(0) end
+if scripts_loaded == true or C.ready then schedule_sync(0) end
 
 return I
