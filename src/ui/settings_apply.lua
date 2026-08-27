@@ -11,7 +11,7 @@ A.handlers = A.handlers or {}
 function A:get_size()
     local S = C.settings
     local size = S and tonumber(S:get("ui.states_font_size", 10)) or 10
-    return math.max(8, math.min(14, math.floor(size + 0.5)))
+    return math.max(7, math.min(14, math.floor(size + 0.5)))
 end
 
 function A:apply()
@@ -21,8 +21,6 @@ function A:apply()
         scripts.ui.states_font_size = size
     end
 
-    -- To są istniejące okna oficjalnej Chimery: stany drużyny/innych postaci
-    -- oraz przeciwników. Footer ChimeraVIP nie jest tutaj dotykany.
     pcall(setFontSize, "states_window", size)
     pcall(setFontSize, "enemy_states_window", size)
 
