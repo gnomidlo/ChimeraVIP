@@ -14,7 +14,6 @@ S.module_defs = S.module_defs or {}
 
 S.defaults = {
     ui = {
-        condition_font_family = "",
         condition_font_size = 10,
     },
     modules = {
@@ -35,17 +34,6 @@ end
 
 local function trim(value)
     return tostring(value or ""):gsub("^%s+", ""):gsub("%s+$", "")
-end
-
-local function unquote(value)
-    value = trim(value)
-    if #value >= 2 then
-        local first, last = value:sub(1, 1), value:sub(-1)
-        if (first == '"' and last == '"') or (first == "'" and last == "'") then
-            value = value:sub(2, -2)
-        end
-    end
-    return trim(value)
 end
 
 local function normalize_module_id(id)
@@ -96,10 +84,14 @@ function S:load()
     end
 
     merge_defaults(loaded, self.defaults)
+    loaded.ui = loaded.ui or {}
 
-    loaded.ui.condition_font_family = tostring(loaded.ui.condition_font_family or "")
+    -- 0.75 usuwa wybór rodziny czcionki. Czyścimy starszy wpis z 0.74,
+    -- aby settings.lua odzwierciedlał wyłącznie aktywne ustawienia.
+    loaded.ui.condition_font_family = nil
+
     loaded.ui.condition_font_size = tonumber(loaded.ui.condition_font_size) or 10
-    loaded.ui.condition_font_size = math.max(8, math.min(11, math.floor(loaded.ui.condition_font_size + 0.5)))
+    loaded.ui.condition_font_size = math.max(8, math.min(14, math.floor(loaded.ui.condition_font_size + 0.5)))
     loaded.modules.combat_colors = loaded.modules.combat_colors ~= false
 
     self.data = loaded
@@ -140,6 +132,21 @@ function S:set(path, value)
 
     if not self:save() then return false end
     raiseEvent("chimeraVipSettingsChanged", path, value)
+    return true
+end
+
+function S:set_condition_font_size(size)
+    size = tonumber(size)
+    if not size then return false end
+    size = math.floor(size + 0.5)
+
+    if size < 8 or size > 14 then
+        cecho("\n<yellow>[ChimeraVIP]<reset> Rozmiar czcionki musi byc w zakresie 8-14.\n")
+        return false
+    end
+
+    if not self:set("ui.condition_font_size", size) then return false end
+    cecho("\n<aquamarine>[ChimeraVIP]<reset> Rozmiar tekstu kondycji: " .. tostring(size) .. ".\n")
     return true
 end
 
@@ -197,33 +204,18 @@ function S:show_modules()
 end
 
 function S:show()
-    local family = trim(self:get("ui.condition_font_family", ""))
-    local size = tonumber(self:get("ui.condition_font_size", 10)) or 10
-    if family == "" then family = "domyslna Mudleta" end
-
-    hecho("\n\n#C7B9E8CHIMERAVIP — USTAWIENIA"
-        .. "\n#2B303C--------------------------------------------------"
-        .. "\n#AEB6C5Okno kondycji"
-        .. "\n  #AEB6C5czcionka   #D8DCE6" .. family
-        .. "\n  #AEB6C5rozmiar    #D8DCE6" .. tostring(size)
-        .. "\n\n#AEB6C5Moduly")
-
-    local ids = {}
-    for id in pairs(self.module_defs) do ids[#ids + 1] = id end
-    table.sort(ids)
-    for _, id in ipairs(ids) do
-        local definition = self.module_defs[id]
-        local enabled = self:is_module_enabled(id)
-        hecho("\n  #AEB6C5" .. string.format("%-18s", definition.title)
-            .. (enabled and "#A8DCC2ON" or "#F0A8B8OFF"))
+    if C.settings_panel and type(C.settings_panel.open) == "function" then
+        C.settings_panel:open()
+        return
     end
 
-    hecho("\n#2B303C--------------------------------------------------"
-        .. "\n#D8DCE6/cvip ustawienia czcionka <nazwa>"
-        .. "\n#D8DCE6/cvip ustawienia czcionka domyslna"
-        .. "\n#D8DCE6/cvip ustawienia rozmiar <8-11>"
-        .. "\n#D8DCE6/cvip ustawienia moduly"
-        .. "\n#D8DCE6/cvip ustawienia modul <nazwa> on|off|toggle")
+    local size = tonumber(self:get("ui.condition_font_size", 10)) or 10
+    hecho("\n\n#C7B9E8CHIMERAVIP — USTAWIENIA"
+        .. "\n#2B303C--------------------------------------------------"
+        .. "\n#AEB6C5Rozmiar tekstu kondycji   #D8DCE6" .. tostring(size)
+        .. "\n#AEB6C5Dostepne: #D8DCE68  9  10  11  12  13  14"
+        .. "\n\n#AEB6C5Uzyj /cvip ustawienia rozmiar <8-14>."
+        .. "\n#AEB6C5Moduly: /cvip moduly")
 end
 
 function S:command(argument)
@@ -233,29 +225,9 @@ function S:command(argument)
     if lower == "" then self:show(); return true end
     if lower == "moduly" or lower == "modules" then self:show_modules(); return true end
 
-    local family = raw:match("^[Cc][Zz][Cc][Ii][Oo][Nn][Kk][Aa]%s+(.+)$")
-    if family then
-        family = unquote(family)
-        local f_lower = family:lower()
-        if f_lower == "domyslna" or f_lower == "domyślna" or f_lower == "domyslny"
-            or f_lower == "domyślny" or f_lower == "default" or f_lower == "system"
-        then
-            family = ""
-        end
-        self:set("ui.condition_font_family", family)
-        cecho("\n<aquamarine>[ChimeraVIP]<reset> Czcionka okna kondycji: " .. (family ~= "" and family or "domyslna Mudleta") .. ".\n")
-        return true
-    end
-
     local size = lower:match("^rozmiar%s+(%d+)$") or lower:match("^size%s+(%d+)$")
     if size then
-        size = tonumber(size)
-        if size < 8 or size > 11 then
-            cecho("\n<yellow>[ChimeraVIP]<reset> Rozmiar czcionki musi byc w zakresie 8-11.\n")
-            return true
-        end
-        self:set("ui.condition_font_size", size)
-        cecho("\n<aquamarine>[ChimeraVIP]<reset> Rozmiar czcionki okna kondycji: " .. tostring(size) .. ".\n")
+        self:set_condition_font_size(size)
         return true
     end
 
