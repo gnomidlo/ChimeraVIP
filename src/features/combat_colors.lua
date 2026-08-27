@@ -11,6 +11,7 @@ local legacy_damage = rawget(_G, "chimera_damage")
 C.combat_colors = C.combat_colors or {}
 chimera_overlay.combat_colors = C.combat_colors
 local D = C.combat_colors
+D.handlers = D.handlers or {}
 
 -- Przy przejsciu ze starego standalone skryptu usuwamy jego tymczasowe
 -- triggery, zeby nie dostac podwojnych prefiksow w tej samej sesji.
@@ -26,6 +27,7 @@ D.min_line_length = 50
 D.damage_triggers = D.damage_triggers or {}
 D.learned_colors = D.learned_colors or {}
 D.sync_timer = D.sync_timer or nil
+D.enabled = D.enabled ~= false
 
 D.defaults = {
     zadane_brak = -1,
@@ -66,8 +68,6 @@ D.prefix_colors = {
     rose = "240,168,184",
 }
 
--- Dla walki osob postronnych zachowujemy ten sam jezyk wizualny:
--- zadawane = chlodniejsze pastele, otrzymywane = cieplejsze pastele.
 D.definitions = {
     zadane_brak = { level = "0/3", color = "mint" },
     zadane_niskie = { level = "1/3", color = "mint" },
@@ -165,9 +165,10 @@ function D:load_colors()
 end
 
 function D:is_eligible_line()
+    if not self.enabled then return false end
+
     local current_line = tostring(line or "")
 
-    -- Nigdy nie prefixujemy listy ustawien z komendy 'kolory'.
     if current_line:match("^%s*zadane_")
         or current_line:match("^%s*otrzymane_")
         or current_line:match("^%s*innych_zadane_")
@@ -184,9 +185,6 @@ function D:is_eligible_line()
     length = length or string.len(current_line)
 
     if length < self.min_line_length then return false end
-
-    -- Linia musi zawierac przynajmniej jedna litere. To odcina dlugie
-    -- separatory, paski, liczby i inne techniczne linie UI.
     if not current_line:find("[A-Za-z]") then return false end
 
     return true
@@ -210,7 +208,6 @@ function D:show_prefix(key)
     )
 end
 
--- Stara nazwa zachowana dla istniejacych callbackow po hot reloadzie.
 D.showPrefix = D.show_prefix
 
 function D:clear_damage_triggers()
@@ -220,8 +217,25 @@ function D:clear_damage_triggers()
     self.damage_triggers = {}
 end
 
+function D:remove_learn_trigger()
+    if self.learn_trigger then pcall(killTrigger, self.learn_trigger) end
+    self.learn_trigger = nil
+end
+
+function D:create_learn_trigger()
+    self:remove_learn_trigger()
+    if not self.enabled then return end
+
+    local keys = table.concat(self.order, "|")
+    self.learn_trigger = tempRegexTrigger(
+        "^\\s*(" .. keys .. ")\\s+(-?\\d+)\\s+(?:przyklad.*|\\(bez koloru\\).*)$",
+        [[chimera_damage:learn_color(matches[2], matches[3])]]
+    )
+end
+
 function D:rebuild_damage_triggers()
     self:clear_damage_triggers()
+    if not self.enabled then return end
 
     local used_colors = {}
 
@@ -229,7 +243,6 @@ function D:rebuild_damage_triggers()
         local ansi = tonumber(self.game_colors[key])
         local definition = self.definitions[key]
 
-        -- -1 oznacza oficjalne 'bez koloru': nie ma czego lapac ANSI.
         if ansi and ansi >= 0 and ansi <= 255 and definition then
             local previous_key = used_colors[ansi]
 
@@ -261,6 +274,11 @@ D.clearDamageTriggers = D.clear_damage_triggers
 
 function D:finish_learning()
     self.sync_timer = nil
+    if not self.enabled then
+        self.learned_colors = {}
+        return
+    end
+
     self:save_colors()
     self:rebuild_damage_triggers()
 
@@ -279,11 +297,14 @@ function D:finish_learning()
 end
 
 function D:schedule_finish_learning()
+    if not self.enabled then return end
     if self.sync_timer then pcall(killTimer, self.sync_timer) end
     self.sync_timer = tempTimer(0.25, function() D:finish_learning() end)
 end
 
 function D:learn_color(key, ansi)
+    if not self.enabled then return end
+
     ansi = tonumber(ansi)
     if self.defaults[key] == nil or not ansi then return end
     if ansi ~= -1 and (ansi < 0 or ansi > 255) then return end
@@ -295,18 +316,39 @@ end
 
 D.learnColor = D.learn_color
 
-if D.learn_trigger then pcall(killTrigger, D.learn_trigger) end
+function D:apply_enabled(enabled)
+    enabled = enabled == true
+    self.enabled = enabled
 
-local keys = table.concat(D.order, "|")
-D.learn_trigger = tempRegexTrigger(
-    "^\\s*(" .. keys .. ")\\s+(-?\\d+)\\s+(?:przyklad.*|\\(bez koloru\\).*)$",
-    [[chimera_damage:learn_color(matches[2], matches[3])]]
-)
+    if enabled then
+        self:disable_legacy_package_triggers()
+        self:create_learn_trigger()
+        self:rebuild_damage_triggers()
+    else
+        if self.sync_timer then pcall(killTimer, self.sync_timer) end
+        self.sync_timer = nil
+        self.learned_colors = {}
+        self:remove_learn_trigger()
+        self:clear_damage_triggers()
+    end
 
-D:disable_legacy_package_triggers()
+    raiseEvent("chimeraVipCombatColorsStateChanged", enabled)
+end
+
+if U and U.replace_handler then
+    U.replace_handler(D, "module_changed", "chimeraVipModuleChanged", function(_, id, enabled)
+        if tostring(id) == "combat_colors" then D:apply_enabled(enabled == true) end
+    end)
+end
+
 D:load_colors()
-D:rebuild_damage_triggers()
 
-raiseEvent("chimeraVipCombatColorsReady", D.game_colors)
+local start_enabled = true
+if C.settings and type(C.settings.is_module_enabled) == "function" then
+    start_enabled = C.settings:is_module_enabled("combat_colors", true)
+end
+D:apply_enabled(start_enabled)
+
+raiseEvent("chimeraVipCombatColorsReady", D.game_colors, D.enabled)
 
 return D
