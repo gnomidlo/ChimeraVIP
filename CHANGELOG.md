@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.74 — 2026-08-27
+
+Dodano trwały system ustawień oraz pierwszy przełączalny moduł ChimeraVIP.
+
+### Dodano
+- `src/core/settings.lua` — centralne ustawienia użytkownika zapisywane w `getMudletHomeDir()/ChimeraVIP-data/settings.lua`,
+- trwałą konfigurację rodziny czcionki tekstowej części okna kondycji,
+- trwałą konfigurację rozmiaru czcionki kondycji w zakresie 8–11,
+- `src/ui/settings_apply.lua`, który nakłada ustawienia czcionki na KOND/SIŁY/MANA, potrzeby, OBC/UPI i EXP bez modyfikowania oficjalnego UI,
+- rejestr stanów modułów przygotowany pod kolejne opcjonalne funkcje,
+- `src/ui/module_controls.lua` z przyciskiem `KOL ●/○` w wolnym ósmym polu panelu footera,
+- komendy `/cvip ustawienia`, `/cvip ustawienia moduly` i `/cvip moduly`,
+- komendy `/cvip ustawienia czcionka <nazwa>`, `/cvip ustawienia czcionka domyslna` oraz `/cvip ustawienia rozmiar <8-11>`,
+- komendę `/cvip ustawienia modul kolory on|off|toggle`.
+
+### Zmieniono
+- `Combat Colors` jest teraz modułem przełączalnym i domyślnie pozostaje włączony,
+- `KOL ON` tworzy tymczasowe triggery prefiksów oraz wyłącza oficjalny folder `chimera/skrypty/ui/gags`,
+- `KOL OFF` usuwa triggery prefiksów, wyłącza trigger uczenia kolorów i ponownie włącza oficjalny `gags`,
+- stan `KOL` jest zapamiętywany pomiędzy restartami Mudleta,
+- `src/integrations/chimera.lua` nie wyłącza już `gags` bezwarunkowo; synchronizuje go ze stanem modułu `combat_colors`,
+- `/cvip` i `/cvip pomoc ustawienia` opisują nowe opcje konfiguracji i modułów.
+
+### Dane użytkownika
+- ustawienia ogólne: `ChimeraVIP-data/settings.lua`,
+- ustawienia ANSI Combat Colors nadal pozostają w `ChimeraVIP-data/combat_colors.lua`,
+- aktualizacje repozytorium nie nadpisują żadnego z tych plików.
+
 ## 0.73 — 2026-08-26
 
 Przebudowano mini-przyciski Quiet Footera tak, aby ich etykiety i zachowanie odzwierciedlały rzeczywisty stan oficjalnych funkcji Chimery.
