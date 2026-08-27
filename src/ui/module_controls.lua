@@ -26,7 +26,10 @@ function M:destroy_ui()
 end
 
 function M:is_combat_colors_enabled()
-    return C.settings and C.settings:is_module_enabled("combat_colors", true) or true
+    if C.settings and type(C.settings.is_module_enabled) == "function" then
+        return C.settings:is_module_enabled("combat_colors", true)
+    end
+    return true
 end
 
 function M:update_ui()
