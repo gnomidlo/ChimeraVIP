@@ -26,7 +26,7 @@ end
 function UI:get_states_font_size()
     if C.settings and type(C.settings.get)=="function" then
         local n=tonumber(C.settings:get("ui.states_font_size",10))
-        if n then return math.max(8,math.min(14,math.floor(n+0.5))) end
+        if n then return math.max(7,math.min(14,math.floor(n+0.5))) end
     end
     return 10
 end
