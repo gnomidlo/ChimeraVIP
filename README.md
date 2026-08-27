@@ -3,7 +3,7 @@
 Nakładka do oficjalnych skryptów **Chimera MUD** dla Mudleta. Projekt nie modyfikuje kodu upstreamu; korzysta z jego GMCP, eventów i publicznych struktur.
 
 Serwer: `chimera.co.pl:2300`  
-Aktualna wersja ChimeraVIP: **0.73**  
+Aktualna wersja ChimeraVIP: **0.74**  
 Wersja upstreamu używana przy rozwoju: **2.6**
 
 ## Instalacja
@@ -26,13 +26,7 @@ Dane użytkownika są przechowywane osobno w:
 getMudletHomeDir()/ChimeraVIP-data/
 ```
 
-Po instalacji wpisz:
-
-```text
-/cvip
-```
-
-aby zobaczyć pełną pomoc.
+Po instalacji wpisz `/cvip`, aby zobaczyć pełną pomoc.
 
 ### Aktualizacja istniejącej instalacji
 
@@ -42,10 +36,6 @@ aby zobaczyć pełną pomoc.
 ```
 
 Updater pobiera całą nową wersję do katalogu stagingowego i dopiero po kompletnym pobraniu podmienia lokalne pliki. Aktualizacja nie nadpisuje danych użytkownika.
-
-### Instalacja ręczna
-
-Jeżeli instalacja pakietu URL nie jest dostępna w używanej wersji Mudleta, można utworzyć ręcznie jeden trwały Script i wkleić do niego zawartość `loader.lua`.
 
 ## Co robi ChimeraVIP
 
@@ -59,56 +49,70 @@ Jeżeli instalacja pakietu URL nie jest dostępna w używanej wersji Mudleta, mo
 - OBC / UPI,
 - pasek EXP,
 - panel auto-wsparcia,
-- dynamiczne mini-przyciski oficjalnych funkcji Chimery: UKR, PRZ, ATK, ZBI, LAM, WAL i ZAS.
+- dynamiczne mini-przyciski: UKR, PRZ, ATK, ZBI, LAM, WAL i ZAS,
+- `KOL ●/○` — trwały przełącznik modułu Combat Colors.
 
-Mini-przyciski pokazują stan funkcji zamiast być wyłącznie skrótami:
+Mini-przyciski pokazują aktualny stan funkcji. Niedostępne akcje nie wykonują kliknięcia, a na węższym footerze etykiety przechodzą w krótszą postać.
 
-- `UKR` — stan ukrycia (`●` albo wartość, jeśli upstream ją udostępnia),
-- `PRZ` — aktualny tryb przemykania (`OFF`, `JA`, `DRU`),
-- `ATK N` — numer oficjalnego trybu ataku; pełna nazwa jest w tooltipie,
-- `ZBI N` — numer oficjalnego trybu zbierania; pełna nazwa jest w tooltipie,
-- `LAM ●/○` — lampa zapalona/zgaszona,
-- `WALKA ●` / `WAL Ns` — stan walki lub okres po walce,
-- `ZAS ✓` / `ZAS N` / `ZAS —` — zasłona gotowa, w odnowieniu albo niedostępna.
+### Ustawienia
 
-Niedostępne akcje nie wykonują kliknięcia. Na węższym footerze etykiety automatycznie przechodzą w krótszą postać.
+Od 0.74 ustawienia są trwałe i zapisywane w:
+
+```text
+getMudletHomeDir()/ChimeraVIP-data/settings.lua
+```
+
+Podstawowe komendy:
+
+```text
+/cvip ustawienia
+/cvip ustawienia czcionka <nazwa>
+/cvip ustawienia czcionka domyslna
+/cvip ustawienia rozmiar <8-11>
+/cvip ustawienia moduly
+/cvip ustawienia modul kolory on|off|toggle
+/cvip moduly
+```
+
+`czcionka` ustawia rodzinę fontu tekstowej części okna kondycji. Nazwa może zawierać spacje, np.:
+
+```text
+/cvip ustawienia czcionka JetBrains Mono
+```
+
+`rozmiar` zmienia rozmiar głównego tekstu kondycji, a tekst pomocniczy jest skalowany razem z nim. Zmiana działa od razu i pozostaje po restarcie Mudleta.
 
 ### Integracja z oficjalną Chimerą
 
-Po uruchomieniu ChimeraVIP wyłącza oficjalny folder skryptów:
+Stan oficjalnego folderu:
 
 ```text
 chimera/skrypty/ui/gags
 ```
 
-Kod oficjalnego pakietu nie jest edytowany. ChimeraVIP używa `disableScript()` do dezaktywacji folderu w profilu.
+jest powiązany ze stanem Combat Colors:
+
+- `KOL ON` — oficjalny `gags` jest wyłączony, aktywne są prefiksy ChimeraVIP,
+- `KOL OFF` — prefiksy ChimeraVIP są usuwane, oficjalny `gags` jest ponownie włączany.
+
+Kod oficjalnego pakietu nie jest edytowany.
 
 ### Kolory walki
 
-`features/combat_colors` przejmuje prezentację siły obrażeń po wyłączeniu oficjalnego `gags` i dodaje pastelowe prefiksy `0/3`–`3/3`.
+`features/combat_colors` dodaje pastelowe prefiksy `0/3`–`3/3` i obsługuje:
 
-Obsługiwane są cztery grupy kolorów:
+- `zadane_*`,
+- `otrzymane_*`,
+- `innych_zadane_*`,
+- `innych_otrzymane_*`.
 
-- `zadane_*` — obrażenia zadawane przez Twoją postać,
-- `otrzymane_*` — obrażenia otrzymywane przez Twoją postać,
-- `innych_zadane_*` — obrażenia zadawane w walce osób postronnych,
-- `innych_otrzymane_*` — obrażenia otrzymywane w walce osób postronnych.
+Moduł uczy się aktualnych ustawień z wyniku komendy `kolory`. Wartość `-1` oznacza `bez koloru`. Prefiks jest dodawany wyłącznie do linii mających co najmniej 50 znaków i zawierających co najmniej jedną literę.
 
-Moduł automatycznie uczy się aktualnych ustawień z wyniku komendy gry:
-
-```text
-kolory
-```
-
-Wartość `-1` oznacza `bez koloru` i dla takiej kategorii nie jest tworzony trigger ANSI. Prefiks jest dodawany wyłącznie do linii mających co najmniej 50 znaków i zawierających co najmniej jedną literę.
-
-Ustawienia są zapisywane w:
+Ustawienia kolorów są zapisywane w:
 
 ```text
 getMudletHomeDir()/ChimeraVIP-data/combat_colors.lua
 ```
-
-Starszy plik `chimera_damage_colors.lua` jest automatycznie wykrywany i migrowany. Stare triggery z pakietu `CHIMERA_damage_prefixes.xml` są wyłączane, aby nie tworzyć podwójnych prefiksów.
 
 Pomoc:
 
@@ -124,8 +128,6 @@ Obserwuje GMCP drużyny i walki. Jeżeli członek drużyny walczy, a Twoja posta
 
 Łapie komunikaty zabicia z `[...xp]`, rozróżnia własne i drużynowe zabójstwa oraz liczy XP/h, aktywny czas, trend i statystyki mobów.
 
-Najważniejsze komendy:
-
 ```text
 /xp
 /xp mobs
@@ -140,23 +142,11 @@ Najważniejsze komendy:
 
 Reguły klasyfikacji są przechowywane w `ChimeraVIP-data/xp_mobs.lua`.
 
-### Cechy
+### Cechy i progres
 
-`features/stats` przechwytuje standardowy wynik cech, poprawia czytelność i wylicza:
+`features/stats` przechwytuje standardowy wynik cech i wylicza Fiz / Ment / Odw / Łącznie.
 
-- `Fiz` = Siła + Zręczność + Wytrzymałość,
-- `Ment` = Intelekt + Mądrość,
-- `Odw` = Odwaga,
-- `Łącznie` = suma wszystkich cech.
-
-### Progres postaci
-
-Historia progresji łączy snapshoty cech z XP i zapisuje dane osobno dla każdej postaci. Postać jest identyfikowana przez:
-
-1. `gmcp.Char.Name.fullname`,
-2. fallback: `gmcp.Char.Name.name`.
-
-Dane są zapisywane w `ChimeraVIP-data/progression.lua`.
+`features/progression` łączy snapshoty cech z XP i zapisuje historię osobno dla każdej postaci rozpoznanej przez `gmcp.Char.Name.fullname`, z fallbackiem do `gmcp.Char.Name.name`.
 
 ```text
 /progres
@@ -167,13 +157,15 @@ Dane są zapisywane w `ChimeraVIP-data/progression.lua`.
 /cechy historia [N]
 ```
 
+Dane są zapisywane w `ChimeraVIP-data/progression.lua`.
+
 ## Pomoc
 
-`/cvip` jest głównym centrum pomocy i wyświetla opis wszystkich modułów w kategoriach.
+`/cvip` jest głównym centrum pomocy.
 
 ```text
 /cvip
-/cvip pomoc
+/cvip pomoc ustawienia
 /cvip pomoc walka
 /cvip pomoc xp
 /cvip pomoc progres
@@ -189,19 +181,9 @@ Komendy systemowe:
 /cvip przeladuj
 ```
 
-Moduły zachowują również własne krótsze pomoce, np. `/xp help` i `/progres help`.
-
 ## Aktualizacje
 
-Źródłem wersji jest `manifest.lua`. Przy publikacji nowej wersji aktualizowane są:
-
-1. `VERSION`,
-2. `manifest.lua`,
-3. `CHANGELOG.md`,
-4. `releases/<wersja>.md`,
-5. zmienione moduły.
-
-Updater obejmuje również lokalny `loader.lua`, dzięki czemu infrastruktura startowa może być rozwijana razem z resztą projektu.
+Źródłem wersji jest `manifest.lua`. Przy publikacji nowej wersji aktualizowane są `VERSION`, manifest, changelog, release notes oraz zmienione moduły. Updater obejmuje również lokalny `loader.lua`.
 
 ## Struktura
 
@@ -221,6 +203,7 @@ ChimeraVIP/
     ├── core/
     │   ├── bootstrap.lua
     │   ├── util.lua
+    │   ├── settings.lua
     │   ├── help.lua
     │   └── updater.lua
     ├── integrations/
@@ -229,7 +212,9 @@ ChimeraVIP/
     │   └── pastel.lua
     ├── ui/
     │   ├── quiet_footer.lua
-    │   └── footer_controls.lua
+    │   ├── settings_apply.lua
+    │   ├── footer_controls.lua
+    │   └── module_controls.lua
     └── features/
         ├── combat_colors.lua
         ├── auto_support.lua
