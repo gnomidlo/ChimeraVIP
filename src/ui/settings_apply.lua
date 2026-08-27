@@ -8,59 +8,39 @@ C.settings_apply = C.settings_apply or {}
 local A = C.settings_apply
 A.handlers = A.handlers or {}
 
-function A:get_sizes()
+function A:get_size()
     local S = C.settings
-    local main = S and tonumber(S:get("ui.condition_font_size", 10)) or 10
-    main = math.max(8, math.min(14, math.floor(main + 0.5)))
-
-    -- Mniejsze elementy footera rosną razem z głównym tekstem, ale wolniej,
-    -- aby SYTOSC/WODA/OBC/UPI/EXP nadal mieściły się w kompaktowym panelu.
-    local small = math.max(6, main - 4)
-    local exp = small
-
-    return main, small, exp
+    local size = S and tonumber(S:get("ui.states_font_size", 10)) or 10
+    return math.max(8, math.min(14, math.floor(size + 0.5)))
 end
 
-function A:sync_values()
-    local HUD = C.quiet_footer
-    if not HUD then return false end
+function A:apply()
+    local size = self:get_size()
 
-    local main, small, exp = self:get_sizes()
-    HUD.main_font = main
-    HUD.small_font = small
-    HUD.exp_font = exp
-
-    return true, main, small, exp
-end
-
-function A:apply(rebuild)
-    local HUD = C.quiet_footer
-    if not HUD then return end
-
-    local ok, main, small, exp = self:sync_values()
-    if not ok then return end
-
-    -- Geyser.Label dostaje fontSize w chwili tworzenia. Dlatego zmiana
-    -- ustawienia musi przebudować Quiet Footer, a nie tylko dopisać CSS do
-    -- już istniejących QLabeli.
-    if rebuild and type(HUD.schedule_rebuild) == "function" then
-        HUD:schedule_rebuild()
+    if scripts and scripts.ui then
+        scripts.ui.states_font_size = size
     end
 
-    raiseEvent("chimeraVipConditionFontApplied", main, small, exp)
+    -- To są istniejące okna oficjalnej Chimery: stany drużyny/innych postaci
+    -- oraz przeciwników. Footer ChimeraVIP nie jest tutaj dotykany.
+    pcall(setFontSize, "states_window", size)
+    pcall(setFontSize, "enemy_states_window", size)
+
+    raiseEvent("chimeraVipStatesFontApplied", size)
 end
 
 if U and U.replace_handler then
     U.replace_handler(A, "settings_changed", "chimeraVipSettingsChanged", function(_, key)
-        if tostring(key or "") == "ui.condition_font_size" then
-            A:apply(true)
-        end
+        if tostring(key or "") == "ui.states_font_size" then tempTimer(0, function() A:apply() end) end
+    end)
+    U.replace_handler(A, "theme_ready", "chimeraThemeReady", function()
+        tempTimer(0, function() A:apply() end)
+    end)
+    U.replace_handler(A, "ui_ready", "uiReady", function()
+        tempTimer(0.05, function() A:apply() end)
     end)
 end
 
--- Przy starcie ustawiamy wartości PRZED najbliższą budową footera. Jeżeli
--- footer został już zbudowany podczas hot-reloadu, schedule_rebuild odtworzy
--- go raz z właściwymi fontSize.
-tempTimer(0, function() A:apply(true) end)
+tempTimer(0, function() A:apply() end)
 
 return A
