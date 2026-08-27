@@ -6,11 +6,18 @@ local U = C.util
 
 C.settings_panel = C.settings_panel or {}
 local SP = C.settings_panel
+
+-- Hot reload: usuń stary panel zanim zarejestrujemy nowe handlery.
+if SP.root then
+    pcall(function() SP.root:hide() end)
+    pcall(function() SP.root:delete() end)
+end
+
 SP.handlers = SP.handlers or {}
-SP.root = SP.root or nil
-SP.size_buttons = SP.size_buttons or {}
-SP.module_button = SP.module_button or nil
-SP.visible = SP.visible or false
+SP.root = nil
+SP.size_buttons = {}
+SP.module_button = nil
+SP.visible = false
 
 local function P()
     if C.pastel_ui and C.pastel_ui.colors then return C.pastel_ui.colors end
