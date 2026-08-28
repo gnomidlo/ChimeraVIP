@@ -3,7 +3,7 @@ chimera_overlay = chimera_overlay or chimera_vip
 
 local C = chimera_vip
 C.name = "ChimeraVIP"
-C.version = C.version or "0.83"
+C.version = C.version or "0.84"
 C.tested_upstream = "2.6"
 C.handlers = C.handlers or {}
 C.ready = false
