@@ -9,6 +9,21 @@ function U.clamp(value, minimum, maximum)
     return value
 end
 
+function U.text_width(value)
+    local text = tostring(value or "")
+    if utf8 and type(utf8.len) == "function" then
+        local ok, length = pcall(utf8.len, text)
+        if ok and length then return length end
+    end
+    return #text
+end
+
+function U.pad_right(value, width)
+    local text = tostring(value or "")
+    local missing = math.max(0, (tonumber(width) or 0) - U.text_width(text))
+    return text .. string.rep(" ", missing)
+end
+
 function U.transparent_css()
     return [[QLabel { background-color: transparent; border: 0px; padding: 0px; }]]
 end
