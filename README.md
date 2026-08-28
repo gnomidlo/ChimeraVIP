@@ -3,7 +3,7 @@
 Nakładka do oficjalnych skryptów **Chimera MUD** dla Mudleta. Projekt nie modyfikuje kodu upstreamu; korzysta z jego GMCP, eventów i publicznych struktur.
 
 Serwer: `chimera.co.pl:2300`  
-Aktualna wersja ChimeraVIP: **0.77**  
+Aktualna wersja ChimeraVIP: **0.78**  
 Wersja upstreamu używana przy rozwoju: **2.6**
 
 ## Instalacja
@@ -20,13 +20,7 @@ Pakiet tworzy trwały loader `ChimeraVIP/loader`, który pobiera aktualny runtim
 getMudletHomeDir()/ChimeraVIP/
 ```
 
-Dane użytkownika są przechowywane osobno w:
-
-```text
-getMudletHomeDir()/ChimeraVIP-data/
-```
-
-Po instalacji wpisz `/cvip`, aby zobaczyć pełną pomoc.
+Dane użytkownika są przechowywane osobno w `getMudletHomeDir()/ChimeraVIP-data/`.
 
 Aktualizacja istniejącej instalacji:
 
@@ -39,57 +33,44 @@ Aktualizacja istniejącej instalacji:
 
 ChimeraVIP dodaje pastelowy motyw oraz responsywny Quiet Footer z kompasem, wyjściami specjalnymi, KOND/SIŁY/MANA, potrzebami, OBC/UPI, EXP, auto-wsparciem i dynamicznymi kontrolkami oficjalnych funkcji Chimery.
 
-Footer zachowuje własne stałe rozmiary tekstu. Ustawienie rozmiaru w `/cvip ustawienia` dotyczy wyłącznie oficjalnych okien stanów:
-
-```text
-states_window
-enemy_states_window
-```
-
-czyli widoku kondycji drużyny, przeciwników i innych postaci.
-
-## Ustawienia
-
-Ustawienia są trwałe i zapisywane w:
-
-```text
-getMudletHomeDir()/ChimeraVIP-data/settings.lua
-```
-
-```text
-/cvip ustawienia
-/cvip ustawienia rozmiar <7-14>
-/cvip ustawienia moduly
-/cvip ustawienia modul kolory on|off|toggle
-/cvip moduly
-```
-
-`/cvip ustawienia` otwiera panel z klikalnymi próbkami rozmiarów `7–14`. Zmiana jest od razu stosowana do `states_window` i `enemy_states_window` oraz pozostaje po restarcie Mudleta.
+Ustawienie rozmiaru w `/cvip ustawienia` dotyczy wyłącznie oficjalnych okien `states_window` i `enemy_states_window`. Dostępne są klikalne rozmiary `7–14`; Quiet Footer zachowuje własne stałe fonty.
 
 ## Combat Colors
 
-`features/combat_colors` dodaje pastelowe prefiksy `0/3–3/3` dla:
+`features/combat_colors` dodaje pastelowe prefiksy `0/3–3/3` dla `zadane_*`, `otrzymane_*`, `innych_zadane_*` i `innych_otrzymane_*`. Moduł uczy się ustawień z wyniku `kolory`; `-1` oznacza brak koloru.
 
-- `zadane_*`,
-- `otrzymane_*`,
-- `innych_zadane_*`,
-- `innych_otrzymane_*`.
+`KOL ON` wyłącza oficjalny `chimera/skrypty/ui/gags` i uruchamia prefiksy ChimeraVIP. `KOL OFF` usuwa własne triggery i ponownie włącza `gags`.
 
-Moduł uczy się ustawień z wyniku `kolory`. `-1` oznacza brak koloru. Prefiks jest dodawany tylko do linii mających minimum 50 znaków i zawierających co najmniej jedną literę.
+Od 0.78 rozpoznane trafienia `otrzymane_*` podnoszą `chimeraVipIncomingHit`, z którego korzysta Defense Tracker.
 
-Stan modułu jest powiązany z oficjalnym folderem:
+## Defense Tracker
+
+`features/defense_tracker` po cichu prowadzi statystyki wyłącznie w pamięci bieżącej sesji. Niczego nie zapisuje na dysku.
+
+Liczy:
+
+- pudła przeciwników,
+- uniki,
+- parowania,
+- zasłony,
+- ciosy zatrzymane pancerzem,
+- znane trafienia `0/3–3/3` przekazane przez Combat Colors.
+
+`OBRONIONE` to suma pudło + unik + parowanie + zasłona. Zatrzymania pancerzem są raportowane osobno. Zasłony, parowania i pancerz mają dodatkowe zestawienie według nazwy użytego przedmiotu.
 
 ```text
-chimera/skrypty/ui/gags
+/def
+/def sprzet
+/def last [N]
+/def reset
+/def help
 ```
 
-`KOL ON` wyłącza `gags` i uruchamia prefiksy ChimeraVIP. `KOL OFF` usuwa własne triggery i ponownie włącza `gags`.
+Jeżeli `otrzymane_brak = -1`, trafienia 0/3 bez koloru nie mają jeszcze pewnego sygnału do rozpoznania. `/def` zaznacza wtedy, że procenty obejmują tylko znane próby ataku.
 
 ## Auto-wsparcie
 
-Auto-wsparcie obserwuje `gmcp.Chimera.Group` i `gmcp.Chimera.Combat`.
-
-Od 0.77, gdy relacje walki pozwalają ustalić cel lidera drużyny, moduł porównuje go z celem bieżącej postaci. Jeśli postać nie walczy z tym samym przeciwnikiem, ponawia wsparcie.
+Auto-wsparcie obserwuje `gmcp.Chimera.Group` i `gmcp.Chimera.Combat`. Gdy relacje pozwalają ustalić cel lidera, pilnuje aby postać biła ten sam cel.
 
 Jedna próba wsparcia wysyła:
 
@@ -99,7 +80,7 @@ wesprzyj
 wesprzyj
 ```
 
-Druga komenda obsługuje NPC wymagających potwierdzenia. Cała para podlega cooldownowi 1500 ms. Jeśli cel lidera nie jest jeszcze dostępny w GMCP, moduł używa wcześniejszego fallbacku i dołącza do trwającej walki drużyny.
+Cała para podlega cooldownowi 1500 ms.
 
 ## Tracker XP
 
@@ -115,7 +96,7 @@ Druga komenda obsługuje NPC wymagających potwierdzenia. Cała para podlega coo
 /xp help
 ```
 
-Tracker liczy XP/h, aktywny czas, trend, własne i drużynowe zabójstwa oraz statystyki mobów. Ręczne klasyfikacje są przechowywane w `ChimeraVIP-data/xp_mobs.lua`.
+Tracker liczy XP/h, aktywny czas, trend, własne i drużynowe zabójstwa oraz statystyki mobów.
 
 ## Cechy i progres
 
@@ -130,18 +111,15 @@ Tracker liczy XP/h, aktywny czas, trend, własne i drużynowe zabójstwa oraz st
 /cechy historia [N]
 ```
 
-Dane progresji są zapisywane w `ChimeraVIP-data/progression.lua`.
-
 ## Pomoc i system
 
 ```text
 /cvip
+/cvip pomoc obrona
 /cvip pomoc ustawienia
 /cvip pomoc walka
 /cvip pomoc xp
 /cvip pomoc progres
-/cvip pomoc ui
-
 /cvip status
 /cvip sprawdz
 /cvip aktualizuj
@@ -164,23 +142,12 @@ ChimeraVIP/
 └── src/
     ├── init.lua
     ├── core/
-    │   ├── bootstrap.lua
-    │   ├── util.lua
-    │   ├── settings.lua
-    │   ├── help.lua
-    │   └── updater.lua
     ├── integrations/
-    │   └── chimera.lua
     ├── theme/
-    │   └── pastel.lua
     ├── ui/
-    │   ├── quiet_footer.lua
-    │   ├── settings_apply.lua
-    │   ├── settings_panel.lua
-    │   ├── footer_controls.lua
-    │   └── module_controls.lua
     └── features/
         ├── combat_colors.lua
+        ├── defense_tracker.lua
         ├── auto_support.lua
         ├── xp_tracker.lua
         ├── stats.lua
