@@ -36,6 +36,21 @@ local function normalize_item(s)
     return s
 end
 
+local function text_width(value)
+    local s = tostring(value or "")
+    if utf8 and type(utf8.len) == "function" then
+        local ok, length = pcall(utf8.len, s)
+        if ok and length then return length end
+    end
+    return #s
+end
+
+local function pad_right(value, width)
+    local s = tostring(value or "")
+    local missing = math.max(0, (tonumber(width) or 0) - text_width(s))
+    return s .. string.rep(" ", missing)
+end
+
 local function pct(value, total)
     if not total or total <= 0 then return "  0.0%" end
     return string.format("%5.1f%%", value * 100 / total)
@@ -151,7 +166,7 @@ end
 
 local function line_row(label, value, total, color)
     local P = colors()
-    hecho("\n  " .. (color or P.text_muted) .. string.format("%-23s", label)
+    hecho("\n  " .. (color or P.text_muted) .. pad_right(label, 22)
         .. P.text .. string.format("%6d", value)
         .. P.text_muted .. "   " .. pct(value,total))
 end
@@ -165,7 +180,8 @@ function D:show_summary()
 
     hecho("\n\n" .. P.lavender .. "OBRONA — SESJA")
     hecho("\n" .. P.separator .. "--------------------------------------------------")
-    hecho("\n" .. P.text_muted .. "Znane próby ataku" .. P.text .. string.format("%27d", total))
+    hecho("\n" .. P.text_muted .. pad_right("Znane próby ataku", 24)
+        .. P.text .. string.format("%6d", total))
 
     hecho("\n\n" .. P.mint .. "OBRONIONE")
     line_row("Pudło", S.miss, total, P.text_muted)
@@ -205,7 +221,7 @@ local function show_items(title, table_data, color)
     local total = 0
     for _,row in ipairs(rows) do total = total + row.count end
     for _,row in ipairs(rows) do
-        hecho("\n  " .. P.text_muted .. string.format("%-36s", row.name)
+        hecho("\n  " .. P.text_muted .. pad_right(row.name, 36)
             .. P.text .. string.format("%5d", row.count)
             .. P.text_muted .. "   " .. pct(row.count,total))
     end
