@@ -1,6 +1,6 @@
 return {
     name = "ChimeraVIP",
-    version = "0.79",
+    version = "0.80",
     tested_upstream = "2.6",
     raw_base = "https://raw.githubusercontent.com/gnomidlo/ChimeraVIP/main/",
     files = {
@@ -12,6 +12,7 @@ return {
         "src/core/help.lua",
         "src/core/updater.lua",
         "src/integrations/chimera.lua",
+        "src/integrations/defense_combat.lua",
         "src/theme/pastel.lua",
         "src/ui/quiet_footer.lua",
         "src/ui/settings_apply.lua",
