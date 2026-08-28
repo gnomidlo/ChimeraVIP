@@ -95,9 +95,7 @@ function D:add_event(kind, detail, raw)
         return
     end
 
-    local event = {
-        time=os.time(), kind=kind, detail=detail, raw=trim(raw),
-    }
+    local event = {time=os.time(), kind=kind, detail=detail, raw=trim(raw)}
     S.events[#S.events + 1] = event
     while #S.events > self.max_events do table.remove(S.events, 1) end
 
@@ -105,13 +103,14 @@ function D:add_event(kind, detail, raw)
 end
 
 function D:is_defense_line(text)
-    text = tostring(text or "")
-    return text:match("^%s*lecz%s+(?:tobie%s+)?udaje%s+ci%s+sie%s+oslonic%s+")
-        or text:match("^%s*lecz%s+tobie%s+udaje%s+je%s+zbic%s+z%s+lini%s+ataku%s+")
-        or text:match("^%s*lecz%s+tobie%s+udaje%s+sie%s+go%s+sparowac%s+")
-        or text:match("^%s*lecz%s+tobie%s+udaje%s+sie%s+uniknac%s+tego%s+ciosu")
-        or text:match("^%s*nie%s+udaje%s+sie%s+trafic%s+ciebie")
-        or text:match("^%s*lecz%s+caly%s+impet%s+uderzenia%s+wyparowany%s+zostaje%s+przez%s+")
+    local s = trim(text):lower()
+    return s:match("^lecz%s+udaje%s+ci%s+sie%s+oslonic%s+")
+        or s:match("^lecz%s+tobie%s+udaje%s+sie%s+oslonic%s+")
+        or s:match("^lecz%s+tobie%s+udaje%s+je%s+zbic%s+z%s+lini%s+ataku%s+")
+        or s:match("^lecz%s+tobie%s+udaje%s+sie%s+go%s+sparowac%s+")
+        or s:match("^lecz%s+tobie%s+udaje%s+sie%s+uniknac%s+tego%s+ciosu")
+        or s:match("^nie%s+udaje%s+sie%s+trafic%s+ciebie")
+        or s:match("^lecz%s+caly%s+impet%s+uderzenia%s+wyparowany%s+zostaje%s+przez%s+")
 end
 
 function D:on_incoming_hit(level, raw)
@@ -283,7 +282,7 @@ end
 function D:install_runtime()
     self:clear_runtime()
 
-    self:add_trigger([[^\s*lecz\s+(?:tobie\s+)?udaje\s+ci\s+sie\s+oslonic\s+(.+?)\.\s*$]],
+    self:add_trigger([[^\s*lecz\s+(?:udaje\s+ci\s+sie|tobie\s+udaje\s+sie)\s+oslonic\s+(.+?)\.\s*$]],
         [[chimera_vip.defense_tracker:add_event("block", matches[2], line)]])
     self:add_trigger([[^\s*lecz\s+tobie\s+udaje\s+je\s+zbic\s+z\s+lini\s+ataku\s+(.+?)\.\s*$]],
         [[chimera_vip.defense_tracker:add_event("parry", matches[2], line)]])
