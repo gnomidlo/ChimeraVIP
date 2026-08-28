@@ -33,37 +33,33 @@ function I:classify_defense(raw_line)
     local raw = tostring(raw_line or "")
     local s = normalize(raw)
 
-    -- Zaslona. Komunikat moze zaczynac sie opisem ataku, np.
-    -- "... w ciebie, lecz tobie udaje sie oslonic zdobionym ... puklerzem."
-    if s:find("lecz tobie udaje sie oslonic ", 1, true) then
-        local item = tail_after(raw, "lecz%s+tobie%s+udaje%s+sie%s+oslonic%s+") or ""
+    if s:find("lecz tobie udaje sie oslonic", 1, true) then
+        local item = tail_after(raw, "lecz%s+tobie%s+udaje%s+sie%s+oslonic%s*") or ""
         D:add_event("block", item, raw)
         return true
     end
-    if s:find("lecz udaje ci sie oslonic ", 1, true) then
-        local item = tail_after(raw, "lecz%s+udaje%s+ci%s+sie%s+oslonic%s+") or ""
+    if s:find("lecz udaje ci sie oslonic", 1, true) then
+        local item = tail_after(raw, "lecz%s+udaje%s+ci%s+sie%s+oslonic%s*") or ""
         D:add_event("block", item, raw)
         return true
     end
 
-    -- Parowanie / zbicie z linii ataku. Obslugujemy oba spotykane szyki:
-    -- "udaje sie zbic je z lini ataku" oraz starszy "udaje je zbic...".
-    if s:find("lecz tobie udaje sie zbic je z lini ataku ", 1, true)
-        or s:find("lecz tobie udaje sie zbic je z linii ataku ", 1, true)
+    if s:find("lecz tobie udaje sie zbic je z lini ataku", 1, true)
+        or s:find("lecz tobie udaje sie zbic je z linii ataku", 1, true)
     then
-        local item = tail_after(raw, "lecz%s+tobie%s+udaje%s+sie%s+zbic%s+je%s+z%s+linii?%s+ataku%s+") or ""
+        local item = tail_after(raw, "lecz%s+tobie%s+udaje%s+sie%s+zbic%s+je%s+z%s+linii?%s+ataku%s*") or ""
         D:add_event("parry", item, raw)
         return true
     end
-    if s:find("lecz tobie udaje je zbic z lini ataku ", 1, true)
-        or s:find("lecz tobie udaje je zbic z linii ataku ", 1, true)
+    if s:find("lecz tobie udaje je zbic z lini ataku", 1, true)
+        or s:find("lecz tobie udaje je zbic z linii ataku", 1, true)
     then
-        local item = tail_after(raw, "lecz%s+tobie%s+udaje%s+je%s+zbic%s+z%s+linii?%s+ataku%s+") or ""
+        local item = tail_after(raw, "lecz%s+tobie%s+udaje%s+je%s+zbic%s+z%s+linii?%s+ataku%s*") or ""
         D:add_event("parry", item, raw)
         return true
     end
-    if s:find("lecz tobie udaje sie go sparowac ", 1, true) then
-        local item = tail_after(raw, "lecz%s+tobie%s+udaje%s+sie%s+go%s+sparowac%s+") or ""
+    if s:find("lecz tobie udaje sie go sparowac", 1, true) then
+        local item = tail_after(raw, "lecz%s+tobie%s+udaje%s+sie%s+go%s+sparowac%s*") or ""
         D:add_event("parry", item, raw)
         return true
     end
@@ -78,8 +74,8 @@ function I:classify_defense(raw_line)
         return true
     end
 
-    if s:find("lecz caly impet uderzenia wyparowany zostaje przez ", 1, true) then
-        local item = tail_after(raw, "lecz%s+caly%s+impet%s+uderzenia%s+wyparowany%s+zostaje%s+przez%s+") or ""
+    if s:find("lecz caly impet uderzenia wyparowany zostaje przez", 1, true) then
+        local item = tail_after(raw, "lecz%s+caly%s+impet%s+uderzenia%s+wyparowany%s+zostaje%s+przez%s*") or ""
         D:add_event("armor", item, raw)
         return true
     end
@@ -98,15 +94,12 @@ function I:install()
         local raw_line = tostring(line or "")
 
         if tostring(key):match("^otrzymane_") then
-            -- Najpierw semantyka: linia o kolorze otrzymane_* moze byc
-            -- udana obrona (zwlaszcza 0/3), a nie trafieniem.
             local defended = I:classify_defense(raw_line)
             if not defended then
                 raiseEvent("chimeraVipIncomingHit", key, raw_line)
             end
         end
 
-        -- Osobna warstwa prezentacji prefiksu [0/3]-[3/3].
         if not self:is_eligible_line() then return end
 
         local prefix_color = self.prefix_colors and self.prefix_colors[definition.color]
