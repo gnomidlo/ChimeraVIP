@@ -37,7 +37,7 @@ R.groups = {
 R.group_aliases = {
     p="przyjaciele", przyjaciel="przyjaciele", przyjaciele="przyjaciele",
     n="neutralni", neutralny="neutralni", neutralni="neutralni",
-    w="wrogowie", wrog="wrogowie", wróg="wrogowie", wrogowie="wrogowie",
+    w="wrogowie", wrog="wrogowie", ["wróg"]="wrogowie", wrogowie="wrogowie",
     brak="", nieprzypisany="", nieprzypisani="", ["?"]="",
 }
 
@@ -206,9 +206,13 @@ function R:finish_capture()
     local existing,old_key=self:find_person(nominative)
     local key=normalize(nominative); local now=os.time()
     if old_key and old_key~=key then self.data.people[old_key]=nil end
+
+    local highlight = true
+    if existing and existing.highlight ~= nil then highlight = existing.highlight == true end
+
     self.data.people[key]={
         name=nominative,forms=copy(captured.forms),group=existing and existing.group or nil,
-        highlight=existing and existing.highlight~=false or true,
+        highlight=highlight,
         added_at=existing and existing.added_at or now,updated_at=now,
     }
     self.capture=nil
