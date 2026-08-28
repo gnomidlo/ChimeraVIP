@@ -7,6 +7,7 @@ local H = C.help
 
 H.sections = H.sections or {}
 H.order = H.order or {}
+H.alias_ids = H.alias_ids or {}
 
 local function colors()
     if C.pastel_ui and C.pastel_ui.colors then return C.pastel_ui.colors end
@@ -16,187 +17,249 @@ local function colors()
     }
 end
 
-function H:register(id,data)
-    id=tostring(id or "")
-    if id=="" or type(data)~="table" then return false end
-    if not self.sections[id] then self.order[#self.order+1]=id end
-    self.sections[id]=data
+local function print_line(text, color)
+    hecho("\n" .. (color or colors().text) .. tostring(text or ""))
+end
+
+function H:register(id, data)
+    id = tostring(id or "")
+    if id == "" or type(data) ~= "table" then return false end
+    if not self.sections[id] then self.order[#self.order + 1] = id end
+    self.sections[id] = data
     return true
 end
 
 function H:register_defaults()
-    self.sections={}; self.order={}
+    self.sections = {}
+    self.order = {}
 
-    self:register("start",{
-        title="CHIMERAVIP",
-        description={
-            "Nakładka do oficjalnych skryptów Chimera MUD. Nie zastępuje upstreamu — korzysta z jego GMCP, eventów i publicznych struktur.",
-            "Po instalacji działa automatycznie. /cvip wyświetla tę pomoc, a lokalne dane użytkownika są przechowywane poza katalogiem aktualizowanym.",
-        },
-    })
-
-    self:register("interface",{
+    self:register("interface", {
         title="INTERFEJS",
         description={
-            "Pastelowy motyw upraszcza oficjalne UI, a Quiet Footer zbiera najważniejsze informacje w jednej belce.",
-            "Footer pokazuje kompas i wyjścia specjalne, KOND/SIŁY/MANA, SYTOŚĆ/WODĘ, OBC, UPI oraz pasek EXP.",
-            "Po prawej stronie znajdują się auto-wsparcie, stanowe przyciski oficjalnych funkcji Chimery oraz przełącznik KOL dla modułu kolorowania walki.",
+            "Pastelowy motyw i Quiet Footer porządkują oficjalny interfejs Chimery.",
+            "Footer pokazuje kompas, wyjścia specjalne, KOND/SIŁY/MANA, potrzeby, OBC/UPI, EXP oraz kontrolki walki.",
         },
         commands={
-            {"AUTO-WSPARCIE","klikany przełącznik ON/OFF w prawej części footera"},
-            {"UKR / PRZ / ATK / ZBI","ukrywanie, przemykanie, tryb ataku i zbieranie"},
-            {"LAM / WAL / ZAS","lampa, akcja walki i zasłona"},
-            {"KOL ● / KOL ○","włącz/wyłącz Combat Colors; stan jest zapamiętywany"},
+            {"/ui pomoc", "ta pomoc"},
+            {"/cvip ustawienia", "panel ustawień interfejsu i modułów"},
         },
     })
 
-    self:register("combat",{
-        title="WALKA I KOLORY",
+    self:register("combat", {
+        title="KOLORY WALKI",
         description={
-            "Combat Colors dodaje pastelowe prefiksy siły obrażeń 0/3–3/3 i może zastąpić prezentację obrażeń z oficjalnego folderu gags.",
-            "Obsługuje obrażenia zadane i otrzymane przez Twoją postać oraz walkę osób postronnych: innych_zadane_* i innych_otrzymane_*.",
-            "Kolory ANSI są automatycznie odczytywane z wyniku komendy 'kolory'. Wartość -1 oznacza 'bez koloru'.",
-            "Prefiks pojawia się tylko na liniach mających co najmniej 50 znaków i zawierających przynajmniej jedną literę.",
-            "Combat Colors przekazuje rozpoznane trafienia w naszą postać do sesyjnego Defense Trackera przez event chimeraVipIncomingHit.",
+            "Combat Colors dodaje prefiksy siły obrażeń 0/3–3/3 i integruje otrzymywane ciosy z Defense Trackerem.",
+            "Kolory są odczytywane z oficjalnej komendy 'kolory'.",
         },
         commands={
-            {"KOL ● / KOL ○","szybki toggle w footerze"},
-            {"/cvip ustawienia modul kolory on|off|toggle","sterowanie modułem z linii poleceń"},
-            {"kolory","wyświetl ustawienia kolorów w grze; aktywny moduł zsynchronizuje się automatycznie"},
+            {"/walka pomoc", "ta pomoc"},
+            {"KOL ● / KOL ○", "włącz lub wyłącz Combat Colors w footerze"},
+            {"kolory", "oficjalna lista kolorów komunikatów Chimery"},
         },
     })
 
-    self:register("automation",{
-        title="AUTOMATYZACJA",
+    self:register("automation", {
+        title="AUTO-WSPARCIE",
         description={
-            "Auto-wsparcie obserwuje GMCP drużyny i walki. Jeśli można ustalić cel lidera, pilnuje aby Twoja postać biła ten sam cel; gdy cel się różni, ponawia 'wesprzyj'.",
-            "Każda próba wsparcia wysyła 'wesprzyj' dwukrotnie z odstępem 0,18 s. Cała para podlega anty-spamowi 1,5 s.",
-        },
-    })
-
-    self:register("defense",{
-        title="OBRONA — STATYSTYKI SESJI",
-        description={
-            "Defense Tracker po cichu liczy w bieżącej sesji próby ataków skierowanych w Twoją postać. Niczego nie zapisuje na dysku.",
-            "OBRONIONE obejmuje pudła, uniki, parowania i zasłony. Osobno liczone są ciosy zatrzymane pancerzem oraz znane trafienia 0/3–3/3.",
-            "Zasłony, parowania i zatrzymania pancerzem są dodatkowo rozbijane według nazwy przedmiotu.",
-            "Jeśli otrzymane_brak ma -1, trafienia 0/3 bez koloru nie mają obecnie pewnego sygnału tekstowego; raport jawnie zaznacza wtedy, że procenty obejmują tylko znane próby.",
+            "Auto-wsparcie obserwuje GMCP drużyny i pilnuje celu lidera.",
+            "Próba wsparcia wysyła 'wesprzyj' dwukrotnie z krótkim odstępem i ma anty-spam 1,5 s.",
         },
         commands={
-            {"/def","podsumowanie sesji i procent znanych prób"},
-            {"/def sprzet","tarcze/puklerze, bronie do parowania i elementy pancerza"},
-            {"/def last [N]","ostatnie N zdarzeń obrony, domyślnie 10"},
-            {"/def reset","wyzeruj statystyki bieżącej sesji"},
-            {"/def help","lokalna pomoc Defense Trackera"},
+            {"/wsparcie pomoc", "ta pomoc"},
+            {"AUTO-WSPARCIE ON/OFF", "przełącznik w prawej części footera"},
         },
     })
 
-    self:register("xp",{
+    self:register("defense", {
+        title="OBRONA",
+        description={
+            "Defense Tracker prowadzi wyłącznie sesyjne statystyki obrony: pudła, uniki, parowania, zasłony, pancerz i trafienia.",
+            "Parowania, zasłony i zatrzymania pancerzem są rozbijane według użytego sprzętu.",
+        },
+        commands={
+            {"/def", "podsumowanie sesji"},
+            {"/def sprzet", "statystyki tarcz, broni i pancerza"},
+            {"/def last [N]", "ostatnie zdarzenia"},
+            {"/def reset", "wyzeruj sesję"},
+            {"/def pomoc", "ta pomoc"},
+        },
+    })
+
+    self:register("xp", {
         title="DOŚWIADCZENIE",
         description={
-            "Tracker XP liczy doświadczenie z własnych i drużynowych zabójstw, XP/h, aktywny czas, trend oraz statystyki typów przeciwników.",
-            "Ręczne reguły pozwalają rozróżnić np. 'ork' i 'czarny ork'.",
+            "Tracker XP liczy XP z własnych i drużynowych zabójstw, XP/h, aktywny czas, trend i statystyki typów mobów.",
+            "Niestandardowe klasyfikacje mobów są utrzymywane centralnie w ChimeraVIP, bez lokalnych reguł użytkownika.",
         },
         commands={
-            {"/xp","podsumowanie bieżącej sesji"},{"/xp mobs","statystyki typów przeciwników"},
-            {"/xp mob <nazwa>","szczegóły jednego typu"},{"/xp last [N]","ostatnie zabójstwa"},
-            {"/xp rules","lista ręcznych reguł"},{"/xp add nazwa#forma","dodaj klasyfikację"},
-            {"/xp del <nazwa>","usuń reguły"},{"/xp reset","wyzeruj bieżącą sesję XP"},{"/xp help","lokalna pomoc"},
+            {"/xp", "podsumowanie sesji"},
+            {"/xp mobs", "statystyki typów mobów"},
+            {"/xp mob <nazwa>", "szczegóły typu"},
+            {"/xp last [N]", "ostatnie zabójstwa"},
+            {"/xp reset", "wyzeruj sesję"},
+            {"/xp pomoc", "ta pomoc"},
         },
     })
 
-    self:register("stats",{
+    self:register("stats", {
         title="CECHY",
         description={
-            "Moduł cech przechwytuje standardowy wynik postępów, porządkuje go kolorystycznie i wylicza Fiz, Ment, Odw oraz sumę wszystkich cech.",
-            "Pełny odczyt tworzy snapshot wykorzystywany przez moduł progresji.",
+            "Moduł formatuje wynik cech i wylicza Fiz, Ment, Odw oraz sumę wszystkich cech.",
+            "Pełny odczyt tworzy snapshot używany przez moduł progresji.",
+        },
+        commands={
+            {"/cechy pomoc", "ta pomoc"},
+            {"/cechy info", "informacje progresji aktualnej postaci"},
+            {"/cechy historia [N]", "historia zmian cech"},
         },
     })
 
-    self:register("progression",{
+    self:register("progression", {
         title="PROGRES POSTACI",
         description={
-            "Historia progresji łączy snapshoty cech z XP i zapisuje dane osobno dla każdej postaci.",
-            "Postać jest rozpoznawana przez gmcp.Char.Name.fullname, a gdy go brak — przez gmcp.Char.Name.name.",
+            "Łączy snapshoty cech z XP i zapisuje historię rozwoju osobno dla każdej postaci.",
         },
         commands={
-            {"/progres","stan progresji aktualnej postaci"},{"/progres historia [N]","ostatnie wpisy historii"},
-            {"/progres postacie","lista zapisanych postaci"},{"/progres help","lokalna pomoc"},
-            {"/cechy info","alias do /progres"},{"/cechy historia [N]","alias historii progresji"},
+            {"/progres", "stan aktualnej postaci"},
+            {"/progres historia [N]", "ostatnie zmiany"},
+            {"/progres postacie", "zapisane postacie"},
+            {"/progres pomoc", "ta pomoc"},
         },
     })
 
-    self:register("settings",{
-        title="USTAWIENIA I MODULY",
+    self:register("postacie", {
+        title="POSTACIE I RELACJE",
         description={
-            "Ustawienia ChimeraVIP są trwałe i zapisywane w ChimeraVIP-data/settings.lua.",
-            "/cvip ustawienia otwiera panel. Rozmiary 7–14 sterują oficjalnymi oknami stanów drużyny, wrogów i innych postaci, bez zmiany Quiet Footera.",
+            "Rejestruje sześć odmian imienia, relację z postacią i koloruje wszystkie znane formy w tekście gry.",
+            "Nowe postacie są nieprzypisane do czasu wybrania relacji.",
         },
         commands={
-            {"/cvip ustawienia","otwórz panel ustawień"},{"/cvip ustawienia rozmiar <7-14>","ustaw rozmiar tekstu okien stanów"},
-            {"/cvip ustawienia moduly","pokaż stany modułów"},{"/cvip ustawienia modul kolory on|off|toggle","steruj Combat Colors"},
-            {"/cvip moduly","krótka lista stanów modułów"},
+            {"odmien <imie>", "zapisz lub odśwież odmianę"},
+            {"/postacie", "lista zapisanych postaci"},
+            {"/postacie szukaj <tekst>", "wyszukaj postać"},
+            {"/postacie pomoc", "ta pomoc"},
         },
     })
 
-    self:register("integration",{
-        title="INTEGRACJA Z OFICJALNĄ CHIMERĄ",
+    self:register("settings", {
+        title="USTAWIENIA",
         description={
-            "ChimeraVIP działa jako nakładka i nie edytuje kodu oficjalnego pakietu.",
-            "Stan oficjalnego folderu chimera/skrypty/ui/gags jest synchronizowany z Combat Colors: wyłączony dla KOL ON i włączony dla KOL OFF.",
+            "Trwałe ustawienia ChimeraVIP: rozmiar oficjalnych okien stanów i przełączniki modułów.",
+        },
+        commands={
+            {"/ustawienia pomoc", "ta pomoc"},
+            {"/cvip ustawienia", "otwórz panel"},
+            {"/cvip moduly", "lista stanów modułów"},
         },
     })
 
-    self:register("system",{
+    self:register("system", {
         title="SYSTEM I AKTUALIZACJE",
         description={
-            "Kod ChimeraVIP jest przechowywany lokalnie w getMudletHomeDir()/ChimeraVIP/, a dane użytkownika w getMudletHomeDir()/ChimeraVIP-data/.",
-            "Updater sprawdza manifest na GitHubie i pobiera całą nową wersję do stagingu przed podmianą plików.",
+            "ChimeraVIP jest nakładką na oficjalne skrypty Chimery i nie edytuje ich kodu.",
+            "Kod nakładki jest aktualizowany z GitHuba, a dane użytkownika pozostają w ChimeraVIP-data.",
         },
         commands={
-            {"/cvip","pełna pomoc ChimeraVIP"},{"/cvip pomoc [sekcja]","pełna pomoc albo jedna sekcja"},
-            {"/cvip ustawienia","trwała konfiguracja użytkownika"},{"/cvip status","wersja ChimeraVIP i upstreamu"},
-            {"/cvip sprawdz","sprawdź aktualizację"},{"/cvip aktualizuj","pobierz i przeładuj najnowszą wersję"},
-            {"/cvip przeladuj","przeładuj lokalne moduły"},
+            {"/cvip", "główne informacje i lista modułów"},
+            {"/cvip status", "wersja ChimeraVIP i upstreamu"},
+            {"/cvip sprawdz", "sprawdź aktualizację"},
+            {"/cvip aktualizuj", "pobierz aktualizację"},
+            {"/cvip przeladuj", "przeładuj lokalne moduły"},
         },
     })
 end
 
-local function print_line(text,color)
-    hecho("\n"..(color or colors().text)..tostring(text or ""))
-end
+H.catalog = {
+    {"/ui pomoc",       "Interfejs",       "motyw, Quiet Footer i układ UI"},
+    {"/walka pomoc",    "Kolory walki",    "prefiksy siły obrażeń i integracja walki"},
+    {"/wsparcie pomoc", "Auto-wsparcie",   "automatyczne podążanie za celem lidera"},
+    {"/def pomoc",      "Obrona",          "sesyjne statystyki defensywy i sprzętu"},
+    {"/xp pomoc",       "Doświadczenie",   "XP/h, zabójstwa i typy mobów"},
+    {"/cechy pomoc",    "Cechy",           "formatowanie i snapshoty cech"},
+    {"/progres pomoc",  "Progres",         "historia rozwoju postaci powiązana z XP"},
+    {"/postacie pomoc", "Postacie",        "odmiany, relacje i kolorowanie imion"},
+    {"/ustawienia pomoc","Ustawienia",      "konfiguracja interfejsu i modułów"},
+}
 
 local function print_section(section)
-    local P=colors()
-    print_line("",P.text); print_line(section.title or "SEKCJA",P.lavender)
-    for _,text in ipairs(section.description or {}) do print_line("  "..tostring(text),P.text_muted) end
-    for _,item in ipairs(section.commands or {}) do
-        hecho("\n  "..P.mint..string.format("%-34s",tostring(item[1] or ""))..P.text_muted..tostring(item[2] or ""))
+    local P = colors()
+    print_line("", P.text)
+    print_line(section.title or "MODUL", P.lavender)
+    for _, text in ipairs(section.description or {}) do print_line("  " .. tostring(text), P.text_muted) end
+    if #(section.commands or {}) > 0 then print_line("", P.text) end
+    for _, item in ipairs(section.commands or {}) do
+        hecho("\n  " .. P.mint .. string.format("%-30s", tostring(item[1] or ""))
+            .. P.text_muted .. tostring(item[2] or ""))
     end
+end
+
+function H:show_summary()
+    local P = colors()
+    local upstream = type(C.get_upstream_version) == "function" and C:get_upstream_version() or "?"
+    hecho("\n\n" .. P.lavender .. "CHIMERAVIP " .. P.peach .. tostring(C.version or "?")
+        .. P.text_muted .. "  |  Chimera " .. tostring(upstream)
+        .. "\n" .. P.separator .. "============================================================")
+    print_line("Nakładka na oficjalne skrypty Chimera MUD. Moduły działają razem, ale każdy ma własną pomoc.", P.text_muted)
+    print_line("", P.text)
+    print_line("MODULY", P.lavender)
+    for _, row in ipairs(self.catalog) do
+        hecho("\n  " .. P.mint .. string.format("%-20s", row[1])
+            .. P.text .. string.format("%-18s", row[2])
+            .. P.text_muted .. row[3])
+    end
+    print_line("", P.text)
+    print_line("SYSTEM", P.lavender)
+    hecho("\n  " .. P.mint .. string.format("%-20s", "/cvip ustawienia") .. P.text_muted .. "panel ustawień")
+    hecho("\n  " .. P.mint .. string.format("%-20s", "/cvip sprawdz") .. P.text_muted .. "sprawdź aktualizację")
+    hecho("\n  " .. P.mint .. string.format("%-20s", "/cvip aktualizuj") .. P.text_muted .. "pobierz nową wersję")
+    hecho("\n  " .. P.mint .. string.format("%-20s", "/cvip status") .. P.text_muted .. "wersje ChimeraVIP i Chimery")
+end
+
+function H:resolve(section_id)
+    local id = tostring(section_id or ""):lower():gsub("^%s+", ""):gsub("%s+$", "")
+    local aliases = {
+        cechy="stats", progres="progression", exp="xp", ui="interface",
+        walka="combat", kolory="combat", combat="combat",
+        wsparcie="automation", auto="automation", automation="automation",
+        obrona="defense", def="defense", defense="defense",
+        postacie="postacie", characters="postacie",
+        ustawienia="settings", settings="settings", moduly="settings", modules="settings",
+        system="system",
+    }
+    return aliases[id] or id
 end
 
 function H:show(section_id)
-    local P=colors()
-    local upstream=type(C.get_upstream_version)=="function" and C:get_upstream_version() or "?"
-    hecho("\n\n"..P.lavender.."CHIMERAVIP "..P.peach..tostring(C.version or "?")..P.text_muted.."  |  Chimera "..tostring(upstream).."\n"..P.separator.."================================================================")
-
-    local id=tostring(section_id or ""):lower():gsub("^%s+",""):gsub("%s+$","")
-    if id~="" then
-        local aliases={
-            pomoc="system",help="system",cechy="stats",progres="progression",exp="xp",ui="interface",
-            walka="combat",kolory="combat",combat="combat",obrona="defense",def="defense",defense="defense",
-            ustawienia="settings",settings="settings",moduly="settings",modules="settings",
-        }
-        id=aliases[id] or id
-        local section=self.sections[id]
-        if not section then print_line("Nie znam sekcji '"..id.."'. Użyj /cvip, aby zobaczyć pełną pomoc.",P.rose); return end
-        print_section(section); print_line("",P.text); return
+    local id = tostring(section_id or ""):gsub("^%s+", ""):gsub("%s+$", "")
+    if id == "" then self:show_summary(); return end
+    id = self:resolve(id)
+    local section = self.sections[id]
+    if not section then
+        print_line("Nie znam modułu '" .. tostring(section_id) .. "'. Użyj /cvip, aby zobaczyć listę modułów.", colors().rose)
+        return
     end
+    local P = colors()
+    local upstream = type(C.get_upstream_version) == "function" and C:get_upstream_version() or "?"
+    hecho("\n\n" .. P.lavender .. "CHIMERAVIP " .. P.peach .. tostring(C.version or "?")
+        .. P.text_muted .. "  |  Chimera " .. tostring(upstream))
+    print_section(section)
+end
 
-    for _,key in ipairs(self.order) do local section=self.sections[key]; if section then print_section(section) end end
-    print_line("",P.text)
-    print_line("Szybki start: /xp  |  /def  |  /progres  |  /cvip ustawienia  |  /cvip sprawdz",P.peach)
+function H:install_aliases()
+    for _, id in ipairs(self.alias_ids or {}) do pcall(killAlias, id) end
+    self.alias_ids = {}
+    local function add(pattern, section)
+        local id = tempAlias(pattern, function() H:show(section) end)
+        if id then self.alias_ids[#self.alias_ids + 1] = id end
+    end
+    add([[^/ui (?:pomoc|help)$]], "interface")
+    add([[^/walka (?:pomoc|help)$]], "combat")
+    add([[^/wsparcie (?:pomoc|help)$]], "automation")
+    add([[^/cechy (?:pomoc|help)$]], "stats")
+    add([[^/progres pomoc$]], "progression")
+    add([[^/ustawienia (?:pomoc|help)$]], "settings")
 end
 
 H:register_defaults()
+H:install_aliases()
 return H
