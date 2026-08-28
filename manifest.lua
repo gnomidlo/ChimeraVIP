@@ -1,6 +1,6 @@
 return {
     name = "ChimeraVIP",
-    version = "0.82",
+    version = "0.83",
     tested_upstream = "2.6",
     raw_base = "https://raw.githubusercontent.com/gnomidlo/ChimeraVIP/main/",
     files = {
