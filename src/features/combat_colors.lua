@@ -13,14 +13,11 @@ chimera_overlay.combat_colors = C.combat_colors
 local D = C.combat_colors
 D.handlers = D.handlers or {}
 
--- Przy przejsciu ze starego standalone skryptu usuwamy jego tymczasowe
--- triggery, zeby nie dostac podwojnych prefiksow w tej samej sesji.
 if legacy_damage and legacy_damage ~= D then
     for _, id in ipairs(legacy_damage.damage_triggers or {}) do pcall(killTrigger, id) end
     if legacy_damage.learn_trigger then pcall(killTrigger, legacy_damage.learn_trigger) end
 end
 
--- Kompatybilnosc ze starszym standalone skryptem i stringowymi callbackami.
 chimera_damage = D
 
 D.min_line_length = 50
@@ -195,6 +192,12 @@ function D:show_prefix(key)
 
     local definition = self.definitions[key]
     if not definition then return end
+
+    -- Defense Tracker korzysta z tego samego, już zweryfikowanego triggera ANSI.
+    -- Nie tworzymy drugiego kompletu triggerów dla trafień w naszą postać.
+    if tostring(key):match("^otrzymane_") then
+        raiseEvent("chimeraVipIncomingHit", key, tostring(line or ""))
+    end
 
     local prefix_color = self.prefix_colors[definition.color]
     if not prefix_color then return end
