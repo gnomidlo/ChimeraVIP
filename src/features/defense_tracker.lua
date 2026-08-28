@@ -14,7 +14,11 @@ chimera_overlay.defense_tracker = D
 D.trigger_ids = D.trigger_ids or {}
 D.alias_ids = D.alias_ids or {}
 D.handlers = D.handlers or {}
+D.pending_hits = D.pending_hits or {}
 D.max_events = 200
+D.hit_delay = 0.06
+D.defense_grace_ms = 100
+D.recent_defense_ms = D.recent_defense_ms or 0
 D.started_at = D.started_at or os.time()
 
 local function colors()
@@ -34,6 +38,10 @@ local function normalize_item(s)
     s = trim(s):gsub("%s+", " ")
     s = s:gsub("[%.%!%?]+$", "")
     return s
+end
+
+local function now_ms()
+    return getEpochMs and getEpochMs() or (os.time() * 1000)
 end
 
 local function text_width(value)
@@ -66,7 +74,29 @@ local function sorted_pairs_by_count(t)
     return rows
 end
 
+function D:clear_pending_hits()
+    for _, pending in ipairs(self.pending_hits or {}) do
+        if pending.timer then pcall(killTimer, pending.timer) end
+        pending.cancelled = true
+    end
+    self.pending_hits = {}
+end
+
+function D:cancel_latest_pending_hit()
+    for i = #self.pending_hits, 1, -1 do
+        local pending = self.pending_hits[i]
+        if pending and not pending.cancelled then
+            pending.cancelled = true
+            if pending.timer then pcall(killTimer, pending.timer) end
+            table.remove(self.pending_hits, i)
+            return true
+        end
+    end
+    return false
+end
+
 function D:new_session()
+    self:clear_pending_hits()
     self.session = {
         miss=0,
         dodge=0,
@@ -79,6 +109,7 @@ function D:new_session()
         armor_items={},
         events={},
     }
+    self.recent_defense_ms = 0
     self.started_at = os.time()
 end
 
@@ -87,6 +118,11 @@ if type(D.session) ~= "table" then D:new_session() end
 function D:add_event(kind, detail, raw)
     local S = self.session
     if not S then self:new_session(); S = self.session end
+
+    if kind ~= "hit" then
+        self.recent_defense_ms = now_ms()
+        self:cancel_latest_pending_hit()
+    end
 
     if kind == "miss" then S.miss = S.miss + 1
     elseif kind == "dodge" then S.dodge = S.dodge + 1
@@ -118,20 +154,20 @@ function D:add_event(kind, detail, raw)
 end
 
 function D:is_defense_line(text)
-    local s = trim(text):lower()
-    return s:match("^lecz%s+udaje%s+ci%s+sie%s+oslonic%s+")
-        or s:match("^lecz%s+tobie%s+udaje%s+sie%s+oslonic%s+")
-        or s:match("^lecz%s+tobie%s+udaje%s+je%s+zbic%s+z%s+lini%s+ataku%s+")
-        or s:match("^lecz%s+tobie%s+udaje%s+sie%s+go%s+sparowac%s+")
-        or s:match("^lecz%s+tobie%s+udaje%s+sie%s+uniknac%s+tego%s+ciosu")
-        or s:match("^nie%s+udaje%s+sie%s+trafic%s+ciebie")
-        or s:match("^lecz%s+caly%s+impet%s+uderzenia%s+wyparowany%s+zostaje%s+przez%s+")
+    local s = trim(text):lower():gsub("%s+", " ")
+    return s:find("lecz udaje ci sie oslonic ", 1, true)
+        or s:find("lecz tobie udaje sie oslonic ", 1, true)
+        or s:find("lecz tobie udaje sie zbic je z lini ataku ", 1, true)
+        or s:find("lecz tobie udaje sie zbic je z linii ataku ", 1, true)
+        or s:find("lecz tobie udaje je zbic z lini ataku ", 1, true)
+        or s:find("lecz tobie udaje je zbic z linii ataku ", 1, true)
+        or s:find("lecz tobie udaje sie go sparowac ", 1, true)
+        or s:find("lecz tobie udaje sie uniknac tego ciosu", 1, true)
+        or s:find("nie udaje sie trafic ciebie", 1, true)
+        or s:find("lecz caly impet uderzenia wyparowany zostaje przez ", 1, true)
 end
 
-function D:on_incoming_hit(level, raw)
-    raw = tostring(raw or "")
-    if self:is_defense_line(raw) then return end
-
+function D:queue_incoming_hit(level, raw)
     local map = {
         otrzymane_brak="brak",
         otrzymane_niskie="niskie",
@@ -140,7 +176,25 @@ function D:on_incoming_hit(level, raw)
         brak="brak", niskie="niskie", srednie="srednie", wysokie="wysokie",
     }
     local normalized = map[tostring(level or "")]
-    if normalized then self:add_event("hit", normalized, raw) end
+    if not normalized then return end
+
+    -- Jeśli regex obrony zdążył odpalić przed callbackiem ANSI, nie twórz trafienia.
+    if now_ms() - (self.recent_defense_ms or 0) <= self.defense_grace_ms then return end
+
+    local pending = {level=normalized, raw=tostring(raw or ""), cancelled=false}
+    self.pending_hits[#self.pending_hits + 1] = pending
+
+    pending.timer = tempTimer(self.hit_delay, function()
+        if pending.cancelled then return end
+        for i, item in ipairs(D.pending_hits) do
+            if item == pending then table.remove(D.pending_hits, i); break end
+        end
+        D:add_event("hit", pending.level, pending.raw)
+    end)
+end
+
+function D:on_incoming_hit(level, raw)
+    self:queue_incoming_hit(level, raw)
 end
 
 function D:known_hits()
@@ -202,12 +256,6 @@ function D:show_summary()
     line_row("Obronione", defended, total, P.mint)
     line_row("Pancerz", S.armor, total, P.yellow)
     line_row("Przeszło (znane)", hits, total, P.rose)
-
-    if not self:zero_hits_complete() then
-        hecho("\n\n" .. P.peach .. "Uwaga: " .. P.text_muted
-            .. "otrzymane_brak ma ustawienie bez koloru (-1), więc trafienia 0/3 nie są jeszcze w pełni wykrywalne. "
-            .. "Procenty obejmują tylko znane próby ataku.")
-    end
 end
 
 local function show_items(title, table_data, color)
@@ -298,17 +346,23 @@ end
 function D:install_runtime()
     self:clear_runtime()
 
-    self:add_trigger([[^\s*lecz\s+(?:udaje\s+ci\s+sie|tobie\s+udaje\s+sie)\s+oslonic\s+(.+?)\.\s*$]],
+    -- Nie kotwiczymy do początku linii. Realny komunikat zaczyna się opisem ataku
+    -- i dopiero później zawiera ', lecz tobie udaje sie ...'.
+    self:add_trigger([[lecz\s+(?:udaje\s+ci\s+sie|tobie\s+udaje\s+sie)\s+oslonic\s+(.+?)\.\s*$]],
         [[chimera_vip.defense_tracker:add_event("block", matches[2], line)]])
-    self:add_trigger([[^\s*lecz\s+tobie\s+udaje\s+je\s+zbic\s+z\s+lini\s+ataku\s+(.+?)\.\s*$]],
+
+    self:add_trigger([[lecz\s+tobie\s+udaje\s+sie\s+zbic\s+je\s+z\s+linii?\s+ataku\s+(.+?)\.\s*$]],
         [[chimera_vip.defense_tracker:add_event("parry", matches[2], line)]])
-    self:add_trigger([[^\s*lecz\s+tobie\s+udaje\s+sie\s+go\s+sparowac\s+(.+?)\.\s*$]],
+    self:add_trigger([[lecz\s+tobie\s+udaje\s+je\s+zbic\s+z\s+linii?\s+ataku\s+(.+?)\.\s*$]],
         [[chimera_vip.defense_tracker:add_event("parry", matches[2], line)]])
-    self:add_trigger([[^\s*lecz\s+tobie\s+udaje\s+sie\s+uniknac\s+tego\s+ciosu\.\s*$]],
+    self:add_trigger([[lecz\s+tobie\s+udaje\s+sie\s+go\s+sparowac\s+(.+?)\.\s*$]],
+        [[chimera_vip.defense_tracker:add_event("parry", matches[2], line)]])
+
+    self:add_trigger([[lecz\s+tobie\s+udaje\s+sie\s+uniknac\s+tego\s+ciosu\.]],
         [[chimera_vip.defense_tracker:add_event("dodge", nil, line)]])
-    self:add_trigger([[^\s*nie\s+udaje\s+sie\s+trafic\s+ciebie\b.*$]],
+    self:add_trigger([[nie\s+udaje\s+sie\s+trafic\s+ciebie\b]],
         [[chimera_vip.defense_tracker:add_event("miss", nil, line)]])
-    self:add_trigger([[^\s*lecz\s+caly\s+impet\s+uderzenia\s+wyparowany\s+zostaje\s+przez\s+(.+?)\.\s*$]],
+    self:add_trigger([[lecz\s+caly\s+impet\s+uderzenia\s+wyparowany\s+zostaje\s+przez\s+(.+?)\.\s*$]],
         [[chimera_vip.defense_tracker:add_event("armor", matches[2], line)]])
 
     local ok,id = pcall(tempAlias,[[^/def(?:\s+(.*))?$]],[[chimera_vip.defense_tracker:command(matches[2] or "")]])
