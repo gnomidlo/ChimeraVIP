@@ -2,6 +2,7 @@ chimera_vip = chimera_vip or {}
 chimera_overlay = chimera_overlay or chimera_vip
 
 local C = chimera_vip
+local U = C.util
 C.help = C.help or {}
 local H = C.help
 
@@ -17,8 +18,23 @@ local function colors()
     }
 end
 
+local function width(value)
+    if U and U.text_width then return U.text_width(value) end
+    return #tostring(value or "")
+end
+
+local function pad(value, target)
+    if U and U.pad_right then return U.pad_right(value, target) end
+    local text=tostring(value or "")
+    return text .. string.rep(" ", math.max(0, target - #text))
+end
+
 local function print_line(text, color)
     hecho("\n" .. (color or colors().text) .. tostring(text or ""))
+end
+
+local function finish_output()
+    hecho("\n")
 end
 
 function H:register(id, data)
@@ -116,9 +132,7 @@ function H:register_defaults()
 
     self:register("progression", {
         title="PROGRES POSTACI",
-        description={
-            "Łączy snapshoty cech z XP i zapisuje historię rozwoju osobno dla każdej postaci.",
-        },
+        description={"Łączy snapshoty cech z XP i zapisuje historię rozwoju osobno dla każdej postaci."},
         commands={
             {"/progres", "stan aktualnej postaci"},
             {"/progres historia [N]", "ostatnie zmiany"},
@@ -143,9 +157,7 @@ function H:register_defaults()
 
     self:register("settings", {
         title="USTAWIENIA",
-        description={
-            "Trwałe ustawienia ChimeraVIP: rozmiar oficjalnych okien stanów i przełączniki modułów.",
-        },
+        description={"Trwałe ustawienia ChimeraVIP: rozmiar oficjalnych okien stanów i przełączniki modułów."},
         commands={
             {"/ustawienia pomoc", "ta pomoc"},
             {"/cvip ustawienia", "otwórz panel"},
@@ -170,15 +182,15 @@ function H:register_defaults()
 end
 
 H.catalog = {
-    {"/ui pomoc",       "Interfejs",       "motyw, Quiet Footer i układ UI"},
-    {"/walka pomoc",    "Kolory walki",    "prefiksy siły obrażeń i integracja walki"},
-    {"/wsparcie pomoc", "Auto-wsparcie",   "automatyczne podążanie za celem lidera"},
-    {"/def pomoc",      "Obrona",          "sesyjne statystyki defensywy i sprzętu"},
-    {"/xp pomoc",       "Doświadczenie",   "XP/h, zabójstwa i typy mobów"},
-    {"/cechy pomoc",    "Cechy",           "formatowanie i snapshoty cech"},
-    {"/progres pomoc",  "Progres",         "historia rozwoju postaci powiązana z XP"},
-    {"/postacie pomoc", "Postacie",        "odmiany, relacje i kolorowanie imion"},
-    {"/ustawienia pomoc","Ustawienia",      "konfiguracja interfejsu i modułów"},
+    {"/ui pomoc",        "Interfejs",     "motyw, Quiet Footer i układ UI"},
+    {"/walka pomoc",     "Kolory walki",  "prefiksy siły obrażeń i integracja walki"},
+    {"/wsparcie pomoc",  "Auto-wsparcie", "automatyczne podążanie za celem lidera"},
+    {"/def pomoc",       "Obrona",        "sesyjne statystyki defensywy i sprzętu"},
+    {"/xp pomoc",        "Doświadczenie", "XP/h, zabójstwa i typy mobów"},
+    {"/cechy pomoc",     "Cechy",         "formatowanie i snapshoty cech"},
+    {"/progres pomoc",   "Progres",       "historia rozwoju postaci powiązana z XP"},
+    {"/postacie pomoc",  "Postacie",      "odmiany, relacje i kolorowanie imion"},
+    {"/ustawienia pomoc", "Ustawienia",    "konfiguracja interfejsu i modułów"},
 }
 
 local function print_section(section)
@@ -186,11 +198,17 @@ local function print_section(section)
     print_line("", P.text)
     print_line(section.title or "MODUL", P.lavender)
     for _, text in ipairs(section.description or {}) do print_line("  " .. tostring(text), P.text_muted) end
-    if #(section.commands or {}) > 0 then print_line("", P.text) end
-    for _, item in ipairs(section.commands or {}) do
-        hecho("\n  " .. P.mint .. string.format("%-30s", tostring(item[1] or ""))
-            .. P.text_muted .. tostring(item[2] or ""))
+    local commands = section.commands or {}
+    if #commands > 0 then
+        print_line("", P.text)
+        local command_width = 0
+        for _, item in ipairs(commands) do command_width = math.max(command_width, width(item[1])) end
+        command_width = command_width + 2
+        for _, item in ipairs(commands) do
+            hecho("\n  " .. P.mint .. pad(item[1], command_width) .. P.text_muted .. tostring(item[2] or ""))
+        end
     end
+    finish_output()
 end
 
 function H:show_summary()
@@ -202,17 +220,36 @@ function H:show_summary()
     print_line("Nakładka na oficjalne skrypty Chimera MUD. Moduły działają razem, ale każdy ma własną pomoc.", P.text_muted)
     print_line("", P.text)
     print_line("MODULY", P.lavender)
+
+    local command_width, title_width = 0, 0
     for _, row in ipairs(self.catalog) do
-        hecho("\n  " .. P.mint .. string.format("%-20s", row[1])
-            .. P.text .. string.format("%-18s", row[2])
+        command_width = math.max(command_width, width(row[1]))
+        title_width = math.max(title_width, width(row[2]))
+    end
+    command_width = command_width + 2
+    title_width = title_width + 2
+
+    for _, row in ipairs(self.catalog) do
+        hecho("\n  " .. P.mint .. pad(row[1], command_width)
+            .. P.text .. pad(row[2], title_width)
             .. P.text_muted .. row[3])
     end
+
     print_line("", P.text)
     print_line("SYSTEM", P.lavender)
-    hecho("\n  " .. P.mint .. string.format("%-20s", "/cvip ustawienia") .. P.text_muted .. "panel ustawień")
-    hecho("\n  " .. P.mint .. string.format("%-20s", "/cvip sprawdz") .. P.text_muted .. "sprawdź aktualizację")
-    hecho("\n  " .. P.mint .. string.format("%-20s", "/cvip aktualizuj") .. P.text_muted .. "pobierz nową wersję")
-    hecho("\n  " .. P.mint .. string.format("%-20s", "/cvip status") .. P.text_muted .. "wersje ChimeraVIP i Chimery")
+    local system_rows = {
+        {"/cvip ustawienia", "panel ustawień"},
+        {"/cvip sprawdz", "sprawdź aktualizację"},
+        {"/cvip aktualizuj", "pobierz nową wersję"},
+        {"/cvip status", "wersje ChimeraVIP i Chimery"},
+    }
+    local system_width = 0
+    for _, row in ipairs(system_rows) do system_width = math.max(system_width, width(row[1])) end
+    system_width = system_width + 2
+    for _, row in ipairs(system_rows) do
+        hecho("\n  " .. P.mint .. pad(row[1], system_width) .. P.text_muted .. row[2])
+    end
+    finish_output()
 end
 
 function H:resolve(section_id)
@@ -236,6 +273,7 @@ function H:show(section_id)
     local section = self.sections[id]
     if not section then
         print_line("Nie znam modułu '" .. tostring(section_id) .. "'. Użyj /cvip, aby zobaczyć listę modułów.", colors().rose)
+        finish_output()
         return
     end
     local P = colors()
@@ -256,7 +294,7 @@ function H:install_aliases()
     add([[^/walka (?:pomoc|help)$]], "combat")
     add([[^/wsparcie (?:pomoc|help)$]], "automation")
     add([[^/cechy (?:pomoc|help)$]], "stats")
-    add([[^/progres pomoc$]], "progression")
+    add([[^/progres (?:pomoc|help)$]], "progression")
     add([[^/ustawienia (?:pomoc|help)$]], "settings")
 end
 
