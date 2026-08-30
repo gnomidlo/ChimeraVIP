@@ -145,15 +145,16 @@ function R:rebuild_highlight_trigger()
     self.highlight_trigger=tempRegexTrigger("(?<![A-Za-z0-9_])(?:"..table.concat(forms,"|")..")(?![A-Za-z0-9_])",[[chimera_vip.characters:color_current_line()]])
 end
 function R:show_help()
-    if C.characters_help_panel and type(C.characters_help_panel.open)=="function" and C.characters_help_panel:open() then return end
-    local P=palette(); local rows={{"odmien <imie>","zapisz lub odśwież odmianę"},{"/postacie","lista postaci"},{"/postacie szukaj <tekst>","szukaj po imieniu lub odmianie"},{"/postacie grupa <imie> p / n / w / ?","przypisz relację"},{"/postacie highlight <imie> on / off","kolorowanie jednej postaci"},{"/postacie info <imie>","pokaż odmianę"},{"/postacie kolor <grupa> <0-255 lub #RRGGBB>","ustaw kolor"},{"/postacie usun <imie>","usuń z bazy"},{"/postacie on / off","globalny highlight"},{"/postacie pomoc","ta pomoc"}}
+    local P=palette(); local rows={{"odmien <imie>","zapisz lub odśwież odmianę"},{"/postacie","lista postaci"},{"/postacie szukaj <tekst>","szukaj po imieniu lub odmianie"},{"/postacie grupa <imie> p / n / w / ?","przypisz relację"},{"/postacie highlight <imie> on / off","kolorowanie jednej postaci"},{"/postacie info <imie>","pokaż odmianę"},{"/postacie kolor","otwórz selektor kolorów grup"},{"/postacie kolor <grupa> <0-255 lub #RRGGBB>","ustaw kolor ręcznie"},{"/postacie usun <imie>","usuń z bazy"},{"/postacie on / off","globalny highlight"},{"/postacie pomoc","ta pomoc"}}
     local w=0; for _,row in ipairs(rows) do w=math.max(w,utf8_len(row[1])) end; w=w+2
     hecho("\n\n"..P.lavender.."POSTACIE — POMOC\n"..P.separator.."-------------------------------------------------------")
     for _,row in ipairs(rows) do hecho("\n"..P.text..pad(row[1],w)..P.text_muted..row[2]) end; finish_output()
+    if C.characters_help_panel and type(C.characters_help_panel.open)=="function" then C.characters_help_panel:open() end
 end
 function R:command(argument)
     local raw=trim(argument); local lower=raw:lower(); if raw=="" then self:show(); return end
     if lower=="help" or lower=="pomoc" then self:show_help(); return end
+    if lower=="kolor" or lower=="kolory" then if C.characters_help_panel and type(C.characters_help_panel.open)=="function" then C.characters_help_panel:open() else self:show_help() end; return end
     if lower=="on" then self:set_highlight_enabled(true); return end; if lower=="off" then self:set_highlight_enabled(false); return end
     local normalized_filter=self:normalize_group(lower); if normalized_filter~=nil and (lower~="p" and lower~="n" and lower~="w" and lower~="?") then self:show(lower); return end
     local name,group=raw:match("^grupa%s+(.+)%s+(%S+)$"); if name then self:set_group(name,group); return end
@@ -172,6 +173,6 @@ function R:install()
 end
 if C.settings and type(C.settings.register_module)=="function" then C.settings:register_module("postacie",{title="Postacie",description="Rejestr odmian, relacji i kolorowanie nazw.",default=true}) end
 if U and U.replace_handler then U.replace_handler(R,"module_changed","chimeraVipModuleChanged",function(_,id) if tostring(id)=="postacie" then R:install() end end) end
-if C.help and type(C.help.register)=="function" then C.help:register("postacie",{title="POSTACIE I RELACJE",description={"Wynik komendy 'odmien <imie>' zapisuje wszystkie szesc form imienia.","Nowa postac pozostaje nieprzypisana, dopoki nie wybierzesz relacji: przyjaciel, neutralny albo wrog.","Modul utrzymuje szybki indeks wszystkich odmian i cache highlightow; baza jest zapisywana w ChimeraVIP-data/characters.lua.","API dla innych modulow: chimera_vip.characters:get(<imie>, <przypadek>)."},commands={{"odmien <imie>","zapisz albo odswiez odmiane"},{"/postacie","lista postaci"},{"/postacie szukaj <tekst>","szukaj po nazwie lub odmianie"},{"/postacie grupa <imie> p / n / w / ?","ustaw relacje lub brak"},{"/postacie highlight <imie> on / off","kolorowanie konkretnej postaci"},{"/postacie info <imie>","pokaz wszystkie formy"}}}) end
+if C.help and type(C.help.register)=="function" then C.help:register("postacie",{title="POSTACIE I RELACJE",description={"Wynik komendy 'odmien <imie>' zapisuje wszystkie szesc form imienia.","Nowa postac pozostaje nieprzypisana, dopoki nie wybierzesz relacji: przyjaciel, neutralny albo wrog.","Modul utrzymuje szybki indeks wszystkich odmian i cache highlightow; baza jest zapisywana w ChimeraVIP-data/characters.lua.","API dla innych modulow: chimera_vip.characters:get(<imie>, <przypadek>)."},commands={{"odmien <imie>","zapisz albo odswiez odmiane"},{"/postacie","lista postaci"},{"/postacie szukaj <tekst>","szukaj po nazwie lub odmianie"},{"/postacie grupa <imie> p / n / w / ?","ustaw relacje lub brak"},{"/postacie highlight <imie> on / off","kolorowanie konkretnej postaci"},{"/postacie info <imie>","pokaz wszystkie formy"},{"/postacie kolor","otworz selektor kolorow grup"}}}) end
 R:load(); R:install(); raiseEvent("chimeraVipCharactersReady",R.data)
 return R

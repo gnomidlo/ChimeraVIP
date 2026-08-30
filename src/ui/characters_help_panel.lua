@@ -1,5 +1,5 @@
--- ChimeraVIP / Characters Help Panel
--- Klikalna pomoc modulu Postacie w stylistyce panelu ustawien.
+-- ChimeraVIP / Characters Color Panel
+-- Klikalny wybor kolorow grup w stylistyce panelu ustawien.
 
 chimera_vip = chimera_vip or {}
 chimera_overlay = chimera_overlay or chimera_vip
@@ -18,7 +18,19 @@ end
 HP.handlers = HP.handlers or {}
 HP.root = nil
 HP.widgets = {}
+HP.rows = {}
 HP.visible = false
+
+HP.presets = {
+    "#A8DCC2", "#AFCBF4", "#C7B9E8", "#F2C4A0",
+    "#EFD8A6", "#F0A8B8", "#D8DCE6", "#E8A87C",
+}
+
+HP.groups = {
+    {id="przyjaciele", label="PRZYJACIELE", accent="mint"},
+    {id="neutralni", label="NEUTRALNI", accent="text"},
+    {id="wrogowie", label="WROGOWIE", accent="rose"},
+}
 
 local function palette()
     if C.pastel_ui and C.pastel_ui.colors then return C.pastel_ui.colors end
@@ -30,16 +42,14 @@ local function palette()
     }
 end
 
-local function html_escape(value)
-    return tostring(value or "")
-        :gsub("&", "&amp;")
-        :gsub("<", "&lt;")
-        :gsub(">", "&gt;")
-end
-
 local function transparent_css()
     if U and type(U.transparent_css) == "function" then return U.transparent_css() end
     return "QLabel {background-color:transparent;border:0px;padding:0px;}"
+end
+
+local function normalized_hex(value)
+    local hex = tostring(value or ""):match("^#?(%x%x%x%x%x%x)$")
+    return hex and ("#" .. hex:upper()) or nil
 end
 
 function HP:destroy()
@@ -49,6 +59,7 @@ function HP:destroy()
     end
     self.root = nil
     self.widgets = {}
+    self.rows = {}
     self.visible = false
 end
 
@@ -67,63 +78,112 @@ function HP:remember(widget)
     return widget
 end
 
-function HP:fill_command(value)
+function HP:current_hex(group)
+    local characters = C.characters
+    if not characters or not characters.data or not characters.data.colors then return "#D8DCE6" end
+    local value = characters.data.colors[group]
+    local direct = normalized_hex(value)
+    if direct then return direct end
+    if type(characters.color_to_rgb) == "function" then
+        local r, g, b = characters:color_to_rgb(value)
+        if r then return string.format("#%02X%02X%02X", r, g, b) end
+    end
+    return "#D8DCE6"
+end
+
+function HP:fill_custom_command(group)
+    local command = "/postacie kolor " .. group .. " #RRGGBB"
     if type(setCmdLine) == "function" then
-        setCmdLine(value)
+        setCmdLine(command)
         return
     end
     local c = palette()
-    hecho("\n" .. c.text_muted .. "[Postacie] Komenda: " .. c.text .. value .. "\n")
+    hecho("\n" .. c.text_muted .. "[Postacie] Komenda: " .. c.text .. command .. "\n")
 end
 
-function HP:command_css()
+function HP:set_group_color(group, color)
+    if C.characters and type(C.characters.set_color) == "function" then
+        C.characters:set_color(group, color)
+        self:update()
+    end
+end
+
+function HP:swatch_css(color, selected)
     local c = palette()
-    return "QLabel {background-color:" .. c.background .. ";color:" .. c.mint
-        .. ";border:1px solid " .. c.separator .. ";border-radius:4px;padding:0px 7px;} "
+    return "QLabel {background-color:" .. color .. ";border:" .. (selected and "3px" or "1px")
+        .. " solid " .. (selected and c.lavender or c.separator)
+        .. ";border-radius:4px;padding:0px;} QLabel:hover {border:2px solid " .. c.text .. ";}"
+end
+
+function HP:custom_css()
+    local c = palette()
+    return "QLabel {background-color:" .. c.background .. ";color:" .. c.text_muted
+        .. ";border:1px solid " .. c.separator .. ";border-radius:4px;padding:0px;} "
         .. "QLabel:hover {border-color:" .. c.lavender .. ";color:" .. c.lavender .. ";}"
 end
 
-function HP:add_section(prefix, x, y, width, height, title, accent, rows, note)
+function HP:update()
+    if not self.visible then return end
     local c = palette()
+    for group, row in pairs(self.rows or {}) do
+        local current = self:current_hex(group)
+        row.preview:setStyleSheet("QLabel {background-color:" .. current .. ";border:1px solid "
+            .. c.separator .. ";border-radius:4px;padding:0px;}")
+        row.value:echo("<font color='" .. c.text .. "'>" .. current .. "</font>")
+        for color, swatch in pairs(row.swatches) do
+            swatch:setStyleSheet(self:swatch_css(color, color == current))
+        end
+    end
+end
+
+function HP:add_group_row(prefix, definition, y)
+    local c = palette()
+    local group = definition.id
     local card = self:remember(Geyser.Label:new({
-        name=prefix .. ".card", x=x, y=y, width=width, height=height,
+        name=prefix .. ".card", x=14, y=y, width=652, height=58,
     }, self.root))
     card:setStyleSheet("QLabel {background-color:" .. c.background_soft .. ";border:1px solid "
         .. c.separator .. ";border-radius:5px;padding:0px;}")
 
-    local heading = self:remember(Geyser.Label:new({
-        name=prefix .. ".title", x=10, y=8, width=width - 20, height=20, fontSize=9,
+    local label = self:remember(Geyser.Label:new({
+        name=prefix .. ".label", x=12, y=18, width=112, height=22, fontSize=8,
     }, card))
-    heading:setStyleSheet(transparent_css())
-    heading:echo("<font color='" .. accent .. "'>" .. html_escape(title) .. "</font>")
+    label:setStyleSheet(transparent_css())
+    label:echo("<font color='" .. (c[definition.accent] or c.text) .. "'>" .. definition.label .. "</font>")
 
-    for index, row in ipairs(rows) do
-        local row_y = 36 + (index - 1) * 50
-        local command = row.command
-        local button = self:remember(Geyser.Label:new({
-            name=prefix .. ".command." .. index, x=10, y=row_y, width=width - 20, height=23, fontSize=8,
-        }, card))
-        button:setStyleSheet(self:command_css())
-        button:echo(html_escape(row.label or command))
-        button:setClickCallback(function() HP:fill_command(command) end)
-        pcall(setLabelCursor, button.name, "PointingHand")
-        pcall(setLabelToolTip, button.name, "Kliknij, aby wstawic komende do linii polecen.", 8)
+    local preview = self:remember(Geyser.Label:new({
+        name=prefix .. ".preview", x=122, y=11, width=36, height=36,
+    }, card))
 
-        local description = self:remember(Geyser.Label:new({
-            name=prefix .. ".description." .. index, x=12, y=row_y + 25,
-            width=width - 24, height=18, fontSize=7,
+    local value = self:remember(Geyser.Label:new({
+        name=prefix .. ".value", x=168, y=18, width=70, height=22, fontSize=8,
+    }, card))
+    value:setStyleSheet(transparent_css())
+
+    local swatches = {}
+    local start_x, size, gap = 238, 30, 6
+    for index, color in ipairs(self.presets) do
+        local selected_color = color
+        local swatch = self:remember(Geyser.Label:new({
+            name=prefix .. ".swatch." .. index,
+            x=start_x + (index - 1) * (size + gap), y=14, width=size, height=size,
         }, card))
-        description:setStyleSheet(transparent_css())
-        description:echo("<font color='" .. c.text_muted .. "'>" .. html_escape(row.description) .. "</font>")
+        swatch:setClickCallback(function() HP:set_group_color(group, selected_color) end)
+        pcall(setLabelCursor, swatch.name, "PointingHand")
+        pcall(setLabelToolTip, swatch.name, "Ustaw " .. selected_color .. " dla grupy " .. group .. ".", 8)
+        swatches[selected_color] = swatch
     end
 
-    if note then
-        local info = self:remember(Geyser.Label:new({
-            name=prefix .. ".note", x=12, y=height - 54, width=width - 24, height=42, fontSize=7,
-        }, card))
-        info:setStyleSheet(transparent_css())
-        info:echo("<font color='" .. c.text_muted .. "'>" .. html_escape(note) .. "</font>")
-    end
+    local custom = self:remember(Geyser.Label:new({
+        name=prefix .. ".custom", x=534, y=14, width=104, height=30, fontSize=8,
+    }, card))
+    custom:setStyleSheet(self:custom_css())
+    custom:echo("<center>WLASNY HEX</center>")
+    custom:setClickCallback(function() HP:fill_custom_command(group) end)
+    pcall(setLabelCursor, custom.name, "PointingHand")
+    pcall(setLabelToolTip, custom.name, "Wstaw komende z wlasnym kolorem #RRGGBB.", 8)
+
+    self.rows[group] = {preview=preview, value=value, swatches=swatches}
 end
 
 function HP:open()
@@ -131,22 +191,22 @@ function HP:open()
 
     self:destroy()
     local c = palette()
-    local pw, ph = 800, 520
+    local pw, ph = 680, 286
     local x, y = self:panel_position(pw, ph)
-    local prefix = "chimera_vip.characters_help_panel." .. tostring(os.time()) .. "." .. tostring(math.random(1000, 9999))
+    local prefix = "chimera_vip.characters_color_panel." .. tostring(os.time()) .. "." .. tostring(math.random(1000, 9999))
 
     self.root = Geyser.Label:new({name=prefix .. ".root", x=x, y=y, width=pw, height=ph})
     self.root:setStyleSheet("QLabel {background-color:" .. c.background .. ";border:1px solid "
         .. c.separator .. ";border-radius:7px;padding:0px;}")
 
     local title = self:remember(Geyser.Label:new({
-        name=prefix .. ".title", x=14, y=8, width=690, height=22, fontSize=10,
+        name=prefix .. ".title", x=14, y=8, width=580, height=22, fontSize=10,
     }, self.root))
     title:setStyleSheet(transparent_css())
-    title:echo("<font color='" .. c.lavender .. "'>POSTACIE — POMOC</font>")
+    title:echo("<font color='" .. c.lavender .. "'>POSTACIE — KOLORY GRUP</font>")
 
     local close = self:remember(Geyser.Label:new({
-        name=prefix .. ".close", x=763, y=6, width=25, height=22, fontSize=11,
+        name=prefix .. ".close", x=643, y=6, width=25, height=22, fontSize=11,
     }, self.root))
     close:setStyleSheet("QLabel {background-color:transparent;color:" .. c.text_muted
         .. ";border:0px;padding:0px;} QLabel:hover {color:" .. c.rose .. ";}")
@@ -155,36 +215,19 @@ function HP:open()
     pcall(setLabelCursor, close.name, "PointingHand")
 
     local subtitle = self:remember(Geyser.Label:new({
-        name=prefix .. ".subtitle", x=14, y=34, width=760, height=18, fontSize=8,
+        name=prefix .. ".subtitle", x=14, y=34, width=640, height=18, fontSize=8,
     }, self.root))
     subtitle:setStyleSheet(transparent_css())
     subtitle:echo("<font color='" .. c.text_muted
-        .. "'>Odmiany, relacje i kolorowanie imion — kliknij komende, aby wstawic ja do linii polecen.</font>")
+        .. "'>Wybierz pastelowa probke albo kliknij WLASNY HEX, aby wpisac dowolny kolor.</font>")
 
-    self:add_section(prefix .. ".basic", 14, 62, 379, 192, "PODSTAWOWE", c.blue, {
-        {label="odmien <imie>", command="odmien <imie>", description="Zapisz lub odswiez wszystkie szesc odmian imienia."},
-        {label="/postacie", command="/postacie", description="Pokaz liste zapisanych postaci i szybkie akcje."},
-        {label="/postacie szukaj <tekst>", command="/postacie szukaj <tekst>", description="Szukaj po imieniu albo dowolnej znanej odmianie."},
-    })
-
-    self:add_section(prefix .. ".relations", 14, 264, 379, 242, "RELACJE", c.mint, {
-        {label="/postacie grupa <imie> p / n / w / ?", command="/postacie grupa <imie> p", description="Ustaw przyjaciela, neutralnego, wroga albo brak relacji."},
-        {label="/postacie highlight <imie> on / off", command="/postacie highlight <imie> on", description="Wlacz lub wylacz kolorowanie tylko tej postaci."},
-        {label="/postacie info <imie>", command="/postacie info <imie>", description="Pokaz relacje, highlight i wszystkie zapisane formy."},
-    })
-
-    self:add_section(prefix .. ".colors", 407, 62, 379, 192, "KOLORY I WIDOCZNOSC", c.peach, {
-        {label="/postacie kolor <grupa> <0-255 lub #RRGGBB>", command="/postacie kolor przyjaciele #A8DCC2", description="Ustaw kolor przyjaciol, neutralnych albo wrogow."},
-        {label="/postacie on / off", command="/postacie on", description="Globalnie wlacz lub wylacz kolorowanie zapisanych imion."},
-    }, "Kolory i globalny highlight sa zapisywane w ChimeraVIP-data/characters.lua.")
-
-    self:add_section(prefix .. ".manage", 407, 264, 379, 242, "ZARZADZANIE", c.yellow, {
-        {label="/postacie usun <imie>", command="/postacie usun <imie>", description="Usun postac wraz ze wszystkimi zapisanymi odmianami."},
-        {label="/postacie pomoc", command="/postacie pomoc", description="Ponownie otworz to okno pomocy."},
-    }, "Na liscie i w widoku info przycisk [USUN] zawsze prosi o potwierdzenie.")
+    for index, definition in ipairs(self.groups) do
+        self:add_group_row(prefix .. "." .. definition.id, definition, 62 + (index - 1) * 66)
+    end
 
     self.visible = true
     self.root:show()
+    self:update()
     return true
 end
 
