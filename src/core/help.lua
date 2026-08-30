@@ -182,14 +182,15 @@ function H:register_defaults()
 end
 
 H.catalog = {
-    {"/ui pomoc",        "Interfejs",     "motyw, Quiet Footer i układ UI"},
-    {"/walka pomoc",     "Kolory walki",  "prefiksy siły obrażeń i integracja walki"},
-    {"/wsparcie pomoc",  "Auto-wsparcie", "automatyczne podążanie za celem lidera"},
-    {"/def pomoc",       "Obrona",        "sesyjne statystyki defensywy i sprzętu"},
-    {"/xp pomoc",        "Doświadczenie", "XP/h, zabójstwa i typy mobów"},
-    {"/cechy pomoc",     "Cechy",         "formatowanie i snapshoty cech"},
-    {"/progres pomoc",   "Progres",       "historia rozwoju postaci powiązana z XP"},
-    {"/postacie pomoc",  "Postacie",      "odmiany, relacje i kolorowanie imion"},
+    {"/ui pomoc",         "Interfejs",     "motyw, Quiet Footer i układ UI"},
+    {"/walka pomoc",      "Kolory walki",  "prefiksy siły obrażeń i integracja walki"},
+    {"/wsparcie pomoc",   "Auto-wsparcie", "automatyczne podążanie za celem lidera"},
+    {"/def pomoc",        "Obrona",        "sesyjne statystyki defensywy i sprzętu"},
+    {"/xp pomoc",         "Doświadczenie", "XP/h, zabójstwa i typy mobów"},
+    {"/bron pomoc",       "Bron",          "skrocone parametry wywazenia i skutecznosci"},
+    {"/cechy pomoc",      "Cechy",         "formatowanie i snapshoty cech"},
+    {"/progres pomoc",    "Progres",       "historia rozwoju postaci powiązana z XP"},
+    {"/postacie pomoc",   "Postacie",      "odmiany, relacje i kolorowanie imion"},
     {"/ustawienia pomoc", "Ustawienia",    "konfiguracja interfejsu i modułów"},
 }
 
@@ -259,6 +260,7 @@ function H:resolve(section_id)
         walka="combat", kolory="combat", combat="combat",
         wsparcie="automation", auto="automation", automation="automation",
         obrona="defense", def="defense", defense="defense",
+        bron="weapon", weapon="weapon",
         postacie="postacie", characters="postacie",
         ustawienia="settings", settings="settings", moduly="settings", modules="settings",
         system="system",
