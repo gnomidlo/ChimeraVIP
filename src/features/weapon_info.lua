@@ -285,7 +285,7 @@ function W:install()
         function() W:on_physical(matches[2], matches[3], matches[4]) end
     )
     self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
-        [[^Wydaje ci sie, ze jest wart(?:a|e)? (\d+) miedziakow\.\s*$]],
+        [[^Wydaje ci sie, ze jest wart(?:a|e)? (\d+) miedziak(?:i|ow)?\.\s*$]],
         function() W:on_value(matches[2]) end
     )
     self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
