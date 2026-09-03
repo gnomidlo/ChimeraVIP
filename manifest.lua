@@ -1,11 +1,11 @@
 return {
     name = "ChimeraVIP",
-    version = "0.95",
+    version = "0.96",
     tested_upstream = "2.6",
     raw_base = "https://raw.githubusercontent.com/gnomidlo/ChimeraVIP/main/",
     changes = {
-        "Ekwipunek: kolorowe RECE, EKWIPUNEK i PRZY SOBIE",
-        "QoL: formatowanie przez cReplace bez przebudowy tresci linii",
+        "Hotfix: formatowanie ekwipunku dziala od poczatku linii",
+        "Ekwipunek: RECE, EKWIPUNEK i PRZY SOBIE przez cReplace",
     },
     files = {
         "loader.lua",
