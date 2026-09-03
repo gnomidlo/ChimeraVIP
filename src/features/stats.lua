@@ -30,20 +30,7 @@ ST.data_file = data_dir .. "/progression.lua"
 local colors = U.palette
 local trim = U.trim
 local fmt_int = U.format_int
-
-local function copy_table(source)
-    local out = {}
-    for k, v in pairs(source or {}) do
-        if type(v) == "table" then
-            local child = {}
-            for ck, cv in pairs(v) do child[ck] = cv end
-            out[k] = child
-        else
-            out[k] = v
-        end
-    end
-    return out
-end
+local copy_table = U.deep_copy
 
 local function safe_key(name)
     return tostring(name or ""):lower()
@@ -294,18 +281,17 @@ function ST:show_history(count)
     hecho("\n")
 end
 
--- Hot reload: usuwamy nasze tymczasowe triggery i aliasy.
 U.clear_triggers(ST)
 U.clear_aliases(ST)
 
--- Migracja 0.94: wyczysc handlery i aliasy starego modulu /progres z biezacej sesji.
+-- Zostawiamy tylko cleanup obiektow runtime po bardzo starym hot-reloadzie.
+-- Plik progression.lua jest od 0.101 usuwany centralnie przez manifest.remove.
 if C.progression then
     for _, id in ipairs(C.progression.alias_ids or {}) do pcall(killAlias, id) end
     for _, id in pairs(C.progression.handlers or {}) do pcall(killAnonymousEventHandler, id) end
 end
 C.progression = nil
 chimera_overlay.progression = nil
-if C.root_dir then pcall(os.remove, C.root_dir .. "/src/features/progression.lua") end
 
 ST:load_data()
 ST:flush_pending_xp()
@@ -313,7 +299,6 @@ ST:flush_pending_xp()
 U.replace_handler(ST, "xp", "chimeraVipXpGained", function(_, amount) ST:on_xp(amount) end)
 U.replace_handler(ST, "char_name", "gmcp.Char.Name", function() ST:flush_pending_xp() end)
 
--- Naglowek postepow.
 ST.trigger_ids[#ST.trigger_ids + 1] = tempRegexTrigger(
     [[^[ \t]*(?:[Nn]ie\s+)?[Pp]oczyni]],
     function()
@@ -345,7 +330,6 @@ ST.trigger_ids[#ST.trigger_ids + 1] = tempRegexTrigger(
     end
 )
 
--- Linie cech.
 ST.trigger_ids[#ST.trigger_ids + 1] = tempRegexTrigger(
     [[^[ \t]*([Ss]il|[Zz]r|[Ww]t|[Ii]nt|[Mm]d|[Oo]dw):]],
     function()
