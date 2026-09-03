@@ -51,15 +51,16 @@ local groups = {
 
 for _, item in ipairs(groups) do
     local group = item.group
+    local default = item.default
     S:register_setting(item.id, {
         type="color", section="characters", order=item.order,
         title=item.title,
         description="Kolor highlightu grupy " .. group .. ". Klikniecie przechodzi po pastelowej palecie ChimeraVIP.",
-        default=item.default,
+        default=default,
         options=COLOR_OPTIONS,
         getter=function()
             local colors=C.characters and C.characters.data and C.characters.data.colors
-            return colors and colors[group] or item.default
+            return colors and colors[group] or default
         end,
         setter=function(value)
             if not C.characters or type(C.characters.set_color) ~= "function" then return false end
