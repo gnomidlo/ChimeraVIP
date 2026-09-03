@@ -10,16 +10,18 @@ UP.raw_base = "https://raw.githubusercontent.com/gnomidlo/ChimeraVIP/main/"
 UP.root_dir = C.root_dir or (getMudletHomeDir() .. "/ChimeraVIP")
 UP.staging_dir = UP.root_dir .. "/.staging"
 UP.manifest_path = UP.staging_dir .. "/manifest.lua"
+UP.installed_manifest_path = UP.root_dir .. "/installed_manifest.lua"
 UP.pending = UP.pending or {}
 UP.mode = nil
 UP.remote_manifest = nil
+UP.install_plan = nil
 UP.auto_checked = UP.auto_checked or false
 
 local function out(text, color)
     cecho("\n<" .. (color or "light_grey") .. ">[ChimeraVIP]<reset> " .. tostring(text) .. "\n")
 end
 
-local function trim(value)
+local trim = U and U.trim or function(value)
     return tostring(value or ""):gsub("^%s+", ""):gsub("%s+$", "")
 end
 
@@ -29,6 +31,68 @@ local function show_changes(changes)
     for i = 1, math.min(#changes, 4) do
         cecho("<light_grey>  - <reset>" .. tostring(changes[i]) .. "\n")
     end
+end
+
+local function dirname(path)
+    return tostring(path or ""):match("^(.*)[/\\][^/\\]+$")
+end
+
+local function file_size(path)
+    local f = io.open(path, "rb")
+    if not f then return nil end
+    local size = f:seek("end")
+    f:close()
+    return size
+end
+
+local function copy_file(source, target)
+    local input, err = io.open(source, "rb")
+    if not input then return false, err end
+    local data = input:read("*a")
+    input:close()
+    local dir = dirname(target)
+    if dir then U.ensure_dir(dir) end
+    local output, write_err = io.open(target, "wb")
+    if not output then return false, write_err end
+    local ok, result = pcall(function() output:write(data) end)
+    output:close()
+    if not ok then return false, result end
+    return true
+end
+
+local function serialize(value, indent)
+    indent = indent or ""
+    local kind = type(value)
+    if kind == "string" then return string.format("%q", value) end
+    if kind == "number" or kind == "boolean" then return tostring(value) end
+    if kind ~= "table" then return "nil" end
+
+    local next_indent = indent .. "    "
+    local parts = {"{"}
+    local numeric = true
+    local max_index = 0
+    for key in pairs(value) do
+        if type(key) ~= "number" or key < 1 or key ~= math.floor(key) then numeric = false; break end
+        if key > max_index then max_index = key end
+    end
+    if numeric then
+        for i = 1, max_index do
+            parts[#parts + 1] = "\n" .. next_indent .. serialize(value[i], next_indent) .. ","
+        end
+    else
+        local keys = {}
+        for key in pairs(value) do keys[#keys + 1] = key end
+        table.sort(keys, function(a, b) return tostring(a) < tostring(b) end)
+        for _, key in ipairs(keys) do
+            local key_text
+            if type(key) == "string" and key:match("^[%a_][%w_]*$") then key_text = key
+            else key_text = "[" .. serialize(key, next_indent) .. "]" end
+            parts[#parts + 1] = "\n" .. next_indent .. key_text .. " = " .. serialize(value[key], next_indent) .. ","
+        end
+    end
+    if #parts > 1 then parts[#parts + 1] = "\n" .. indent end
+    parts[#parts + 1] = "}"
+    return table.concat(parts)
 end
 
 function UP:cleanup_handlers()
@@ -41,6 +105,31 @@ function UP:load_manifest(path)
     local ok, result = pcall(dofile, path)
     if not ok or type(result) ~= "table" then return nil, result end
     return result
+end
+
+function UP:save_installed_manifest(manifest)
+    if type(manifest) ~= "table" then return false end
+    return U.write_file(self.installed_manifest_path, "return " .. serialize(manifest) .. "\n")
+end
+
+function UP:get_installed_manifest()
+    local manifest = self:load_manifest(self.installed_manifest_path)
+    if manifest and tostring(manifest.version) == tostring(C.version) then return manifest end
+
+    -- Pierwsze przejscie ze starego updatera: pobrany manifest z aktualizacji
+    -- pozostaje w stagingu. Mozemy go przyjac jako stan zainstalowanej wersji.
+    local staged = self:load_manifest(self.manifest_path)
+    if staged and tostring(staged.version) == tostring(C.version) then
+        self:save_installed_manifest(staged)
+        return staged
+    end
+    return nil
+end
+
+function UP:remember_current_manifest(manifest)
+    if type(manifest) ~= "table" then return end
+    if tostring(manifest.version) ~= tostring(C.version) then return end
+    if tonumber(manifest.schema) and tonumber(manifest.schema) >= 2 then self:save_installed_manifest(manifest) end
 end
 
 function UP:check(quiet)
@@ -65,8 +154,9 @@ function UP:check(quiet)
             out("Dostepna wersja " .. tostring(manifest.version) .. " (masz " .. tostring(C.version) .. ").", "aquamarine")
             show_changes(manifest.changes)
             cecho("\n<aquamarine>/cvip aktualizuj<reset>\n")
-        elseif not quiet then
-            out("Masz aktualna wersje " .. tostring(C.version) .. ".", "aquamarine")
+        else
+            UP:remember_current_manifest(manifest)
+            if not quiet then out("Masz aktualna wersje " .. tostring(C.version) .. ".", "aquamarine") end
         end
     end)
     self.handlers.error = registerAnonymousEventHandler("sysDownloadError", function(_, err, filename)
@@ -88,6 +178,12 @@ function UP:update()
         local manifest, err = UP:load_manifest(filename)
         if not manifest then UP.mode = nil; out("Nie moge odczytac manifestu: " .. tostring(err), "orange"); return end
         UP.remote_manifest = manifest
+        if not U.version_gt(manifest.version, C.version) then
+            UP.mode = nil
+            UP:remember_current_manifest(manifest)
+            out("Masz aktualna wersje " .. tostring(C.version) .. ".", "aquamarine")
+            return
+        end
         UP:start_files()
     end)
     self.handlers.error = registerAnonymousEventHandler("sysDownloadError", function(_, err, filename)
@@ -99,20 +195,66 @@ function UP:update()
     downloadFile(self.manifest_path, self.raw_base .. "manifest.lua")
 end
 
+function UP:build_plan(manifest)
+    local installed = self:get_installed_manifest()
+    local changed = {}
+    local meta = type(manifest.file_meta) == "table" and manifest.file_meta or {}
+    local old_meta = installed and type(installed.file_meta) == "table" and installed.file_meta or nil
+
+    for _, rel in ipairs(manifest.files or {}) do
+        local remote = meta[rel]
+        local previous = old_meta and old_meta[rel]
+        local same = remote and previous and remote.hash and previous.hash and tostring(remote.hash) == tostring(previous.hash)
+        if not same then changed[#changed + 1] = rel end
+    end
+
+    local remove = {}
+    for _, rel in ipairs(manifest.remove or {}) do remove[#remove + 1] = rel end
+    return {changed=changed, remove=remove, meta=meta}
+end
+
 function UP:start_files()
     local manifest = self.remote_manifest
     if not manifest or type(manifest.files) ~= "table" then self.mode = nil; out("Manifest nie zawiera listy plikow.", "orange"); return end
+
+    self.install_plan = self:build_plan(manifest)
+    local plan = self.install_plan
     self.mode = "files"
     self.pending = {}
     self:cleanup_handlers()
-    for _, rel in ipairs(manifest.files) do
-        local target = self.staging_dir .. "/" .. rel
-        local dir = target:match("^(.*)[/\\][^/\\]+$")
+
+    local version_dir = self.staging_dir .. "/update-" .. tostring(manifest.version)
+    U.ensure_dir(version_dir)
+    plan.version_dir = version_dir
+
+    for _, rel in ipairs(plan.changed) do
+        local target = version_dir .. "/" .. rel
+        local dir = dirname(target)
         if dir then U.ensure_dir(dir) end
+        pcall(os.remove, target)
         self.pending[target] = rel
     end
+
+    if next(self.pending) == nil then
+        out("Brak zmienionych plikow do pobrania; stosuje porzadki wersji " .. tostring(manifest.version) .. "...", "light_grey")
+        self:finish_update()
+        return
+    end
+
     self.handlers.done = registerAnonymousEventHandler("sysDownloadDone", function(_, filename)
-        if not UP.pending[filename] then return end
+        local rel = UP.pending[filename]
+        if not rel then return end
+
+        local expected = UP.install_plan and UP.install_plan.meta and UP.install_plan.meta[rel]
+        if expected and tonumber(expected.size) then
+            local actual = file_size(filename)
+            if actual ~= tonumber(expected.size) then
+                UP:cleanup_handlers(); UP.mode = nil; UP.pending = {}
+                out("Aktualizacja przerwana. Nieprawidlowy rozmiar " .. tostring(rel) .. ".", "orange")
+                return
+            end
+        end
+
         UP.pending[filename] = nil
         if next(UP.pending) == nil then UP:finish_update() end
     end)
@@ -121,34 +263,90 @@ function UP:start_files()
         UP:cleanup_handlers(); UP.mode = nil; UP.pending = {}
         out("Aktualizacja przerwana. Blad pobierania " .. tostring(filename) .. ": " .. tostring(err), "orange")
     end)
-    local count = 0
-    for target, rel in pairs(self.pending) do
-        count = count + 1
-        downloadFile(target, self.raw_base .. rel)
+
+    for target, rel in pairs(self.pending) do downloadFile(target, self.raw_base .. rel) end
+    out("Pobieram " .. tostring(#plan.changed) .. " zmienionych plikow wersji " .. tostring(manifest.version) .. "...", "light_grey")
+end
+
+function UP:rollback(plan)
+    if not plan or not plan.backup_dir then return end
+    for _, rel in ipairs(plan.changed or {}) do
+        local target = self.root_dir .. "/" .. rel
+        local backup = plan.backup_dir .. "/" .. rel
+        if U.file_exists(backup) then
+            pcall(os.remove, target)
+            copy_file(backup, target)
+        elseif plan.created and plan.created[rel] then
+            pcall(os.remove, target)
+        end
     end
-    out("Pobieram " .. tostring(count) .. " plikow wersji " .. tostring(manifest.version) .. "...", "light_grey")
+    for _, rel in ipairs(plan.remove or {}) do
+        local target = self.root_dir .. "/" .. rel
+        local backup = plan.backup_dir .. "/" .. rel
+        if U.file_exists(backup) then copy_file(backup, target) end
+    end
 end
 
 function UP:finish_update()
     self:cleanup_handlers()
     local manifest = self.remote_manifest
-    for _, rel in ipairs(manifest.files) do
-        local source = self.staging_dir .. "/" .. rel
+    local plan = self.install_plan or self:build_plan(manifest)
+    plan.created = {}
+    plan.backup_dir = self.staging_dir .. "/backup-" .. tostring(C.version) .. "-to-" .. tostring(manifest.version)
+    U.ensure_dir(plan.backup_dir)
+
+    -- Faza 1: backup wszystkich plikow, ktore beda ruszane.
+    for _, rel in ipairs(plan.changed) do
         local target = self.root_dir .. "/" .. rel
-        local dir = target:match("^(.*)[/\\][^/\\]+$")
-        if dir then U.ensure_dir(dir) end
-        os.remove(target)
-        local ok, err = os.rename(source, target)
+        if U.file_exists(target) then
+            local ok, err = copy_file(target, plan.backup_dir .. "/" .. rel)
+            if not ok then self.mode=nil; out("Nie udalo sie wykonac backupu " .. rel .. ": " .. tostring(err), "orange"); return end
+        else
+            plan.created[rel] = true
+        end
+    end
+    for _, rel in ipairs(plan.remove) do
+        local target = self.root_dir .. "/" .. rel
+        if U.file_exists(target) then
+            local ok, err = copy_file(target, plan.backup_dir .. "/" .. rel)
+            if not ok then self.mode=nil; out("Nie udalo sie wykonac backupu " .. rel .. ": " .. tostring(err), "orange"); return end
+        end
+    end
+
+    -- Faza 2: przygotuj nowe pliki obok docelowych, dopiero potem je przelacz.
+    for _, rel in ipairs(plan.changed) do
+        local source = plan.version_dir .. "/" .. rel
+        local target = self.root_dir .. "/" .. rel
+        local temp_target = target .. ".cvip-new"
+        local ok, err = copy_file(source, temp_target)
         if not ok then
-            self.mode = nil
-            out("Nie udalo sie podmienic " .. rel .. ": " .. tostring(err), "orange")
+            self:rollback(plan); self.mode=nil
+            out("Aktualizacja wycofana. Nie udalo sie przygotowac " .. rel .. ": " .. tostring(err), "orange")
+            return
+        end
+        pcall(os.remove, target)
+        local renamed, rename_err = os.rename(temp_target, target)
+        if not renamed then
+            pcall(os.remove, temp_target)
+            self:rollback(plan); self.mode=nil
+            out("Aktualizacja wycofana. Nie udalo sie podmienic " .. rel .. ": " .. tostring(rename_err), "orange")
             return
         end
     end
-    U.write_file(self.root_dir .. "/VERSION", tostring(manifest.version) .. "\n")
+
+    for _, rel in ipairs(plan.remove) do pcall(os.remove, self.root_dir .. "/" .. rel) end
+
+    local version_ok, version_err = U.write_file(self.root_dir .. "/VERSION", tostring(manifest.version) .. "\n")
+    if not version_ok or not self:save_installed_manifest(manifest) then
+        self:rollback(plan); self.mode=nil
+        out("Aktualizacja wycofana. Nie udalo sie zapisac metadanych wersji: " .. tostring(version_err or "manifest"), "orange")
+        return
+    end
+
     C.version = tostring(manifest.version)
     self.mode = nil
-    out("Zaktualizowano ChimeraVIP do " .. C.version .. ". Przeladowuje moduly...", "aquamarine")
+    self.install_plan = nil
+    out("Zaktualizowano ChimeraVIP do " .. C.version .. " (" .. tostring(#plan.changed) .. " plikow zmienionych). Przeladowuje moduly...", "aquamarine")
     raiseEvent("chimeraVipUpdated", C.version)
     tempTimer(0.2, function()
         local ok, err = pcall(dofile, UP.root_dir .. "/src/init.lua")
