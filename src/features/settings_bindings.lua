@@ -17,6 +17,15 @@ local COLOR_OPTIONS = {
     "#EFD8A6", -- yellow
 }
 
+local function display_color(value, fallback)
+    if type(value) == "string" and value:match("^#%x%x%x%x%x%x$") then return value:upper() end
+    if C.characters and type(C.characters.color_to_rgb) == "function" then
+        local r,g,b=C.characters:color_to_rgb(value)
+        if r then return string.format("#%02X%02X%02X",r,g,b) end
+    end
+    return fallback
+end
+
 -- Stary modul sam rejestruje toggle; tutaj nadajemy mu docelowa sekcje Settings 2.0.
 if C.characters then
     S:register_module("postacie", {
@@ -60,7 +69,7 @@ for _, item in ipairs(groups) do
         options=COLOR_OPTIONS,
         getter=function()
             local colors=C.characters and C.characters.data and C.characters.data.colors
-            return colors and colors[group] or default
+            return display_color(colors and colors[group], default)
         end,
         setter=function(value)
             if not C.characters or type(C.characters.set_color) ~= "function" then return false end
