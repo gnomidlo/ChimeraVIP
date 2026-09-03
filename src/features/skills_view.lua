@@ -5,6 +5,7 @@ chimera_vip = chimera_vip or {}
 chimera_overlay = chimera_overlay or chimera_vip
 
 local C = chimera_vip
+local U = C.util
 C.skills_view = C.skills_view or {}
 chimera_overlay.skills_view = C.skills_view
 local S = C.skills_view
@@ -24,29 +25,11 @@ S.gain_aliases = {
     ["walce toporem"] = "topory",
 }
 
-local function trim(text)
-    return tostring(text or ""):gsub("^%s+", ""):gsub("%s+$", "")
-end
-
-local function normalize(text)
-    return trim(text):lower():gsub("%s+", " ")
-end
-
-local function pad(text, width)
-    local value = tostring(text or "")
-    if C.util and C.util.pad_right then return C.util.pad_right(value, width) end
-    if #value >= width then return value end
-    return value .. string.rep(" ", width - #value)
-end
-
-local function colors()
-    if C.pastel_ui and C.pastel_ui.colors then return C.pastel_ui.colors end
-    return {
-        text="#D8DCE6", text_muted="#AEB6C5", rose="#F0A8B8", peach="#F2C4A0",
-        yellow="#EFD8A6", mint="#A8DCC2", blue="#AFCBF4", lavender="#C7B9E8",
-        separator="#2B303C",
-    }
-end
+local trim = U.trim
+local normalize = U.normalize
+local pad = U.pad_right
+local colors = U.palette
+local gag_line = U.gag_line
 
 local function value_color(value, P)
     value = tonumber(value) or 0
@@ -63,17 +46,6 @@ local function delta_text(delta, suffix, P)
     if delta > 0 then return P.mint .. "+" .. tostring(delta) .. suffix end
     if delta < 0 then return P.rose .. tostring(delta) .. suffix end
     return ""
-end
-
-local function gag_line()
-    if type(deleteLine) == "function" then
-        local ok = pcall(deleteLine)
-        if ok then return end
-    end
-    pcall(function()
-        selectCurrentLine()
-        replace("")
-    end)
 end
 
 function S:start_skills()
@@ -237,9 +209,8 @@ function S:add_gain(raw_name)
 end
 
 function S:install()
-    for _, id in ipairs(self.trigger_ids or {}) do pcall(killTrigger, id) end
-    for _, id in ipairs(self.alias_ids or {}) do pcall(killAlias, id) end
-    self.trigger_ids, self.alias_ids = {}, {}
+    U.clear_triggers(self)
+    U.clear_aliases(self)
 
     self.alias_ids[#self.alias_ids + 1] = tempAlias([[^(?:um|umiejetnosci)$]], function()
         S:start_skills()
