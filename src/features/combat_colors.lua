@@ -92,17 +92,6 @@ D.storage_path = data_dir .. "/combat_colors.lua"
 D.legacy_storage_path = getMudletHomeDir() .. "/chimera_damage_colors.lua"
 D.game_colors = D.game_colors or {}
 
-local function file_exists(path)
-    if U and U.file_exists then return U.file_exists(path) end
-    local f = io.open(path, "rb")
-    if f then f:close(); return true end
-    return false
-end
-
-local function ensure_data_dir()
-    if U and U.ensure_dir then U.ensure_dir(data_dir) end
-end
-
 function D:disable_legacy_package_triggers()
     if type(disableTrigger) ~= "function" then return end
     local names = {
@@ -119,7 +108,7 @@ function D:disable_legacy_package_triggers()
 end
 
 function D:save_colors()
-    ensure_data_dir()
+    U.ensure_dir(data_dir)
     local ok, err = pcall(table.save, self.storage_path, self.game_colors)
     if not ok then
         cecho("\n<red>[ChimeraVIP]<reset> Nie udalo sie zapisac kolorow walki: " .. tostring(err) .. "\n")
@@ -132,11 +121,11 @@ function D:load_colors()
     self.game_colors = {}
     for key, value in pairs(self.defaults) do self.game_colors[key] = value end
 
-    ensure_data_dir()
+    U.ensure_dir(data_dir)
     local source = nil
-    if file_exists(self.storage_path) then
+    if U.file_exists(self.storage_path) then
         source = self.storage_path
-    elseif file_exists(self.legacy_storage_path) then
+    elseif U.file_exists(self.legacy_storage_path) then
         source = self.legacy_storage_path
     end
 
@@ -174,13 +163,7 @@ function D:is_eligible_line()
         return false
     end
 
-    local length = nil
-    if utf8 and type(utf8.len) == "function" then
-        local ok, value = pcall(utf8.len, current_line)
-        if ok then length = value end
-    end
-    length = length or string.len(current_line)
-
+    local length = U.text_width(current_line)
     if length < self.min_line_length then return false end
     if not current_line:find("[A-Za-z]") then return false end
 
@@ -193,8 +176,6 @@ function D:show_prefix(key)
     local definition = self.definitions[key]
     if not definition then return end
 
-    -- Defense Tracker korzysta z tego samego, już zweryfikowanego triggera ANSI.
-    -- Nie tworzymy drugiego kompletu triggerów dla trafień w naszą postać.
     if tostring(key):match("^otrzymane_") then
         raiseEvent("chimeraVipIncomingHit", key, tostring(line or ""))
     end
@@ -338,11 +319,9 @@ function D:apply_enabled(enabled)
     raiseEvent("chimeraVipCombatColorsStateChanged", enabled)
 end
 
-if U and U.replace_handler then
-    U.replace_handler(D, "module_changed", "chimeraVipModuleChanged", function(_, id, enabled)
-        if tostring(id) == "combat_colors" then D:apply_enabled(enabled == true) end
-    end)
-end
+U.replace_handler(D, "module_changed", "chimeraVipModuleChanged", function(_, id, enabled)
+    if tostring(id) == "combat_colors" then D:apply_enabled(enabled == true) end
+end)
 
 D:load_colors()
 
