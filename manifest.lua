@@ -1,11 +1,12 @@
 return {
     name = "ChimeraVIP",
-    version = "0.98",
+    version = "0.99",
     tested_upstream = "2.6",
     raw_base = "https://raw.githubusercontent.com/gnomidlo/ChimeraVIP/main/",
     changes = {
-        "Hotfix: poprawne pastelowe kolory ekwipunku przez dreplace",
-        "Ekwipunek: RECE, EKWIPUNEK i PRZY SOBIE bez widocznych tagow",
+        "Core: wspolne helpery dla kolorow, tekstu i runtime",
+        "XP: lekkie bufory i agregaty zamiast rosnacej historii eventow",
+        "Dev: validator wydania przed 1.0",
     },
     files = {
         "loader.lua",
