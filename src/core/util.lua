@@ -56,6 +56,30 @@ function U.pad_right(value, width)
     return text .. string.rep(" ", missing)
 end
 
+function U.deep_copy(value)
+    if type(value) ~= "table" then return value end
+    local out = {}
+    for key, child in pairs(value) do out[key] = U.deep_copy(child) end
+    return out
+end
+
+function U.merge_defaults(target, defaults)
+    target = type(target) == "table" and target or {}
+    for key, value in pairs(defaults or {}) do
+        if type(value) == "table" then
+            if type(target[key]) ~= "table" then target[key] = {} end
+            U.merge_defaults(target[key], value)
+        elseif target[key] == nil then
+            target[key] = value
+        end
+    end
+    return target
+end
+
+function U.pcre_escape(value)
+    return (tostring(value or ""):gsub("([\\%^%$%.|%?%*%+%(%)%[%]{}])", "\\%1"))
+end
+
 function U.transparent_css()
     return [[QLabel { background-color: transparent; border: 0px; padding: 0px; }]]
 end
