@@ -116,8 +116,6 @@ function UP:get_installed_manifest()
     local manifest = self:load_manifest(self.installed_manifest_path)
     if manifest and tostring(manifest.version) == tostring(C.version) then return manifest end
 
-    -- Pierwsze przejscie ze starego updatera: pobrany manifest z aktualizacji
-    -- pozostaje w stagingu. Mozemy go przyjac jako stan zainstalowanej wersji.
     local staged = self:load_manifest(self.manifest_path)
     if staged and tostring(staged.version) == tostring(C.version) then
         self:save_installed_manifest(staged)
@@ -295,7 +293,6 @@ function UP:finish_update()
     plan.backup_dir = self.staging_dir .. "/backup-" .. tostring(C.version) .. "-to-" .. tostring(manifest.version)
     U.ensure_dir(plan.backup_dir)
 
-    -- Faza 1: backup wszystkich plikow, ktore beda ruszane.
     for _, rel in ipairs(plan.changed) do
         local target = self.root_dir .. "/" .. rel
         if U.file_exists(target) then
@@ -313,7 +310,6 @@ function UP:finish_update()
         end
     end
 
-    -- Faza 2: przygotuj nowe pliki obok docelowych, dopiero potem je przelacz.
     for _, rel in ipairs(plan.changed) do
         local source = plan.version_dir .. "/" .. rel
         local target = self.root_dir .. "/" .. rel
@@ -364,6 +360,29 @@ function UP:show_status()
     out("Wersja " .. tostring(C.version) .. " | upstream " .. tostring(C:get_upstream_version()) .. ".", "light_grey")
 end
 
+function UP:show_diagnostics()
+    local manifest = self:get_installed_manifest()
+    local schema = manifest and tonumber(manifest.schema) or nil
+    local files = manifest and type(manifest.files) == "table" and #manifest.files or 0
+    local has_local = U.file_exists(self.installed_manifest_path)
+    local differential = schema and schema >= 2 and has_local
+    local pending = 0
+    for _ in pairs(self.pending or {}) do pending = pending + 1 end
+
+    local P = U.palette()
+    hecho("\n\n" .. P.lavender .. "CHIMERAVIP — DIAGNOSTYKA"
+        .. "\n" .. P.separator .. "------------------------------------------"
+        .. "\n" .. P.text_muted .. "Wersja       " .. P.text .. tostring(C.version or "?")
+        .. "\n" .. P.text_muted .. "Upstream     " .. P.text .. tostring(C:get_upstream_version())
+        .. "\n" .. P.text_muted .. "Manifest     " .. (schema and P.mint or P.rose) .. (schema and ("v" .. tostring(schema)) or "brak")
+        .. "\n" .. P.text_muted .. "Pliki        " .. P.text .. tostring(files)
+        .. "\n" .. P.text_muted .. "Updater      " .. (differential and P.mint or P.yellow) .. (differential and "differential" or "pelny / brak stanu")
+        .. "\n" .. P.text_muted .. "Stan lokalny " .. (has_local and P.mint or P.rose) .. (has_local and "OK" or "brak installed_manifest.lua")
+        .. "\n" .. P.text_muted .. "Runtime      " .. P.text .. tostring(self.mode or "idle")
+        .. (pending > 0 and (P.text_muted .. "  |  pending " .. P.peach .. tostring(pending)) or "")
+        .. "\n" .. P.separator .. "------------------------------------------\n")
+end
+
 function UP:command(argument)
     local raw = trim(argument)
     local arg = raw:lower()
@@ -389,6 +408,7 @@ function UP:command(argument)
         if C.settings and type(C.settings.show_modules) == "function" then C.settings:show_modules()
         else out("Modul ustawien nie jest dostepny.", "yellow") end
     elseif arg == "status" or arg == "wersja" or arg == "version" then self:show_status()
+    elseif arg == "diagnostyka" or arg == "diag" or arg == "diagnostics" then self:show_diagnostics()
     elseif arg == "sprawdz" or arg == "check" then self:check(false)
     elseif arg == "aktualizuj" or arg == "update" then self:update()
     elseif arg == "przeladuj" or arg == "reload" then self:reload()
