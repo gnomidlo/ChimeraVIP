@@ -1,12 +1,14 @@
 return {
     name = "ChimeraVIP",
-    version = "0.100",
+    version = "0.101",
+    schema = 2,
     tested_upstream = "2.6",
     raw_base = "https://raw.githubusercontent.com/gnomidlo/ChimeraVIP/main/",
     changes = {
-        "Raporty: klikalne podkomendy pod XP, cechami i obrona",
-        "Core: Skills, Weapon i Defense korzystaja ze wspolnych helperow",
-        "Porzadki: mniej duplikacji przed 1.0",
+        "Updater 2.0: od kolejnej wersji pobiera tylko zmienione pliki",
+        "Bezpieczenstwo: staging, backup i rollback aktualizacji",
+        "CI: automatyczna kontrola wersji, Lua i metadanych manifestu",
+        "Porzadki: manifest potrafi usuwac stare pliki",
     },
     files = {
         "loader.lua",
@@ -37,5 +39,38 @@ return {
         "src/features/weapon_info.lua",
         "src/ui/footer_controls.lua",
         "src/ui/module_controls.lua"
+    },
+    file_meta = {
+        ["loader.lua"] = {hash="42e1c1b290327121c8025b0ecfdb2fa3dcd8a0f5", size=4381},
+        ["src/init.lua"] = {hash="066d084d7f15c88fffead29bda6b361e21213659", size=1399},
+        ["src/core/bootstrap.lua"] = {hash="ca0246467127bf1b9a0654b3b9c5678025d230d6", size=1479},
+        ["src/core/util.lua"] = {hash="5cbc8f94549bcaacb01d1b6942bcf553be18e41c", size=5837},
+        ["src/core/settings.lua"] = {hash="e1eb9162b55ad2f42e32fb2ed83baec5f6dd68c4", size=8416},
+        ["src/core/help.lua"] = {hash="1728eea459ddf977f944d465614ef5288d8bec69", size=11467},
+        ["src/core/updater.lua"] = {hash="c987d092151511f24cce1a95368a7600aea701f7", size=16934},
+        ["src/integrations/chimera.lua"] = {hash="4347dbbb38868c3db48071f408ca4b1b637a3d4b", size=2993},
+        ["src/integrations/defense_combat.lua"] = {hash="80a1d8939742d3adfff4f14581f0cdf30da426dc", size=1665},
+        ["src/theme/pastel.lua"] = {hash="559112636ef7d328865ce139c798b2e82713bed7", size=6203},
+        ["src/ui/quiet_footer.lua"] = {hash="c18d2a8b6b45ff96368494cba431317a9e90b38a", size=18153},
+        ["src/ui/settings_apply.lua"] = {hash="e070e54d2df9f142a418ef23188af03e9e450f29", size=1239},
+        ["src/ui/settings_panel.lua"] = {hash="62fc01436d99444446daf8c73a77196b7adcb0cd", size=6449},
+        ["src/features/combat_colors.lua"] = {hash="ba44f2280870f655a3283a4c1ed8f3a6fe638352", size=11410},
+        ["src/features/defense_tracker.lua"] = {hash="f760a5f9084feb5be53fdec4dbca0274c2a84276", size=12216},
+        ["src/features/auto_support.lua"] = {hash="9d57f8c3186c2cc716fe2e6c3542dbc3c4ad1078", size=7516},
+        ["src/features/xp_tracker.lua"] = {hash="8898db835008bd3a6a3a1d8316ad1bdbbee4c66b", size=16365},
+        ["src/features/stats.lua"] = {hash="ef403fa8be569558fdddd3988cdfc44fe7718e0f", size=15083},
+        ["src/features/report_actions.lua"] = {hash="fd94ede283c639df08b8316e286f3bc3d694555b", size=552},
+        ["src/features/characters.lua"] = {hash="537b094f8e2c7374a553c558ca8bba7c14c2ce0e", size=22298},
+        ["src/features/characters_delete_ui.lua"] = {hash="dd70e429d43a1f57e8785689063547063d2bf9bf", size=2077},
+        ["src/ui/characters_help_panel.lua"] = {hash="634fbd308f81451b545bc9c6dabbb2f8c068e54b", size=8887},
+        ["src/features/containers.lua"] = {hash="21db8219e89626c0f083d67dadc8015642d87325", size=5494},
+        ["src/features/skills_view.lua"] = {hash="5eaa6d89119dd439d9beebee6bfacd73de98e699", size=8284},
+        ["src/features/equipment_view.lua"] = {hash="14d6f882f2b48d1b937603949a7d21b81027e49b", size=1721},
+        ["src/features/weapon_info.lua"] = {hash="f7559370e8c0e00804dd9ca7b63c3ebc17f8c882", size=10821},
+        ["src/ui/footer_controls.lua"] = {hash="65e177de20cf4ea762da6b2210ad27e8a8433cfe", size=13255},
+        ["src/ui/module_controls.lua"] = {hash="d678888ba23e8955db0d108b6de6ad75265837cb", size=3660}
+    },
+    remove = {
+        "src/features/progression.lua",
     }
 }
