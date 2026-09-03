@@ -27,29 +27,9 @@ local data_dir = getMudletHomeDir() .. "/ChimeraVIP-data"
 -- Zachowujemy stara nazwe pliku, aby dotychczasowa historia /progres zostala przejeta bez migracji.
 ST.data_file = data_dir .. "/progression.lua"
 
-local function colors()
-    if chimera_overlay.pastel_ui and chimera_overlay.pastel_ui.colors then
-        return chimera_overlay.pastel_ui.colors
-    end
-    return {
-        text="#D8DCE6", text_muted="#AEB6C5", rose="#F0A8B8", mint="#A8DCC2",
-        blue="#AFCBF4", lavender="#C7B9E8", peach="#F2C4A0", yellow="#EFD8A6", separator="#2B303C",
-    }
-end
-
-local function trim(text)
-    return tostring(text or ""):gsub("^[ \t]+", ""):gsub("[ \t]+$", "")
-end
-
-local function fmt_int(value)
-    local text = tostring(math.floor(tonumber(value) or 0))
-    local result = ""
-    while #text > 3 do
-        result = " " .. text:sub(-3) .. result
-        text = text:sub(1, -4)
-    end
-    return text .. result
-end
+local colors = U.palette
+local trim = U.trim
+local fmt_int = U.format_int
 
 local function copy_table(source)
     local out = {}
@@ -118,7 +98,7 @@ function ST:get_record(create)
 end
 
 function ST:load_data()
-    if U and U.ensure_dir then U.ensure_dir(data_dir) end
+    U.ensure_dir(data_dir)
     local loaded = {}
     if io.exists and io.exists(self.data_file) then
         local ok, err = pcall(table.load, self.data_file, loaded)
@@ -132,7 +112,7 @@ function ST:load_data()
 end
 
 function ST:save_data()
-    if U and U.ensure_dir then U.ensure_dir(data_dir) end
+    U.ensure_dir(data_dir)
     local ok, err = pcall(table.save, self.data_file, self.data)
     if not ok then
         hecho("\n" .. colors().rose .. "[CECHY] Nie udalo sie zapisac historii: " .. tostring(err) .. "\n")
@@ -315,9 +295,8 @@ function ST:show_history(count)
 end
 
 -- Hot reload: usuwamy nasze tymczasowe triggery i aliasy.
-for _, id in ipairs(ST.trigger_ids) do pcall(killTrigger, id) end
-for _, id in ipairs(ST.alias_ids) do pcall(killAlias, id) end
-ST.trigger_ids, ST.alias_ids = {}, {}
+U.clear_triggers(ST)
+U.clear_aliases(ST)
 
 -- Migracja 0.94: wyczysc handlery i aliasy starego modulu /progres z biezacej sesji.
 if C.progression then
@@ -331,10 +310,8 @@ if C.root_dir then pcall(os.remove, C.root_dir .. "/src/features/progression.lua
 ST:load_data()
 ST:flush_pending_xp()
 
-if U and U.replace_handler then
-    U.replace_handler(ST, "xp", "chimeraVipXpGained", function(_, amount) ST:on_xp(amount) end)
-    U.replace_handler(ST, "char_name", "gmcp.Char.Name", function() ST:flush_pending_xp() end)
-end
+U.replace_handler(ST, "xp", "chimeraVipXpGained", function(_, amount) ST:on_xp(amount) end)
+U.replace_handler(ST, "char_name", "gmcp.Char.Name", function() ST:flush_pending_xp() end)
 
 -- Naglowek postepow.
 ST.trigger_ids[#ST.trigger_ids + 1] = tempRegexTrigger(
