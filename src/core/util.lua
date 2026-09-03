@@ -2,6 +2,38 @@ chimera_vip = chimera_vip or {}
 local U = chimera_vip.util or {}
 chimera_vip.util = U
 
+U.default_palette = U.default_palette or {
+    background="#12151D", background_soft="#181C26", separator="#2B303C", inactive="#303542",
+    text="#D8DCE6", text_muted="#AEB6C5", rose="#F0A8B8", mint="#A8DCC2",
+    blue="#AFCBF4", lavender="#C7B9E8", peach="#F2C4A0", yellow="#EFD8A6",
+}
+
+function U.palette()
+    local C = chimera_vip
+    if C and C.pastel_ui and type(C.pastel_ui.colors) == "table" then return C.pastel_ui.colors end
+    return U.default_palette
+end
+
+function U.trim(value)
+    return tostring(value or ""):gsub("^%s+", ""):gsub("%s+$", "")
+end
+
+function U.normalize(value)
+    return U.trim(value):lower():gsub("%s+", " ")
+end
+
+function U.format_int(value)
+    local text = tostring(math.floor(tonumber(value) or 0))
+    local sign = ""
+    if text:sub(1, 1) == "-" then sign, text = "-", text:sub(2) end
+    local result = ""
+    while #text > 3 do
+        result = " " .. text:sub(-3) .. result
+        text = text:sub(1, -4)
+    end
+    return sign .. text .. result
+end
+
 function U.clamp(value, minimum, maximum)
     if type(value) ~= "number" then return nil end
     if value < minimum then return minimum end
@@ -40,6 +72,42 @@ function U.short_text(text, max_length)
     text = tostring(text or "")
     if #text <= max_length then return text end
     return text:sub(1, max_length - 1) .. "…"
+end
+
+function U.hex_to_rgb(value)
+    local hex = tostring(value or ""):match("^#?(%x%x%x%x%x%x)$")
+    if not hex then return nil, nil, nil end
+    return tonumber(hex:sub(1,2),16), tonumber(hex:sub(3,4),16), tonumber(hex:sub(5,6),16)
+end
+
+function U.decho_tag(value)
+    local r, g, b = U.hex_to_rgb(value)
+    if not r then return "" end
+    return string.format("<%d,%d,%d>", r, g, b)
+end
+
+function U.gag_line()
+    if type(deleteLine) == "function" then
+        local ok = pcall(deleteLine)
+        if ok then return true end
+    end
+    local ok = pcall(function()
+        selectCurrentLine()
+        replace("")
+    end)
+    return ok
+end
+
+function U.clear_triggers(owner)
+    if type(owner) ~= "table" then return end
+    for _, id in ipairs(owner.trigger_ids or {}) do pcall(killTrigger, id) end
+    owner.trigger_ids = {}
+end
+
+function U.clear_aliases(owner)
+    if type(owner) ~= "table" then return end
+    for _, id in ipairs(owner.alias_ids or {}) do pcall(killAlias, id) end
+    owner.alias_ids = {}
 end
 
 function U.replace_handler(owner, name, event, callback)
