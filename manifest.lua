@@ -1,12 +1,11 @@
 return {
     name = "ChimeraVIP",
-    version = "0.94",
+    version = "0.95",
     tested_upstream = "2.6",
     raw_base = "https://raw.githubusercontent.com/gnomidlo/ChimeraVIP/main/",
     changes = {
-        "Cechy: delty i podsumowanie progresu po kazdym odczycie",
-        "Historia: /cechy historia zastapilo osobny /progres",
-        "Porzadki: progres scalony z cechami, /xp zostaje trackerem sesyjnym",
+        "Ekwipunek: kolorowe RECE, EKWIPUNEK i PRZY SOBIE",
+        "QoL: formatowanie przez cReplace bez przebudowy tresci linii",
     },
     files = {
         "loader.lua",
@@ -32,6 +31,7 @@ return {
         "src/ui/characters_help_panel.lua",
         "src/features/containers.lua",
         "src/features/skills_view.lua",
+        "src/features/equipment_view.lua",
         "src/features/weapon_info.lua",
         "src/ui/footer_controls.lua",
         "src/ui/module_controls.lua"
