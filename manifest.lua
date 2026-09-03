@@ -1,12 +1,12 @@
 return {
     name = "ChimeraVIP",
-    version = "0.99",
+    version = "0.100",
     tested_upstream = "2.6",
     raw_base = "https://raw.githubusercontent.com/gnomidlo/ChimeraVIP/main/",
     changes = {
-        "Core: wspolne helpery dla kolorow, tekstu i runtime",
-        "XP: lekkie bufory i agregaty zamiast rosnacej historii eventow",
-        "Dev: validator wydania przed 1.0",
+        "Raporty: klikalne podkomendy pod XP, cechami i obrona",
+        "Core: Skills, Weapon i Defense korzystaja ze wspolnych helperow",
+        "Porzadki: mniej duplikacji przed 1.0",
     },
     files = {
         "loader.lua",
@@ -27,6 +27,7 @@ return {
         "src/features/auto_support.lua",
         "src/features/xp_tracker.lua",
         "src/features/stats.lua",
+        "src/features/report_actions.lua",
         "src/features/characters.lua",
         "src/features/characters_delete_ui.lua",
         "src/ui/characters_help_panel.lua",
