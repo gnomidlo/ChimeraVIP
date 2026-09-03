@@ -10,24 +10,9 @@ H.sections = H.sections or {}
 H.order = H.order or {}
 H.alias_ids = H.alias_ids or {}
 
-local function colors()
-    if C.pastel_ui and C.pastel_ui.colors then return C.pastel_ui.colors end
-    return {
-        text="#D8DCE6", text_muted="#AEB6C5", mint="#A8DCC2", blue="#AFCBF4",
-        lavender="#C7B9E8", peach="#F2C4A0", yellow="#EFD8A6", rose="#F0A8B8", separator="#2B303C",
-    }
-end
-
-local function width(value)
-    if U and U.text_width then return U.text_width(value) end
-    return #tostring(value or "")
-end
-
-local function pad(value, target)
-    if U and U.pad_right then return U.pad_right(value, target) end
-    local text=tostring(value or "")
-    return text .. string.rep(" ", math.max(0, target - #text))
-end
+local colors = U.palette
+local width = U.text_width
+local pad = U.pad_right
 
 local function print_line(text, color)
     hecho("\n" .. (color or colors().text) .. tostring(text or ""))
@@ -170,7 +155,7 @@ function H:show_summary()
 end
 
 function H:resolve(section_id)
-    local id = tostring(section_id or ""):lower():gsub("^%s+", ""):gsub("%s+$", "")
+    local id = U.normalize(section_id)
     local aliases = {
         cechy="stats", exp="xp", ui="interface", walka="combat", kolory="combat", combat="combat",
         wsparcie="automation", auto="automation", automation="automation", obrona="defense", def="defense", defense="defense",
@@ -181,7 +166,7 @@ function H:resolve(section_id)
 end
 
 function H:show(section_id)
-    local id = tostring(section_id or ""):gsub("^%s+", ""):gsub("%s+$", "")
+    local id = U.trim(section_id)
     if id == "" then self:show_summary(); return end
     id = self:resolve(id)
     local section = self.sections[id]
@@ -197,8 +182,7 @@ function H:show(section_id)
 end
 
 function H:install_aliases()
-    for _, id in ipairs(self.alias_ids or {}) do pcall(killAlias, id) end
-    self.alias_ids = {}
+    U.clear_aliases(self)
     local function add(pattern, section)
         local id = tempAlias(pattern, function() H:show(section) end)
         if id then self.alias_ids[#self.alias_ids + 1] = id end
