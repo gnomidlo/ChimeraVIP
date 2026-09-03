@@ -110,6 +110,25 @@ function U.clear_aliases(owner)
     owner.alias_ids = {}
 end
 
+-- Jednolinijkowe, dyskretne akcje pod raportami. Klik prowadzi przez alias,
+-- dzieki czemu interfejs tekstowy pozostaje jedynym publicznym API modulu.
+function U.action_links(actions)
+    if type(actions) ~= "table" or #actions == 0 or type(echoLink) ~= "function" then return end
+    local P = U.palette()
+    hecho("\n" .. P.text_muted .. "  ")
+    for i, action in ipairs(actions) do
+        local label = tostring(action.label or action[1] or "")
+        local command = tostring(action.command or action[2] or "")
+        local hint = tostring(action.hint or action[3] or command)
+        if label ~= "" and command ~= "" then
+            if i > 1 then hecho(P.text_muted .. "  ") end
+            local callback = string.format("expandAlias(%q, false)", command)
+            echoLink("[" .. label .. "]", callback, hint, true)
+        end
+    end
+    hecho("\n")
+end
+
 function U.replace_handler(owner, name, event, callback)
     owner.handlers = owner.handlers or {}
     if owner.handlers[name] then
