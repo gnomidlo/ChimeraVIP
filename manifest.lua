@@ -1,11 +1,11 @@
 return {
     name = "ChimeraVIP",
-    version = "0.97",
+    version = "0.98",
     tested_upstream = "2.6",
     raw_base = "https://raw.githubusercontent.com/gnomidlo/ChimeraVIP/main/",
     changes = {
-        "Hotfix: poprawna funkcja Mudleta creplace w ekwipunku",
-        "Ekwipunek: kolorowe RECE, EKWIPUNEK i PRZY SOBIE bez bledow Lua",
+        "Hotfix: poprawne pastelowe kolory ekwipunku przez dreplace",
+        "Ekwipunek: RECE, EKWIPUNEK i PRZY SOBIE bez widocznych tagow",
     },
     files = {
         "loader.lua",
