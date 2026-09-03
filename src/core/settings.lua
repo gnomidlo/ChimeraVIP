@@ -9,8 +9,8 @@ local S = C.settings
 S.data_dir = getMudletHomeDir() .. "/ChimeraVIP-data"
 S.data_file = S.data_dir .. "/settings.lua"
 S.data = S.data or {}
-S.module_defs = S.module_defs or {}
-S.setting_defs = S.setting_defs or {}
+S.module_defs = {}
+S.setting_defs = {}
 S.defaults = {ui={states_font_size=10},modules={combat_colors=true}}
 S.section_order = {interface=10, combat=20, defense=30, xp=40, characters=50, automation=60, system=90}
 
@@ -188,7 +188,6 @@ S:register_setting("ui_states_font_size", {
     title="Rozmiar tekstu stanow", description="Oficjalne okna stanow druzyny, wrogow i innych.",
     path="ui.states_font_size", default=10,
     options={7,8,9,10,11,12,13,14},
-    setter=function(value) return S:set_states_font_size(value) end,
 })
 S:register_module("combat_colors",{title="Kolory walki",description="Pastelowe prefiksy obrazen zamiast oficjalnego gags.",default=true,section="combat",order=10})
 return S
