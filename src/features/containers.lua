@@ -5,6 +5,7 @@ chimera_vip = chimera_vip or {}
 chimera_overlay = chimera_overlay or chimera_vip
 
 local C = chimera_vip
+local U = C.util
 C.containers = C.containers or {}
 chimera_overlay.containers = C.containers
 local R = C.containers
@@ -32,33 +33,9 @@ R.word_amounts = {
     dziewiec=9, dziesiec=10,
 }
 
-local function trim(text)
-    return tostring(text or ""):gsub("^%s+", ""):gsub("%s+$", "")
-end
-
-local function normalize(text)
-    return trim(text):lower()
-end
-
-local function colors()
-    if C.pastel_ui and C.pastel_ui.colors then return C.pastel_ui.colors end
-    return {
-        text="#D8DCE6", text_muted="#AEB6C5", mint="#A8DCC2",
-        lavender="#C7B9E8", peach="#F2C4A0", yellow="#EFD8A6",
-        separator="#2B303C",
-    }
-end
-
-local function gag_line()
-    if type(deleteLine) == "function" then
-        local ok = pcall(deleteLine)
-        if ok then return end
-    end
-    pcall(function()
-        selectCurrentLine()
-        replace("")
-    end)
-end
+local trim = U.trim
+local normalize = U.normalize
+local colors = U.palette
 
 function R:is_container(name)
     local lowered = normalize(name)
@@ -150,7 +127,7 @@ end
 
 function R:show(state, name, contents)
     if not self:is_container(name) then return false end
-    gag_line()
+    U.gag_line()
 
     local money, other = {}, {}
     for _, item in ipairs(self:split_items(contents)) do
@@ -177,15 +154,14 @@ end
 
 function R:show_empty(state, name)
     if not self:is_container(name) then return false end
-    gag_line()
+    U.gag_line()
     self:print_header(state, name)
     hecho("\n\n" .. colors().text_muted .. "  pusty\n")
     return true
 end
 
 function R:install()
-    for _, id in ipairs(self.trigger_ids or {}) do pcall(killTrigger, id) end
-    self.trigger_ids = {}
+    U.clear_triggers(self)
 
     self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
         [[^\s*(Otwarty|Zamkniety) (.+?) zawiera (.+)\.\s*$]],
