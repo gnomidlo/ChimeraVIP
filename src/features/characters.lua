@@ -27,30 +27,30 @@ R.group_aliases={p="przyjaciele",przyjaciel="przyjaciele",przyjaciele="przyjacie
 R.defaults={version=2,highlight_enabled=true,colors={przyjaciele="#A8DCC2",neutralni="#D8DCE6",wrogowie="#F0A8B8"},people={}}
 local ANSI16={[0]={0,0,0},[1]={128,0,0},[2]={0,128,0},[3]={128,128,0},[4]={0,0,128},[5]={128,0,128},[6]={0,128,128},[7]={192,192,192},[8]={128,128,128},[9]={255,0,0},[10]={0,255,0},[11]={255,255,0},[12]={0,0,255},[13]={255,0,255},[14]={0,255,255},[15]={255,255,255}}
 
-local function copy(v) if type(v)~="table" then return v end; local t={}; for k,c in pairs(v) do t[k]=copy(c) end; return t end
-local function merge_defaults(target,defaults) for k,v in pairs(defaults or {}) do if type(v)=="table" then if type(target[k])~="table" then target[k]={} end; merge_defaults(target[k],v) elseif target[k]==nil then target[k]=v end end end
-local function trim(v) return tostring(v or ""):gsub("^%s+",""):gsub("%s+$","") end
-local function normalize(v) return trim(v):lower():gsub("%s+"," ") end
-local function utf8_len(v) if U and U.text_width then return U.text_width(v) end; local s=tostring(v or ""); if utf8 and type(utf8.len)=="function" then local ok,n=pcall(utf8.len,s); if ok and n then return n end end; return #s end
-local function pad(v,w) if U and U.pad_right then return U.pad_right(v,w) end; local s=tostring(v or ""); return s..string.rep(" ",math.max(0,w-#s)) end
-local function pcre_escape(v) return (tostring(v):gsub("([\\%^%$%.|%?%*%+%(%)%[%]{}])","\\%1")) end
-local function palette() if C.pastel_ui and C.pastel_ui.colors then return C.pastel_ui.colors end; return {text="#D8DCE6",text_muted="#AEB6C5",mint="#A8DCC2",blue="#AFCBF4",lavender="#C7B9E8",peach="#F2C4A0",yellow="#EFD8A6",rose="#F0A8B8",separator="#2B303C"} end
+local copy = U.deep_copy
+local merge_defaults = U.merge_defaults
+local trim = U.trim
+local normalize = U.normalize
+local utf8_len = U.text_width
+local pad = U.pad_right
+local pcre_escape = U.pcre_escape
+local palette = U.palette
 local function out(text,color) hecho("\n"..(color or palette().text_muted)..tostring(text or "").."\n") end
 local function finish_output() hecho("\n") end
 
 function R:is_module_enabled() if C.settings and type(C.settings.is_module_enabled)=="function" then return C.settings:is_module_enabled("postacie",true) end; return true end
 function R:normalize_group(value) local key=normalize(value); if self.group_aliases[key]~=nil then return self.group_aliases[key] end; if self.groups[key] then return key end; return nil end
 function R:color_to_rgb(value)
-    if type(value)=="string" then local hex=value:match("^#?(%x%x%x%x%x%x)$"); if hex then return tonumber(hex:sub(1,2),16),tonumber(hex:sub(3,4),16),tonumber(hex:sub(5,6),16) end end
+    if type(value)=="string" then local r,g,b=U.hex_to_rgb(value); if r then return r,g,b end end
     local index=tonumber(value); if not index or index<0 or index>255 or index~=math.floor(index) then return nil end
     if index<16 then return unpack(ANSI16[index]) end
     if index<232 then local cube=index-16; local r=math.floor(cube/36); local g=math.floor((cube%36)/6); local b=cube%6; local levels={0,95,135,175,215,255}; return levels[r+1],levels[g+1],levels[b+1] end
     local gray=8+(index-232)*10; return gray,gray,gray
 end
-function R:save() if U and U.ensure_dir then U.ensure_dir(self.data_dir) end; local ok,err=pcall(table.save,self.data_file,self.data); if not ok then out("[Postacie] Nie udalo sie zapisac bazy: "..tostring(err),palette().rose); return false end; return true end
+function R:save() U.ensure_dir(self.data_dir); local ok,err=pcall(table.save,self.data_file,self.data); if not ok then out("[Postacie] Nie udalo sie zapisac bazy: "..tostring(err),palette().rose); return false end; return true end
 function R:load()
-    self.data=copy(self.defaults); if U and U.ensure_dir then U.ensure_dir(self.data_dir) end
-    if U and U.file_exists and U.file_exists(self.data_file) then
+    self.data=copy(self.defaults); U.ensure_dir(self.data_dir)
+    if U.file_exists(self.data_file) then
         local loaded={}; local ok,err=pcall(table.load,self.data_file,loaded)
         if ok and type(loaded)=="table" then if loaded.highlight_enabled==nil and loaded.enabled~=nil then loaded.highlight_enabled=loaded.enabled~=false end; loaded.enabled=nil; merge_defaults(loaded,self.defaults); self.data=loaded else out("[Postacie] Nie udalo sie wczytac bazy: "..tostring(err),palette().rose) end
     end
@@ -165,14 +165,14 @@ function R:command(argument)
     local remove=raw:match("^usun%s+(.+)$"); if remove then self:remove(remove); return end; self:show_help()
 end
 function R:install()
-    for _,id in ipairs(self.trigger_ids or {}) do pcall(killTrigger,id) end; for _,id in ipairs(self.alias_ids or {}) do pcall(killAlias,id) end
+    U.clear_triggers(self); U.clear_aliases(self)
     if self.highlight_trigger then pcall(killTrigger,self.highlight_trigger) end; if self.capture_timer then pcall(killTimer,self.capture_timer) end
-    self.trigger_ids,self.alias_ids={},{}; self.highlight_trigger,self.capture_timer,self.capture=nil,nil,nil
+    self.highlight_trigger,self.capture_timer,self.capture=nil,nil,nil
     if self:is_module_enabled() then self.trigger_ids[#self.trigger_ids+1]=tempRegexTrigger([[^(.+?) odmienia sie nastepujaco:$]],function() R:begin_capture(matches[2]) end); self.trigger_ids[#self.trigger_ids+1]=tempRegexTrigger([[^\s*(Mianownik|Dopelniacz|Celownik|Biernik|Narzednik|Miejscownik)\s*:\s*(.+?)\s*$]],function() R:on_case(matches[2],matches[3]) end) end
     self.alias_ids[#self.alias_ids+1]=tempAlias([[^/postacie(?:\s+(.*))?$]],function() R:command(matches[2] or "") end); self:rebuild_highlight_trigger()
 end
 if C.settings and type(C.settings.register_module)=="function" then C.settings:register_module("postacie",{title="Postacie",description="Rejestr odmian, relacji i kolorowanie nazw.",default=true}) end
-if U and U.replace_handler then U.replace_handler(R,"module_changed","chimeraVipModuleChanged",function(_,id) if tostring(id)=="postacie" then R:install() end end) end
+U.replace_handler(R,"module_changed","chimeraVipModuleChanged",function(_,id) if tostring(id)=="postacie" then R:install() end end)
 if C.help and type(C.help.register)=="function" then C.help:register("postacie",{title="POSTACIE I RELACJE",description={"Wynik komendy 'odmien <imie>' zapisuje wszystkie szesc form imienia.","Nowa postac pozostaje nieprzypisana, dopoki nie wybierzesz relacji: przyjaciel, neutralny albo wrog.","Modul utrzymuje szybki indeks wszystkich odmian i cache highlightow; baza jest zapisywana w ChimeraVIP-data/characters.lua.","API dla innych modulow: chimera_vip.characters:get(<imie>, <przypadek>)."},commands={{"odmien <imie>","zapisz albo odswiez odmiane"},{"/postacie","lista postaci"},{"/postacie szukaj <tekst>","szukaj po nazwie lub odmianie"},{"/postacie grupa <imie> p / n / w / ?","ustaw relacje lub brak"},{"/postacie highlight <imie> on / off","kolorowanie konkretnej postaci"},{"/postacie info <imie>","pokaz wszystkie formy"},{"/postacie kolor","otworz selektor kolorow grup"}}}) end
 R:load(); R:install(); raiseEvent("chimeraVipCharactersReady",R.data)
 return R
