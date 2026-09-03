@@ -13,6 +13,7 @@ HUD.exp_turns = HUD.exp_turns or 0
 HUD.last_progress = HUD.last_progress
 HUD.generation = HUD.generation or 0
 HUD.resize_timer = nil
+HUD.render_cache = HUD.render_cache or {}
 HUD.height = 76
 HUD.main_font = 10
 HUD.small_font = 7
@@ -21,10 +22,7 @@ HUD.main_segments = 10
 HUD.main_segment_gap = 2
 HUD.max_special_exits = 2
 
-local function colors()
-    if C.pastel_ui and C.pastel_ui.colors then return C.pastel_ui.colors end
-    return {background="#12151D",background_soft="#181C26",separator="#2B303C",inactive="#303542",text="#D8DCE6",text_muted="#AEB6C5",rose="#F0A8B8",mint="#A8DCC2",blue="#AFCBF4",lavender="#C7B9E8",peach="#F2C4A0",yellow="#EFD8A6"}
-end
+local colors = U.palette
 HUD.colors = colors()
 
 function HUD:calculate_layout()
@@ -265,16 +263,35 @@ function HUD:create_zone3(parent,prefix)
     self.zone3=Geyser.Label:new({name=prefix..".zone3",x=L.zone3_x,y=0,width=L.zone3_width,height="100%"},parent); self.zone3:setStyleSheet(U.transparent_css())
 end
 
+function HUD:render_if_changed(key, value, callback)
+    if self.render_cache[key] == value then return false end
+    self.render_cache[key] = value
+    callback(value)
+    return true
+end
+
 function HUD:update_vitals()
     if not self.metrics then return end
     local s=gmcp and gmcp.Char and gmcp.Char.Vitals
     if type(s)~="table" then return end
-    self:update_metric(self.metrics.hp,"KOND",U.clamp(s.hp,0,100),self.colors.rose)
-    self:update_metric(self.metrics.moves,"SIŁY",U.clamp(s.moves,0,100),self.colors.mint)
-    self:update_metric(self.metrics.mana,"MANA",U.clamp(s.mana,0,100),self.colors.blue)
-    self:update_need(self.needs.hunger,"SYTOŚĆ",self:get_extended(s,"hunger"))
-    self:update_need(self.needs.thirst,"WODA",self:get_extended(s,"thirst"))
-    self:update_obc(self:get_extended(s,"encumbrance")); self:update_intox(self:get_extended(s,"intox")); self:update_progress(self:get_extended(s,"progress"))
+
+    local hp=U.clamp(s.hp,0,100)
+    local moves=U.clamp(s.moves,0,100)
+    local mana=U.clamp(s.mana,0,100)
+    local hunger=self:get_extended(s,"hunger")
+    local thirst=self:get_extended(s,"thirst")
+    local encumbrance=self:get_extended(s,"encumbrance")
+    local intox=self:get_extended(s,"intox")
+    local progress=self:get_extended(s,"progress")
+
+    self:render_if_changed("hp",hp,function(v) HUD:update_metric(HUD.metrics.hp,"KOND",v,HUD.colors.rose) end)
+    self:render_if_changed("moves",moves,function(v) HUD:update_metric(HUD.metrics.moves,"SIŁY",v,HUD.colors.mint) end)
+    self:render_if_changed("mana",mana,function(v) HUD:update_metric(HUD.metrics.mana,"MANA",v,HUD.colors.blue) end)
+    self:render_if_changed("hunger",hunger,function(v) HUD:update_need(HUD.needs.hunger,"SYTOŚĆ",v) end)
+    self:render_if_changed("thirst",thirst,function(v) HUD:update_need(HUD.needs.thirst,"WODA",v) end)
+    self:render_if_changed("encumbrance",encumbrance,function(v) HUD:update_obc(v) end)
+    self:render_if_changed("intox",intox,function(v) HUD:update_intox(v) end)
+    self:render_if_changed("progress",progress,function(v) HUD:update_progress(v) end)
 end
 
 function HUD:destroy()
@@ -283,7 +300,7 @@ function HUD:destroy()
 end
 function HUD:build()
     if not C.theme_ready or not self:prepare_footer() then return end
-    self:destroy(); self.colors=colors(); self.layout=self:calculate_layout(); self.generation=self.generation+1
+    self:destroy(); self.colors=colors(); self.render_cache={}; self.layout=self:calculate_layout(); self.generation=self.generation+1
     local prefix="chimera_vip.quiet_footer."..self.generation
     self.root=Geyser.Label:new({name=prefix..".root",x=0,y=0,width="100%",height="100%"},scripts.ui.bottom); self.root:setStyleSheet(U.transparent_css())
     self:create_zone1(self.root,prefix); self:create_zone2(self.root,prefix); self:create_zone3(self.root,prefix); self.root:show(); self:update_compass(); self:update_vitals()
