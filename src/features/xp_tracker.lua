@@ -47,6 +47,21 @@ local function pad(text, width)
 end
 local function finish_output() hecho("\n") end
 
+local function actions(kind)
+    if not U or type(U.action_links) ~= "function" then return end
+    if kind == "summary" then
+        U.action_links({
+            {"MOBY", "/xp mobs", "Statystyki typow mobow"},
+            {"LAST 10", "/xp last 10", "Ostatnie 10 zabojstw"},
+            {"RESET", "/xp reset", "Wyzeruj sesje XP"},
+        })
+    elseif kind == "mobs" then
+        U.action_links({{"SESJA", "/xp", "Podsumowanie sesji"}, {"LAST 10", "/xp last 10", "Ostatnie 10 zabojstw"}})
+    elseif kind == "last" or kind == "mob" then
+        U.action_links({{"SESJA", "/xp", "Podsumowanie sesji"}, {"MOBY", "/xp mobs", "Statystyki typow mobow"}})
+    end
+end
+
 local function format_time(seconds)
     seconds = math.max(0, math.floor(seconds or 0))
     local hours = math.floor(seconds / 3600); local minutes = math.floor((seconds % 3600) / 60); local secs = seconds % 60
@@ -93,10 +108,7 @@ function XP:ensure_session_schema()
     S.own_xp = tonumber(S.own_xp) or 0
     S.group_xp = tonumber(S.group_xp) or 0
 
-    if type(S.mob_stats) ~= "table" then
-        S.mob_stats = self:rebuild_mob_stats(S.events)
-    end
-
+    if type(S.mob_stats) ~= "table" then S.mob_stats = self:rebuild_mob_stats(S.events) end
     if type(S.rate_events) ~= "table" then
         S.rate_events = {}
         local cutoff = os.time() - self.rolling_window * 2
@@ -104,7 +116,6 @@ function XP:ensure_session_schema()
             if tonumber(event.time) and event.time >= cutoff then S.rate_events[#S.rate_events + 1] = event end
         end
     end
-
     while #S.events > self.max_recent_events do table.remove(S.events, 1) end
 end
 
@@ -215,7 +226,7 @@ end
 
 function XP:show_summary()
     local Cc,S=self.colors,self.session
-    if S.kills==0 then hecho("\n"..Cc.text_muted.."XP: "..Cc.text.."brak danych w tej sesji.\n"); return end
+    if S.kills==0 then hecho("\n"..Cc.text_muted.."XP: "..Cc.text.."brak danych w tej sesji."); actions("summary"); return end
     local now=os.time(); local session_seconds=now-S.started_at; local active_seconds=self:get_active_seconds(now)
     local session_rate=calculate_rate(S.total_xp,session_seconds); local active_rate=calculate_rate(S.total_xp,active_seconds)
     local current_rate=self:get_current_rate(now); local previous_rate=self:get_previous_rate(now); local trend=self:get_trend(current_rate,previous_rate)
@@ -238,42 +249,45 @@ function XP:show_summary()
         ..Cc.text_muted.."TERAZ      "..Cc.mint..string.format("%12s",format_rate(current_rate))..trend_text.."\n"
         ..Cc.text_muted.."AKTYWNIE   "..Cc.blue..string.format("%12s",format_rate(active_rate)).."\n"
         ..Cc.text_muted.."SESJA      "..Cc.lavender..string.format("%12s",format_rate(session_rate))
-        .."\n"..Cc.separator.."------------------------------------------\n")
+        .."\n"..Cc.separator.."------------------------------------------")
+    actions("summary")
 end
 
 function XP:show_mobs()
     local Cc=self.colors; local list=self:get_mob_stats()
     hecho("\n\n"..Cc.lavender.."XP — MOBY\n"..Cc.separator.."-------------------------------------------------------")
-    if #list==0 then hecho("\n"..Cc.text_muted.."Brak danych w tej sesji.\n"); return end
+    if #list==0 then hecho("\n"..Cc.text_muted.."Brak danych w tej sesji."); actions("mobs"); return end
     for _,data in ipairs(list) do
         local marker=data.builtin and "*" or " "
         hecho(string.format("\n%s%s %-24s %s%4d  %s%9s xp  %s%6s/k",Cc.lavender,marker,data.name,Cc.text,data.kills,Cc.peach,format_integer(data.xp),Cc.text_muted,format_integer(data.average)))
     end
-    hecho("\n"..Cc.text_muted.."* = wbudowana klasyfikacja ChimeraVIP\n")
+    hecho("\n"..Cc.text_muted.."* = wbudowana klasyfikacja ChimeraVIP")
+    actions("mobs")
 end
 
 function XP:show_mob(name)
     local Cc=self.colors; local data=self:find_mob(name)
-    if not data then hecho("\n"..Cc.rose.."[XP] Brak moba w tej sesji: "..Cc.text..trim(name).."\n"); return end
+    if not data then hecho("\n"..Cc.rose.."[XP] Brak moba w tej sesji: "..Cc.text..trim(name)); actions("mob"); return end
     hecho("\n\n"..Cc.lavender.."XP — "..string.upper(data.name)
         .."\n"..Cc.separator.."------------------------------------------"
         .."\n"..Cc.text_muted.."Zabicia    "..Cc.text..format_integer(data.kills)
         .."\n"..Cc.text_muted.."  ty       "..Cc.text..format_integer(data.own_kills)
         .."\n"..Cc.text_muted.."  druzyna  "..Cc.text..format_integer(data.group_kills)
         .."\n"..Cc.text_muted.."XP razem   "..Cc.peach..format_integer(data.xp)
-        .."\n"..Cc.text_muted.."XP / kill  "..Cc.text..format_integer(data.average).."\n")
+        .."\n"..Cc.text_muted.."XP / kill  "..Cc.text..format_integer(data.average))
+    actions("mob")
 end
 
 function XP:show_last(count)
     count=math.max(1,math.min(self.max_recent_events,tonumber(count) or 10)); local Cc,events=self.colors,self.session.events
     hecho("\n\n"..Cc.lavender.."XP — OSTATNIE ZABICIA\n"..Cc.separator.."-------------------------------------------------------")
-    if #events==0 then hecho("\n"..Cc.text_muted.."Brak danych.\n"); return end
+    if #events==0 then hecho("\n"..Cc.text_muted.."Brak danych."); actions("last"); return end
     local first=math.max(1,#events-count+1)
     for i=first,#events do
         local event=events[i]; local marker=event.classification=="rule" and "*" or " "
         hecho("\n"..Cc.text_muted..os.date("%H:%M:%S",event.time).."  "..Cc.peach.."+"..format_integer(event.xp).." xp  "..Cc.text..event.mob_raw..Cc.text_muted.."  ->  "..Cc.mint..marker..event.mob)
     end
-    finish_output()
+    actions("last")
 end
 
 function XP:reset()
