@@ -1,11 +1,11 @@
 return {
     name = "ChimeraVIP",
-    version = "0.96",
+    version = "0.97",
     tested_upstream = "2.6",
     raw_base = "https://raw.githubusercontent.com/gnomidlo/ChimeraVIP/main/",
     changes = {
-        "Hotfix: formatowanie ekwipunku dziala od poczatku linii",
-        "Ekwipunek: RECE, EKWIPUNEK i PRZY SOBIE przez cReplace",
+        "Hotfix: poprawna funkcja Mudleta creplace w ekwipunku",
+        "Ekwipunek: kolorowe RECE, EKWIPUNEK i PRZY SOBIE bez bledow Lua",
     },
     files = {
         "loader.lua",
