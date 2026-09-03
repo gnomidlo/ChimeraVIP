@@ -118,26 +118,15 @@ function H:register_defaults()
     })
 
     self:register("stats", {
-        title="CECHY",
+        title="CECHY I ROZWOJ",
         description={
-            "Moduł formatuje wynik cech i wylicza Fiz, Ment, Odw oraz sumę wszystkich cech.",
-            "Pełny odczyt tworzy snapshot używany przez moduł progresji.",
+            "Komenda 'cechy' pokazuje cechy, sumy, zmiany względem poprzedniego snapshotu oraz XP związane z rozwojem postaci.",
+            "Historia zmian jest zapisywana osobno dla każdej postaci; szczegółowy tracker zdobywania doświadczenia pozostaje pod /xp.",
         },
         commands={
+            {"cechy", "pełny odczyt cech i bieżącego progresu"},
+            {"/cechy historia [N]", "ostatnie zmiany cech i XP między nimi"},
             {"/cechy pomoc", "ta pomoc"},
-            {"/cechy info", "informacje progresji aktualnej postaci"},
-            {"/cechy historia [N]", "historia zmian cech"},
-        },
-    })
-
-    self:register("progression", {
-        title="PROGRES POSTACI",
-        description={"Łączy snapshoty cech z XP i zapisuje historię rozwoju osobno dla każdej postaci."},
-        commands={
-            {"/progres", "stan aktualnej postaci"},
-            {"/progres historia [N]", "ostatnie zmiany"},
-            {"/progres postacie", "zapisane postacie"},
-            {"/progres pomoc", "ta pomoc"},
         },
     })
 
@@ -188,8 +177,7 @@ H.catalog = {
     {"/def pomoc",        "Obrona",        "sesyjne statystyki defensywy i sprzętu"},
     {"/xp pomoc",         "Doświadczenie", "XP/h, zabójstwa i typy mobów"},
     {"/bron pomoc",       "Bron",          "skrocone parametry wywazenia i skutecznosci"},
-    {"/cechy pomoc",      "Cechy",         "formatowanie i snapshoty cech"},
-    {"/progres pomoc",    "Progres",       "historia rozwoju postaci powiązana z XP"},
+    {"/cechy pomoc",      "Cechy",         "cechy, delty, historia rozwoju i XP między wzrostami"},
     {"/postacie pomoc",   "Postacie",      "odmiany, relacje i kolorowanie imion"},
     {"/ustawienia pomoc", "Ustawienia",    "konfiguracja interfejsu i modułów"},
 }
@@ -256,7 +244,7 @@ end
 function H:resolve(section_id)
     local id = tostring(section_id or ""):lower():gsub("^%s+", ""):gsub("%s+$", "")
     local aliases = {
-        cechy="stats", progres="progression", exp="xp", ui="interface",
+        cechy="stats", exp="xp", ui="interface",
         walka="combat", kolory="combat", combat="combat",
         wsparcie="automation", auto="automation", automation="automation",
         obrona="defense", def="defense", defense="defense",
@@ -296,7 +284,6 @@ function H:install_aliases()
     add([[^/walka (?:pomoc|help)$]], "combat")
     add([[^/wsparcie (?:pomoc|help)$]], "automation")
     add([[^/cechy (?:pomoc|help)$]], "stats")
-    add([[^/progres (?:pomoc|help)$]], "progression")
     add([[^/ustawienia (?:pomoc|help)$]], "settings")
 end
 
