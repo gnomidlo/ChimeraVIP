@@ -1,10 +1,12 @@
 return {
     name = "ChimeraVIP",
-    version = "0.93",
+    version = "0.94",
     tested_upstream = "2.6",
     raw_base = "https://raw.githubusercontent.com/gnomidlo/ChimeraVIP/main/",
     changes = {
-        "Updater: krotkie nowosci przy /cvip sprawdz",
+        "Cechy: delty i podsumowanie progresu po kazdym odczycie",
+        "Historia: /cechy historia zastapilo osobny /progres",
+        "Porzadki: progres scalony z cechami, /xp zostaje trackerem sesyjnym",
     },
     files = {
         "loader.lua",
@@ -25,7 +27,6 @@ return {
         "src/features/auto_support.lua",
         "src/features/xp_tracker.lua",
         "src/features/stats.lua",
-        "src/features/progression.lua",
         "src/features/characters.lua",
         "src/features/characters_delete_ui.lua",
         "src/ui/characters_help_panel.lua",
