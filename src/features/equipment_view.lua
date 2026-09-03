@@ -18,7 +18,7 @@ E.trigger_ids = {}
 
 local function replace_prefix(prefix, label, color)
     local found = selectString(prefix, 1)
-    if not found or found <= 0 then return end
+    if found == nil or found < 0 then return end
     cReplace("<#" .. color .. ">" .. label .. ":<#D8DCE6> ")
 end
 
