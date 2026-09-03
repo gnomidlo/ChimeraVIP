@@ -23,6 +23,14 @@ local function trim(value)
     return tostring(value or ""):gsub("^%s+", ""):gsub("%s+$", "")
 end
 
+local function show_changes(changes)
+    if type(changes) ~= "table" or #changes == 0 then return end
+    cecho("\n<light_slate_blue>NOWOSCI<reset>\n")
+    for i = 1, math.min(#changes, 4) do
+        cecho("<light_grey>  - <reset>" .. tostring(changes[i]) .. "\n")
+    end
+end
+
 function UP:cleanup_handlers()
     if self.handlers.done then pcall(killAnonymousEventHandler, self.handlers.done) end
     if self.handlers.error then pcall(killAnonymousEventHandler, self.handlers.error) end
@@ -54,7 +62,9 @@ function UP:check(quiet)
         end
         UP.remote_manifest = manifest
         if U.version_gt(manifest.version, C.version) then
-            out("Dostepna wersja " .. tostring(manifest.version) .. " (masz " .. tostring(C.version) .. "). Uzyj /cvip aktualizuj.", "aquamarine")
+            out("Dostepna wersja " .. tostring(manifest.version) .. " (masz " .. tostring(C.version) .. ").", "aquamarine")
+            show_changes(manifest.changes)
+            cecho("\n<aquamarine>/cvip aktualizuj<reset>\n")
         elseif not quiet then
             out("Masz aktualna wersje " .. tostring(C.version) .. ".", "aquamarine")
         end
