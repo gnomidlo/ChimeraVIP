@@ -20,20 +20,32 @@ D.defense_grace_ms = 100
 D.recent_defense_ms = D.recent_defense_ms or 0
 D.started_at = D.started_at or os.time()
 
-local function colors()
-    if C.pastel_ui and C.pastel_ui.colors then return C.pastel_ui.colors end
-    return {text="#D8DCE6",text_muted="#AEB6C5",mint="#A8DCC2",blue="#AFCBF4",lavender="#C7B9E8",peach="#F2C4A0",yellow="#EFD8A6",rose="#F0A8B8",separator="#2B303C"}
-end
-local function trim(s) return tostring(s or ""):gsub("^%s+",""):gsub("%s+$","") end
+local colors = U.palette
+local trim = U.trim
+local text_width = U.text_width
+local pad_right = U.pad_right
 local function normalize_item(s) s=trim(s):gsub("%s+"," "):gsub("[%.%!%?]+$",""); return s end
 local function now_ms() return getEpochMs and getEpochMs() or (os.time()*1000) end
-local function text_width(v) if U and U.text_width then return U.text_width(v) end; return #tostring(v or "") end
-local function pad_right(v,w) if U and U.pad_right then return U.pad_right(v,w) end; local s=tostring(v or ""); return s..string.rep(" ",math.max(0,(tonumber(w) or 0)-#s)) end
 local function finish_output() hecho("\n") end
 local function pct(value,total) if not total or total<=0 then return "  0.0%" end; return string.format("%5.1f%%",value*100/total) end
 local function sorted_pairs_by_count(t)
     local rows={}; for name,count in pairs(t or {}) do rows[#rows+1]={name=name,count=count} end
     table.sort(rows,function(a,b) if a.count==b.count then return a.name<b.name end; return a.count>b.count end); return rows
+end
+
+local function actions(kind)
+    if not U or type(U.action_links) ~= "function" then return end
+    if kind=="summary" then
+        U.action_links({
+            {"SPRZET","/def sprzet","Statystyki obrony wedlug sprzetu"},
+            {"LAST 10","/def last 10","Ostatnie 10 zdarzen obrony"},
+            {"RESET","/def reset","Wyzeruj sesje obrony"},
+        })
+    elseif kind=="equipment" then
+        U.action_links({{"SESJA","/def","Podsumowanie obrony"},{"LAST 10","/def last 10","Ostatnie 10 zdarzen obrony"}})
+    elseif kind=="last" then
+        U.action_links({{"SESJA","/def","Podsumowanie obrony"},{"SPRZET","/def sprzet","Statystyki obrony wedlug sprzetu"}})
+    end
 end
 
 function D:clear_pending_hits()
@@ -104,7 +116,8 @@ function D:show_summary()
     hecho("\n\n"..P.mint.."OBRONIONE"); line_row("Pudło",S.miss,total,P.text_muted); line_row("Unik",S.dodge,total,P.mint); line_row("Parowanie",S.parry,total,P.blue); line_row("Zasłona",S.block,total,P.lavender)
     hecho("\n\n"..P.yellow.."ZATRZYMANE PANCERZEM"); line_row("Pancerz",S.armor,total,P.yellow)
     hecho("\n\n"..P.rose.."TRAFIENIA"); line_row("Brak / 0",S.hits.brak,total,P.mint); line_row("Niskie / 1",S.hits.niskie,total,P.yellow); line_row("Średnie / 2",S.hits.srednie,total,P.peach); line_row("Wysokie / 3",S.hits.wysokie,total,P.rose)
-    hecho("\n\n"..P.separator.."--------------------------------------------------"); line_row("Obronione",defended,total,P.mint); line_row("Pancerz",S.armor,total,P.yellow); line_row("Przeszło (znane)",hits,total,P.rose); finish_output()
+    hecho("\n\n"..P.separator.."--------------------------------------------------"); line_row("Obronione",defended,total,P.mint); line_row("Pancerz",S.armor,total,P.yellow); line_row("Przeszło (znane)",hits,total,P.rose)
+    actions("summary")
 end
 local function show_items(title,table_data,color)
     local P=colors(); hecho("\n\n"..color..title); local rows=sorted_pairs_by_count(table_data)
@@ -115,16 +128,17 @@ end
 function D:show_equipment()
     local P=colors(); hecho("\n\n"..P.lavender.."OBRONA — SPRZĘT (SESJA)\n"..P.separator.."--------------------------------------------------")
     show_items("ZASŁONY",self.session.block_items,P.lavender); show_items("PAROWANIA",self.session.parry_items,P.blue); show_items("PANCERZ",self.session.armor_items,P.yellow)
-    hecho("\n\n"..P.text_muted.."Udział oznacza część udanych obron danego typu, nie skuteczność/AC przedmiotu."); finish_output()
+    hecho("\n\n"..P.text_muted.."Udział oznacza część udanych obron danego typu, nie skuteczność/AC przedmiotu.")
+    actions("equipment")
 end
 local event_labels={miss="pudło",dodge="unik",parry="parowanie",block="zasłona",armor="pancerz",hit="trafienie"}
 function D:show_last(n)
     n=math.max(1,math.min(50,tonumber(n) or 10)); local P=colors(); local events=self.session.events
     hecho("\n\n"..P.lavender.."OBRONA — OSTATNIE "..tostring(math.min(n,#events)).."\n"..P.separator.."--------------------------------------------------")
-    if #events==0 then hecho("\n"..P.text_muted.."Brak danych w tej sesji.\n"); return end
+    if #events==0 then hecho("\n"..P.text_muted.."Brak danych w tej sesji."); actions("last"); return end
     local first=math.max(1,#events-n+1)
     for i=first,#events do local e=events[i]; local suffix=e.detail and tostring(e.detail)~="" and (" — "..tostring(e.detail)) or ""; hecho("\n"..P.text_muted..os.date("%H:%M:%S",e.time).."  "..P.text..tostring(event_labels[e.kind] or e.kind)..P.text_muted..suffix) end
-    finish_output()
+    actions("last")
 end
 function D:show_help()
     local P=colors(); local rows={{"/def","podsumowanie sesji"},{"/def sprzet","tarcze, bronie i pancerz"},{"/def last [N]","ostatnie zdarzenia"},{"/def reset","wyzeruj sesję"},{"/def pomoc","ta pomoc"}}
@@ -142,7 +156,7 @@ function D:command(arg)
     local n=arg:match("^last%s*(%d*)$"); if n~=nil then self:show_last(n~="" and tonumber(n) or 10); return end
     self:show_help()
 end
-function D:clear_runtime() for _,id in ipairs(self.trigger_ids or {}) do pcall(killTrigger,id) end; for _,id in ipairs(self.alias_ids or {}) do pcall(killAlias,id) end; self.trigger_ids={}; self.alias_ids={} end
+function D:clear_runtime() U.clear_triggers(self); U.clear_aliases(self) end
 function D:add_trigger(pattern,code) local ok,id=pcall(tempRegexTrigger,pattern,code); if ok and id then self.trigger_ids[#self.trigger_ids+1]=id end end
 function D:install_runtime()
     self:clear_runtime()
