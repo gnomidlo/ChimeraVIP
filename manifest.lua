@@ -1,8 +1,11 @@
 return {
     name = "ChimeraVIP",
-    version = "0.92",
+    version = "0.93",
     tested_upstream = "2.6",
     raw_base = "https://raw.githubusercontent.com/gnomidlo/ChimeraVIP/main/",
+    changes = {
+        "Updater: krotkie nowosci przy /cvip sprawdz",
+    },
     files = {
         "loader.lua",
         "src/init.lua",
