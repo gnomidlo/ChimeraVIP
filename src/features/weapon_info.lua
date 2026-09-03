@@ -47,9 +47,9 @@ local DURABILITY_RANGES = {
     ["bardzo krotko"] = "<1h",
 }
 
-local function normalize(value)
-    return tostring(value or ""):lower():gsub("^%s+", ""):gsub("%s+$", ""):gsub("%s+", " ")
-end
+local normalize = U.normalize
+local colors = U.palette
+local gag_current_line = U.gag_line
 
 local function make_index(levels)
     local out = {}
@@ -59,26 +59,6 @@ end
 
 W.balance_index = make_index(BALANCE_LEVELS)
 W.effectiveness_index = make_index(EFFECTIVENESS_LEVELS)
-
-local function colors()
-    if C.pastel_ui and C.pastel_ui.colors then return C.pastel_ui.colors end
-    return {
-        text="#D8DCE6", text_muted="#AEB6C5", mint="#A8DCC2", blue="#AFCBF4",
-        lavender="#C7B9E8", peach="#F2C4A0", yellow="#EFD8A6", rose="#F0A8B8",
-        separator="#2B303C",
-    }
-end
-
-local function gag_current_line()
-    if type(deleteLine) == "function" then
-        local ok = pcall(deleteLine)
-        if ok then return end
-    end
-    pcall(function()
-        selectCurrentLine()
-        replace("")
-    end)
-end
 
 local function grip_short(value)
     local key = normalize(value)
@@ -262,10 +242,9 @@ function W:show_help()
 end
 
 function W:install()
-    for _, id in ipairs(self.trigger_ids or {}) do pcall(killTrigger, id) end
-    for _, id in ipairs(self.alias_ids or {}) do pcall(killAlias, id) end
+    U.clear_triggers(self)
+    U.clear_aliases(self)
     if self.capture_timer then pcall(killTimer, self.capture_timer) end
-    self.trigger_ids, self.alias_ids = {}, {}
     self.capture, self.capture_timer = nil, nil
 
     self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
