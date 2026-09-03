@@ -19,7 +19,7 @@ E.trigger_ids = {}
 local function replace_prefix(prefix, label, color)
     local found = selectString(prefix, 1)
     if found == nil or found < 0 then return end
-    cReplace("<#" .. color .. ">" .. label .. ":<#D8DCE6> ")
+    creplace("<#" .. color .. ">" .. label .. ":<#D8DCE6> ")
 end
 
 E.trigger_ids[#E.trigger_ids + 1] = tempRegexTrigger(
@@ -47,7 +47,7 @@ E.trigger_ids[#E.trigger_ids + 1] = tempRegexTrigger(
     [[^Nie masz nic przy sobie\.$]],
     function()
         selectCurrentLine()
-        cReplace("<#AFCBF4>PRZY SOBIE:<#AEB6C5> brak")
+        creplace("<#AFCBF4>PRZY SOBIE:<#AEB6C5> brak")
     end
 )
 
