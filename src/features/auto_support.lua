@@ -149,7 +149,7 @@ end
 function AS:update_ui()
     local b=self.ui.button; if not b then return end
     local P=colors(); local active=self.enabled and P.mint or P.rose; local state=self.enabled and "ON" or "OFF"
-    local width=(C.quiet_footer and C.quiet_footer.layout and C.quiet_footer.layout.zone3_width) or 150
+    local width=self.ui.button_width or ((C.quiet_footer and C.quiet_footer.layout and C.quiet_footer.layout.zone3_width) or 150)
     local text
     if width<95 then text="<center><font color='"..P.text_muted.."'>AS</font>&nbsp;<font color='"..active.."'>"..state.."</font></center>"
     else text="<center><font color='"..P.text_muted.."'>AUTO-WSPARCIE</font>&nbsp;&nbsp;<font color='"..active.."'>● "..state.."</font></center>" end
@@ -164,9 +164,15 @@ function AS:attach_ui()
     self:destroy_ui()
     local zone_width=HUD.layout.zone3_width or 0
     if zone_width<40 then return end
-    local width=math.max(40,math.min(165,zone_width-4))
+    local width
+    if zone_width>=80 then
+        width=math.floor((math.min(zone_width,200)-3)/2)
+    else
+        width=math.max(40,zone_width-4)
+    end
     local name="chimera_vip.auto_support."..tostring(HUD.generation or 0)..".button"
     self.ui.button=Geyser.Label:new({name=name,x=0,y=8,width=width,height=25,fontSize=8},HUD.zone3)
+    self.ui.button_width=width
     self.ui.button:setClickCallback(function() AS:toggle() end)
     pcall(setLabelCursor,name,"PointingHand")
     self:update_ui()

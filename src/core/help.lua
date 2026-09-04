@@ -50,9 +50,9 @@ function H:register_defaults()
     })
 
     self:register("automation", {
-        title="AUTO-WSPARCIE",
-        description={"Auto-wsparcie obserwuje GMCP drużyny i pilnuje celu lidera.","Próba wsparcia wysyła 'wesprzyj' dwukrotnie z krótkim odstępem i ma anty-spam 1,5 s."},
-        commands={{"/wsparcie pomoc", "ta pomoc"},{"AUTO-WSPARCIE ON/OFF", "przełącznik w prawej części footera"}},
+        title="AUTOMATYKA WALKI",
+        description={"Auto-wsparcie obserwuje GMCP drużyny i pilnuje celu lidera.","Tactician analizuje rozkład przeciwników i HP drużyny, a następnie rekomenduje lub wykonuje manewr zasłony albo wycofania."},
+        commands={{"/wsparcie pomoc", "ta pomoc"},{"AUTO-WSPARCIE ON/OFF", "przełącznik w prawej części footera"},{"/tactician obserwuj", "pokazuj rekomendacje bez wysyłania komend"},{"/tactician auto", "automatycznie wykonuj manewry po ID GMCP"},{"/tactician status", "snapshot pola walki i bieżąca decyzja"},{"TACTICIAN OFF/OBS/AUTO", "przełącznik obok Auto-wsparcia"}},
     })
 
     self:register("defense", {
@@ -96,6 +96,7 @@ H.catalog = {
     {"/ui pomoc",         "Interfejs",     "motyw, Quiet Footer i układ UI"},
     {"/walka pomoc",      "Kolory walki",  "prefiksy siły obrażeń i integracja walki"},
     {"/wsparcie pomoc",   "Auto-wsparcie", "automatyczne podążanie za celem lidera"},
+    {"/tactician pomoc",  "Tactician",     "rekomendacje i automatyczne manewry szyku"},
     {"/def pomoc",        "Obrona",        "sesyjne statystyki defensywy i sprzętu"},
     {"/xp pomoc",         "Doświadczenie", "XP/h, zabójstwa i typy mobów"},
     {"/bron pomoc",       "Bron",          "skrocone parametry wywazenia i skutecznosci"},
@@ -190,6 +191,7 @@ function H:install_aliases()
     add([[^/ui (?:pomoc|help)$]], "interface")
     add([[^/walka (?:pomoc|help)$]], "combat")
     add([[^/wsparcie (?:pomoc|help)$]], "automation")
+    add([[^/tactician (?:pomoc|help)$]], "automation")
     add([[^/cechy (?:pomoc|help)$]], "stats")
     add([[^/ustawienia (?:pomoc|help)$]], "settings")
 end
