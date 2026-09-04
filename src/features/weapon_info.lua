@@ -107,6 +107,14 @@ local function duration_range(text)
     return DURATION_RANGES[key] or trim(text)
 end
 
+local function armor_damage_line(rows, key, label, color, P)
+    local parts = {}
+    for _, row in ipairs(rows or {}) do
+        parts[#parts + 1] = P.text_muted .. row.location .. ": " .. P.text .. tostring(row[key])
+    end
+    return "\n    " .. color .. string.format("%-10s", label .. ":") .. table.concat(parts, P.text_muted .. " | ")
+end
+
 function W:touch_capture()
     if self.capture_timer then pcall(killTimer, self.capture_timer) end
     self.capture_timer = tempTimer(self.capture_timeout, function()
@@ -259,12 +267,10 @@ function W:show_summary()
         if #(c.armor or {}) == 0 then
             hecho("\n  " .. P.text_muted .. "KP: brak rozpoznanych danych")
         else
-            local parts = {}
-            for _, row in ipairs(c.armor) do
-                parts[#parts + 1] = P.text_muted .. row.location .. " " .. P.mint
-                    .. tostring(row.pierce) .. "/" .. tostring(row.slash) .. "/" .. tostring(row.blunt)
-            end
-            hecho("\n  " .. P.text_muted .. "KP: " .. table.concat(parts, P.text_muted .. "  |  "))
+            hecho("\n  " .. P.text_muted .. "KP:")
+            hecho(armor_damage_line(c.armor, "pierce", "KLUTE", P.blue, P))
+            hecho(armor_damage_line(c.armor, "slash", "CIETE", P.mint, P))
+            hecho(armor_damage_line(c.armor, "blunt", "OBUCHOWE", P.peach, P))
         end
     end
 
@@ -277,6 +283,7 @@ function W:show_help()
         .. "\n" .. P.text_muted .. "Parser oceny sprzetu nie ukrywa ani nie przebudowuje odpowiedzi MUD-a."
         .. "\n" .. P.text_muted .. "Po surowej ocenie dopisuje podsumowanie stanu, wartosci, masy, objetosci, czasu, magii oraz parametrow broni lub KP."
         .. "\n" .. P.text_muted .. "Stan opisowy jest mapowany na skale 1-7; czas sluzenia na przyblizony zakres godzin."
+        .. "\n" .. P.text_muted .. "KP jest rozbite na klute, ciete i obuchowe, aby latwo porownac ochrone lokacji."
         .. "\n" .. P.text_muted .. "Dla broni SUMA = WYW + SKUT; nie zakladamy obecnie zadnej maksymalnej skali."
         .. "\n\n" .. P.mint .. "/bron pomoc" .. P.text_muted .. "  ta pomoc\n")
 end
