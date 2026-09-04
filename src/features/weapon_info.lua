@@ -22,8 +22,6 @@ local colors = U.palette
 local trim = U.trim
 local normalize = U.normalize
 
--- Drabinka zgodna z dawnym parserem, rozszerzona do nowej skali 1-7.
--- Serwer potwierdzil jawnie "w dobrym stanie" jako 6/7.
 local CONDITION_LEVELS = {
     ["w znakomitym stanie"] = 7,
     ["w dobrym stanie"] = 6,
@@ -45,16 +43,13 @@ local DURATION_RANGES = {
 local function parse_money(text)
     local raw = normalize(text)
     local value = {mt=0, z=0, s=0, m=0}
-
     value.mt = tonumber(raw:match("(%d+)%s+mithryl")) or 0
     value.z = tonumber(raw:match("(%d+)%s+zlot")) or 0
     value.s = tonumber(raw:match("(%d+)%s+srebr")) or 0
     value.m = tonumber(raw:match("(%d+)%s+miedz")) or 0
-
     if value.mt == 0 and value.z == 0 and value.s == 0 and value.m == 0 then
         value.m = tonumber(raw:match("(%d+)%s+miedziak")) or 0
     end
-
     return value
 end
 
@@ -124,11 +119,7 @@ function W:touch_capture()
 end
 
 function W:start(item_name)
-    self.capture = {
-        item_name = trim(item_name),
-        armor = {},
-        magic = false,
-    }
+    self.capture = {item_name=trim(item_name), armor={}, magic=false}
     self:touch_capture()
 end
 
@@ -153,8 +144,6 @@ end
 
 function W:on_physical(item_name, amount, unit, milliliters)
     local c = self:ensure_capture()
-    -- Ta linia daje nazwe przedmiotu w mianowniku, w przeciwienstwie do
-    -- "Oceniasz starannie ...", ktore zwykle uzywa biernika.
     c.item_name = trim(item_name)
     local weight = tonumber(amount)
     if unit == "kilogramow" then weight = weight and weight * 1000 or nil end
@@ -169,13 +158,11 @@ function W:on_value(text)
 end
 
 function W:on_duration(duration)
-    local c = self:ensure_capture()
-    c.duration = trim(duration)
+    self:ensure_capture().duration = trim(duration)
 end
 
 function W:on_magic()
-    local c = self:ensure_capture()
-    c.magic = true
+    self:ensure_capture().magic = true
 end
 
 function W:on_weapon_header(weapon_type, grip)
@@ -185,8 +172,7 @@ function W:on_weapon_header(weapon_type, grip)
 end
 
 function W:on_damage(damage)
-    local c = self:ensure_capture()
-    c.damage = trim(damage)
+    self:ensure_capture().damage = trim(damage)
 end
 
 function W:on_weapon_scores(balance_text, balance, effectiveness_text, effectiveness)
@@ -205,10 +191,7 @@ function W:parse_armor(text)
     for chunk in tostring(text or ""):gmatch("[^,]+") do
         local location, pierce, slash, blunt = trim(chunk):match("^(.-)%s+(%d+)/(%d+)/(%d+)$")
         if location then
-            rows[#rows + 1] = {
-                location=trim(location),
-                pierce=tonumber(pierce), slash=tonumber(slash), blunt=tonumber(blunt),
-            }
+            rows[#rows + 1] = {location=trim(location), pierce=tonumber(pierce), slash=tonumber(slash), blunt=tonumber(blunt)}
         end
     end
     return rows
@@ -230,7 +213,11 @@ function W:show_summary()
     if title == "" then title = "przedmiot" end
 
     hecho("\n" .. P.separator .. "-------------------------------------------------------")
-    hecho("\n" .. P.lavender .. "OCENA" .. P.text_muted .. " - " .. P.text .. title)
+    if c.magic then
+        hecho("\n" .. P.lavender .. "OCENA - " .. title .. "  |  MAGIA")
+    else
+        hecho("\n" .. P.lavender .. "OCENA" .. P.text_muted .. " - " .. P.text .. title)
+    end
 
     local details = {}
     if c.condition and c.condition_max then
@@ -239,10 +226,7 @@ function W:show_summary()
     elseif c.condition_text then
         details[#details + 1] = P.text_muted .. "stan: " .. condition_color(c.condition_text, P) .. c.condition_text
     end
-    if c.value then
-        details[#details + 1] = P.text_muted .. "wartosc: " .. colored_money(c.value, P)
-    end
-    if c.magic then details[#details + 1] = P.lavender .. "MAGIA" end
+    if c.value then details[#details + 1] = P.text_muted .. "wartosc: " .. colored_money(c.value, P) end
     if #details > 0 then hecho("\n  " .. table.concat(details, P.text_muted .. "  |  ")) end
 
     local physical = {}
@@ -257,7 +241,6 @@ function W:show_summary()
         if c.grip then weapon[#weapon + 1] = P.text_muted .. "chwyt: " .. P.text .. c.grip end
         if c.damage then weapon[#weapon + 1] = P.text_muted .. "obrazenia: " .. P.text .. c.damage end
         if #weapon > 0 then hecho("\n  " .. table.concat(weapon, P.text_muted .. "  |  ")) end
-
         if c.balance and c.effectiveness then
             hecho("\n  " .. P.text_muted .. "WYW: " .. P.blue .. tostring(c.balance)
                 .. P.text_muted .. "  |  SKUT: " .. P.mint .. tostring(c.effectiveness)
@@ -281,7 +264,7 @@ function W:show_help()
     local P = colors()
     hecho("\n\n" .. P.lavender .. "SPRZET - OCENA"
         .. "\n" .. P.text_muted .. "Parser oceny sprzetu nie ukrywa ani nie przebudowuje odpowiedzi MUD-a."
-        .. "\n" .. P.text_muted .. "Po surowej ocenie dopisuje podsumowanie stanu, wartosci, masy, objetosci, czasu, magii oraz parametrow broni lub KP."
+        .. "\n" .. P.text_muted .. "Przedmioty magiczne maja wyrozniony naglowek OCENA - nazwa | MAGIA."
         .. "\n" .. P.text_muted .. "Stan opisowy jest mapowany na skale 1-7; czas sluzenia na przyblizony zakres godzin."
         .. "\n" .. P.text_muted .. "KP jest rozbite na klute, ciete i obuchowe, aby latwo porownac ochrone lokacji."
         .. "\n" .. P.text_muted .. "Dla broni SUMA = WYW + SKUT; nie zakladamy obecnie zadnej maksymalnej skali."
@@ -293,77 +276,21 @@ function W:install()
     U.clear_aliases(self)
     self:reset_capture()
 
-    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
-        [[^Oceniasz starannie (.+)\.\s*$]],
-        function() W:start(matches[2]) end
-    )
+    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger([[^Oceniasz starannie (.+)\.\s*$]], function() W:start(matches[2]) end)
+    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger([[^Wyglada na to, ze jest (.+?stanie)\.\s*\[(\d+)/(\d+)\]\s*$]], function() W:on_condition(matches[2], matches[3], matches[4]) end)
+    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger([[^Wyglada na to, ze jest (.+?stanie)\.\s*$]], function() if W.capture then W:on_condition(matches[2]) end end)
+    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger([[^Wyglada na to, ze liczne walki wyryly na (?:nim|niej) swoje pietno\.\s*$]], function() if W.capture then W:on_condition("liczne walki wyryly swoje pietno") end end)
+    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger([[^Wyglada na to, ze wym(?:aga|ga) natychmiastowej konserwacji i moze peknac w kazdej chwili\.\s*$]], function() if W.capture then W:on_condition("natychmiastowa konserwacja") end end)
+    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger([[^Oceniasz, ze (.+?) wazy (\d+) (gramow|kilogramow), zas (?:jego|jej|ich) objetosc wynosi (\d+) mililitrow\.\s*$]], function() W:on_physical(matches[2], matches[3], matches[4], matches[5]) end)
+    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger([[^Wydaje ci sie, ze jest wart(?:a|e)? (.+?)\.\s*$]], function() W:on_value(matches[2]) end)
+    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger([[^Wyglada na to, ze mogl(?:by|aby|oby) ci jeszcze (.+?) sluzyc\.\s*$]], function() W:on_duration(matches[2]) end)
+    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger([[^Sadzac po .*zostala zakleta jakas magia\.\s*$]], function() W:on_magic() end)
+    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger([[^Typ broni:\s*(.+?)\s+Chwyt:\s*(.+?)\s*$]], function() W:on_weapon_header(matches[2], matches[3]) end)
+    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger([[^Obrazenia:\s*(.+?)\s*$]], function() W:on_damage(matches[2]) end)
+    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger([[^Wywazenie:\s*(.*?)\s*\[(\d+)\]\s+Skutecznosc:\s*(.*?)\s*\[(\d+)\]\s*$]], function() W:on_weapon_scores(matches[2], matches[3], matches[4], matches[5]) end)
+    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger([[^Klasa pancerza \(klute/ciete/obuchowe\):\s*(.+?)\.\s*$]], function() W:on_armor(matches[2]) end)
 
-    -- Wariant z liczbowym stanem, jesli serwer go zwroci.
-    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
-        [[^Wyglada na to, ze jest (.+?stanie)\.\s*\[(\d+)/(\d+)\]\s*$]],
-        function() W:on_condition(matches[2], matches[3], matches[4]) end
-    )
-
-    -- Aktualny wariant silnika: tylko opis stanu.
-    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
-        [[^Wyglada na to, ze jest (.+?stanie)\.\s*$]],
-        function() if W.capture then W:on_condition(matches[2]) end end
-    )
-
-    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
-        [[^Wyglada na to, ze liczne walki wyryly na (?:nim|niej) swoje pietno\.\s*$]],
-        function() if W.capture then W:on_condition("liczne walki wyryly swoje pietno") end end
-    )
-
-    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
-        [[^Wyglada na to, ze wym(?:aga|ga) natychmiastowej konserwacji i moze peknac w kazdej chwili\.\s*$]],
-        function() if W.capture then W:on_condition("natychmiastowa konserwacja") end end
-    )
-
-    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
-        [[^Oceniasz, ze (.+?) wazy (\d+) (gramow|kilogramow), zas (?:jego|jej|ich) objetosc wynosi (\d+) mililitrow\.\s*$]],
-        function() W:on_physical(matches[2], matches[3], matches[4], matches[5]) end
-    )
-
-    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
-        [[^Wydaje ci sie, ze jest wart(?:a|e)? (.+?)\.\s*$]],
-        function() W:on_value(matches[2]) end
-    )
-
-    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
-        [[^Wyglada na to, ze mogl(?:by|aby|oby) ci jeszcze (.+?) sluzyc\.\s*$]],
-        function() W:on_duration(matches[2]) end
-    )
-
-    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
-        [[^Sadzac po .*zostala zakleta jakas magia\.\s*$]],
-        function() W:on_magic() end
-    )
-
-    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
-        [[^Typ broni:\s*(.+?)\s+Chwyt:\s*(.+?)\s*$]],
-        function() W:on_weapon_header(matches[2], matches[3]) end
-    )
-
-    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
-        [[^Obrazenia:\s*(.+?)\s*$]],
-        function() W:on_damage(matches[2]) end
-    )
-
-    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
-        [[^Wywazenie:\s*(.*?)\s*\[(\d+)\]\s+Skutecznosc:\s*(.*?)\s*\[(\d+)\]\s*$]],
-        function() W:on_weapon_scores(matches[2], matches[3], matches[4], matches[5]) end
-    )
-
-    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
-        [[^Klasa pancerza \(klute/ciete/obuchowe\):\s*(.+?)\.\s*$]],
-        function() W:on_armor(matches[2]) end
-    )
-
-    self.alias_ids[#self.alias_ids + 1] = tempAlias(
-        [[^/bron (?:pomoc|help)$]],
-        function() W:show_help() end
-    )
+    self.alias_ids[#self.alias_ids + 1] = tempAlias([[^/bron (?:pomoc|help)$]], function() W:show_help() end)
 end
 
 if C.help and type(C.help.register) == "function" then
