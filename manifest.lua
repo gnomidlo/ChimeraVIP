@@ -1,13 +1,13 @@
 return {
     name = "ChimeraVIP",
-    version = "0.107",
+    version = "0.108",
     schema = 2,
     tested_upstream = "4.3",
     raw_base = "https://raw.githubusercontent.com/gnomidlo/ChimeraVIP/main/",
     changes = {
-        "Sprzet: poprawny mianownik nazwy z linii wagi",
-        "Sprzet: stan opisowy, waga, objetosc i czas w podsumowaniu",
-        "Bron: typ, chwyt i obrazenia w karcie oceny",
+        "Sprzet: stan opisowy mapowany na skale 1-7",
+        "Sprzet: czas sluzenia mapowany na zakres godzin",
+        "Sprzet: dwukropki przy wszystkich kategoriach podsumowania",
     },
     files = {
         "loader.lua",
@@ -43,7 +43,7 @@ return {
     file_meta = {
         ["loader.lua"] = {hash="42e1c1b290327121c8025b0ecfdb2fa3dcd8a0f5", size=4381},
         ["src/init.lua"] = {hash="d6b39d65dcc9e38b258da4a3a6aba944d0b8e078", size=1442},
-        ["src/core/bootstrap.lua"] = {hash="81970b6a04813229f3671d85960e11ded9257f60", size=1479},
+        ["src/core/bootstrap.lua"] = {hash="63ca58c51c6fc5eb0244e643631dcb3401a0e985", size=1479},
         ["src/core/util.lua"] = {hash="76cddf18a60094025f4e9ba1bf980417ed3b4812", size=6561},
         ["src/core/settings.lua"] = {hash="db775abfeb39687dc9be9a3b38ba24b0caa5596b", size=10762},
         ["src/core/help.lua"] = {hash="8c3afcb438dd53ea86bc65a548f375e9a444f517", size=9973},
@@ -67,7 +67,7 @@ return {
         ["src/features/containers.lua"] = {hash="c5462c4929412da93fb780c277388a925e27b065", size=5027},
         ["src/features/skills_view.lua"] = {hash="5eaa6d89119dd439d9beebee6bfacd73de98e699", size=8284},
         ["src/features/equipment_view.lua"] = {hash="14d6f882f2b48d1b937603949a7d21b81027e49b", size=1721},
-        ["src/features/weapon_info.lua"] = {hash="a3f8cea149b58f4ae6fae9f81c37806ca7a58a6f", size=11836},
+        ["src/features/weapon_info.lua"] = {hash="b7fe09615d00e3ef1966d0950c28bd128519989b", size=13758},
         ["src/ui/footer_controls.lua"] = {hash="65e177de20cf4ea762da6b2210ad27e8a8433cfe", size=13255},
         ["src/ui/module_controls.lua"] = {hash="d678888ba23e8955db0d108b6de6ad75265837cb", size=3660}
     },
