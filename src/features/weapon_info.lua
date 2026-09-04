@@ -136,7 +136,7 @@ function W:show_summary()
     if title == "" then title = "przedmiot" end
 
     hecho("\n" .. P.separator .. "-------------------------------------------------------")
-    hecho("\n" .. P.lavender .. "OCENA" .. P.text_muted .. " — " .. P.text .. title)
+    hecho("\n" .. P.lavender .. "OCENA" .. P.text_muted .. " - " .. P.text .. title)
 
     local details = {}
     if c.condition and c.condition_max then
@@ -172,7 +172,7 @@ end
 
 function W:show_help()
     local P = colors()
-    hecho("\n\n" .. P.lavender .. "SPRZET — OCENA"
+    hecho("\n\n" .. P.lavender .. "SPRZET - OCENA"
         .. "\n" .. P.text_muted .. "Nowy parser oceny sprzetu nie ukrywa ani nie przebudowuje odpowiedzi MUD-a."
         .. "\n" .. P.text_muted .. "Po surowej ocenie dopisuje podsumowanie twardych danych: stan, wartosc, magie oraz parametry broni lub KP."
         .. "\n" .. P.text_muted .. "Dla broni SUMA = WYW + SKUT; nie zakladamy obecnie zadnej maksymalnej skali."
@@ -184,7 +184,7 @@ function W:install()
     U.clear_aliases(self)
     self:reset_capture()
 
-    -- Początek nowej oceny. Od tej chwili tylko zbieramy dane; niczego nie gagujemy.
+    -- Poczatek nowej oceny. Od tej chwili tylko zbieramy dane; niczego nie gagujemy.
     self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
         [[^Oceniasz starannie (.+)\.\s*$]],
         function() W:start(matches[2]) end
@@ -223,10 +223,10 @@ end
 
 if C.help and type(C.help.register) == "function" then
     C.help:register("weapon", {
-        title="SPRZET — OCENA",
+        title="SPRZET - OCENA",
         description={
-            "Podsłuchuje nowy format 'oceniasz starannie' bez gagowania oryginalnej odpowiedzi.",
-            "Dopisuje zwięzłe podsumowanie liczb dla broni i pancerza.",
+            "Podsluchuje nowy format 'oceniasz starannie' bez gagowania oryginalnej odpowiedzi.",
+            "Dopisuje zwiezle podsumowanie liczb dla broni i pancerza.",
         },
         commands={{"/bron pomoc", "ta pomoc"}},
     })
