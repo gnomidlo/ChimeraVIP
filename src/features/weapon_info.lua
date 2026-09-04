@@ -1,6 +1,6 @@
 -- ChimeraVIP / Equipment appraisal
 -- Parser nowego formatu "oceniasz starannie". Nie gaguje odpowiedzi MUD-a:
--- zbiera twarde liczby i dopisuje male podsumowanie na koncu oceny.
+-- zbiera twarde dane i dopisuje male podsumowanie na koncu oceny.
 
 chimera_vip = chimera_vip or {}
 chimera_overlay = chimera_overlay or chimera_vip
@@ -48,6 +48,27 @@ local function colored_money(value, P)
     return table.concat(parts, P.text_muted .. " ")
 end
 
+local function format_weight(grams)
+    grams = tonumber(grams)
+    if not grams then return "-" end
+    if grams >= 1000 then
+        local kg = grams / 1000
+        if kg == math.floor(kg) then return tostring(math.floor(kg)) .. " kg" end
+        return string.format("%.1f kg", kg)
+    end
+    return tostring(math.floor(grams)) .. " g"
+end
+
+local function condition_color(text, P)
+    local key = normalize(text)
+    if key:find("znakomitym", 1, true) then return P.lavender end
+    if key:find("dobrym", 1, true) then return P.mint end
+    if key:find("kiepskim", 1, true) then return P.yellow end
+    if key:find("zlym", 1, true) then return P.peach end
+    if key:find("bardzo zlym", 1, true) then return P.rose end
+    return P.text
+end
+
 function W:touch_capture()
     if self.capture_timer then pcall(killTimer, self.capture_timer) end
     self.capture_timer = tempTimer(self.capture_timeout, function()
@@ -84,15 +105,42 @@ function W:on_condition(description, current, maximum)
     c.condition_max = tonumber(maximum)
 end
 
+function W:on_physical(item_name, amount, unit, milliliters)
+    local c = self:ensure_capture()
+    -- Ta linia daje nazwe przedmiotu w mianowniku, w przeciwienstwie do
+    -- "Oceniasz starannie ...", ktore zwykle uzywa biernika.
+    c.item_name = trim(item_name)
+    local weight = tonumber(amount)
+    if unit == "kilogramow" then weight = weight and weight * 1000 or nil end
+    c.grams = weight
+    c.milliliters = tonumber(milliliters)
+end
+
 function W:on_value(text)
     local c = self:ensure_capture()
     c.value = parse_money(text)
     c.value_raw = trim(text)
 end
 
+function W:on_duration(duration)
+    local c = self:ensure_capture()
+    c.duration = trim(duration)
+end
+
 function W:on_magic()
     local c = self:ensure_capture()
     c.magic = true
+end
+
+function W:on_weapon_header(weapon_type, grip)
+    local c = self:ensure_capture()
+    c.weapon_type = trim(weapon_type)
+    c.grip = trim(grip)
+end
+
+function W:on_damage(damage)
+    local c = self:ensure_capture()
+    c.damage = trim(damage)
 end
 
 function W:on_weapon_scores(balance_text, balance, effectiveness_text, effectiveness)
@@ -140,20 +188,35 @@ function W:show_summary()
 
     local details = {}
     if c.condition and c.condition_max then
-        details[#details + 1] = P.text_muted .. "stan " .. P.mint .. tostring(c.condition) .. "/" .. tostring(c.condition_max)
+        details[#details + 1] = P.text_muted .. "stan " .. condition_color(c.condition_text, P)
+            .. tostring(c.condition) .. "/" .. tostring(c.condition_max)
+    elseif c.condition_text then
+        details[#details + 1] = P.text_muted .. "stan " .. condition_color(c.condition_text, P) .. c.condition_text
     end
     if c.value then
         details[#details + 1] = P.text_muted .. "wartosc " .. colored_money(c.value, P)
     end
-    if c.magic then
-        details[#details + 1] = P.lavender .. "MAGIA"
-    end
+    if c.magic then details[#details + 1] = P.lavender .. "MAGIA" end
     if #details > 0 then hecho("\n  " .. table.concat(details, P.text_muted .. "  |  ")) end
 
-    if c.kind == "weapon" and c.balance and c.effectiveness then
-        hecho("\n  " .. P.text_muted .. "WYW " .. P.blue .. tostring(c.balance)
-            .. P.text_muted .. "  |  SKUT " .. P.mint .. tostring(c.effectiveness)
-            .. P.text_muted .. "  |  SUMA " .. P.lavender .. tostring(c.balance + c.effectiveness))
+    local physical = {}
+    if c.grams then physical[#physical + 1] = P.text_muted .. "waga " .. P.text .. format_weight(c.grams) end
+    if c.milliliters then physical[#physical + 1] = P.text_muted .. "objetosc " .. P.text .. tostring(c.milliliters) .. " ml" end
+    if c.duration then physical[#physical + 1] = P.text_muted .. "czas " .. P.text .. c.duration end
+    if #physical > 0 then hecho("\n  " .. table.concat(physical, P.text_muted .. "  |  ")) end
+
+    if c.kind == "weapon" then
+        local weapon = {}
+        if c.weapon_type then weapon[#weapon + 1] = P.text_muted .. "typ " .. P.text .. c.weapon_type end
+        if c.grip then weapon[#weapon + 1] = P.text_muted .. "chwyt " .. P.text .. c.grip end
+        if c.damage then weapon[#weapon + 1] = P.text_muted .. "obrazenia " .. P.text .. c.damage end
+        if #weapon > 0 then hecho("\n  " .. table.concat(weapon, P.text_muted .. "  |  ")) end
+
+        if c.balance and c.effectiveness then
+            hecho("\n  " .. P.text_muted .. "WYW " .. P.blue .. tostring(c.balance)
+                .. P.text_muted .. "  |  SKUT " .. P.mint .. tostring(c.effectiveness)
+                .. P.text_muted .. "  |  SUMA " .. P.lavender .. tostring(c.balance + c.effectiveness))
+        end
     elseif c.kind == "armor" then
         if #(c.armor or {}) == 0 then
             hecho("\n  " .. P.text_muted .. "KP: brak rozpoznanych danych")
@@ -173,8 +236,8 @@ end
 function W:show_help()
     local P = colors()
     hecho("\n\n" .. P.lavender .. "SPRZET - OCENA"
-        .. "\n" .. P.text_muted .. "Nowy parser oceny sprzetu nie ukrywa ani nie przebudowuje odpowiedzi MUD-a."
-        .. "\n" .. P.text_muted .. "Po surowej ocenie dopisuje podsumowanie twardych danych: stan, wartosc, magie oraz parametry broni lub KP."
+        .. "\n" .. P.text_muted .. "Parser oceny sprzetu nie ukrywa ani nie przebudowuje odpowiedzi MUD-a."
+        .. "\n" .. P.text_muted .. "Po surowej ocenie dopisuje podsumowanie stanu, wartosci, masy, objetosci, czasu, magii oraz parametrow broni lub KP."
         .. "\n" .. P.text_muted .. "Dla broni SUMA = WYW + SKUT; nie zakladamy obecnie zadnej maksymalnej skali."
         .. "\n\n" .. P.mint .. "/bron pomoc" .. P.text_muted .. "  ta pomoc\n")
 end
@@ -184,15 +247,26 @@ function W:install()
     U.clear_aliases(self)
     self:reset_capture()
 
-    -- Poczatek nowej oceny. Od tej chwili tylko zbieramy dane; niczego nie gagujemy.
     self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
         [[^Oceniasz starannie (.+)\.\s*$]],
         function() W:start(matches[2]) end
     )
 
+    -- Wariant z liczbowym stanem, jesli serwer go zwroci.
     self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
-        [[^Wyglada na to, ze jest (.+?)\.\s*\[(\d+)/(\d+)\]\s*$]],
+        [[^Wyglada na to, ze jest (.+?stanie)\.\s*\[(\d+)/(\d+)\]\s*$]],
         function() W:on_condition(matches[2], matches[3], matches[4]) end
+    )
+
+    -- Aktualny wariant silnika: tylko opis stanu.
+    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
+        [[^Wyglada na to, ze jest (.+?stanie)\.\s*$]],
+        function() if W.capture then W:on_condition(matches[2]) end end
+    )
+
+    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
+        [[^Oceniasz, ze (.+?) wazy (\d+) (gramow|kilogramow), zas (?:jego|jej|ich) objetosc wynosi (\d+) mililitrow\.\s*$]],
+        function() W:on_physical(matches[2], matches[3], matches[4], matches[5]) end
     )
 
     self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
@@ -201,8 +275,23 @@ function W:install()
     )
 
     self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
+        [[^Wyglada na to, ze mogl(?:by|aby|oby) ci jeszcze (.+?) sluzyc\.\s*$]],
+        function() W:on_duration(matches[2]) end
+    )
+
+    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
         [[^Sadzac po .*zostala zakleta jakas magia\.\s*$]],
         function() W:on_magic() end
+    )
+
+    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
+        [[^Typ broni:\s*(.+?)\s+Chwyt:\s*(.+?)\s*$]],
+        function() W:on_weapon_header(matches[2], matches[3]) end
+    )
+
+    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
+        [[^Obrazenia:\s*(.+?)\s*$]],
+        function() W:on_damage(matches[2]) end
     )
 
     self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
@@ -226,7 +315,7 @@ if C.help and type(C.help.register) == "function" then
         title="SPRZET - OCENA",
         description={
             "Podsluchuje nowy format 'oceniasz starannie' bez gagowania oryginalnej odpowiedzi.",
-            "Dopisuje zwiezle podsumowanie liczb dla broni i pancerza.",
+            "Dopisuje zwiezle podsumowanie danych dla broni i pancerza.",
         },
         commands={{"/bron pomoc", "ta pomoc"}},
     })
