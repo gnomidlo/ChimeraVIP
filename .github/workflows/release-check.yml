@@ -19,3 +19,5 @@ jobs:
 
       - name: Validate release metadata and Lua syntax
         run: lua5.1 tools/release_check.lua
+      - name: Test container amounts
+        run: lua5.1 tools/containers_test.lua

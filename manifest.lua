@@ -1,14 +1,12 @@
 return {
     name = "ChimeraVIP",
-    version = "0.104",
+    version = "0.105",
     schema = 2,
     tested_upstream = "4.3",
     raw_base = "https://raw.githubusercontent.com/gnomidlo/ChimeraVIP/main/",
     changes = {
-        "Settings 2.0: dynamiczny centralny panel ustawien",
-        "Ustawienia: wspolny rejestr toggle, choice i color",
-        "Postacie: highlight i kolory relacji dostepne w /cvip ustawienia",
-        "Architektura: nowe moduly moga rejestrowac ustawienia bez zmian GUI",
+        "Pojemniki: liczebniki slowne od zera do dwudziestu",
+        "Monety: jedenascie mithrylowych monet pokazuje poprawnie 11",
     },
     files = {
         "loader.lua",
@@ -44,7 +42,7 @@ return {
     file_meta = {
         ["loader.lua"] = {hash="42e1c1b290327121c8025b0ecfdb2fa3dcd8a0f5", size=4381},
         ["src/init.lua"] = {hash="d6b39d65dcc9e38b258da4a3a6aba944d0b8e078", size=1442},
-        ["src/core/bootstrap.lua"] = {hash="28383368d3ebffac3366fd73fa261b3fac8b9212", size=1479},
+        ["src/core/bootstrap.lua"] = {hash="6032d8851d1bd4c07c44e0fbb74f5f917c13928b", size=1479},
         ["src/core/util.lua"] = {hash="76cddf18a60094025f4e9ba1bf980417ed3b4812", size=6561},
         ["src/core/settings.lua"] = {hash="db775abfeb39687dc9be9a3b38ba24b0caa5596b", size=10762},
         ["src/core/help.lua"] = {hash="8c3afcb438dd53ea86bc65a548f375e9a444f517", size=9973},
@@ -65,7 +63,7 @@ return {
         ["src/features/settings_bindings.lua"] = {hash="3015d9994667fc4959029f8faf76c69f67ab7d3f", size=2959},
         ["src/features/characters_delete_ui.lua"] = {hash="dd70e429d43a1f57e8785689063547063d2bf9bf", size=2077},
         ["src/ui/characters_help_panel.lua"] = {hash="634fbd308f81451b545bc9c6dabbb2f8c068e54b", size=8887},
-        ["src/features/containers.lua"] = {hash="01f3fe9def163073e07f6ef52a1643515472e7d2", size=4845},
+        ["src/features/containers.lua"] = {hash="c5462c4929412da93fb780c277388a925e27b065", size=5027},
         ["src/features/skills_view.lua"] = {hash="5eaa6d89119dd439d9beebee6bfacd73de98e699", size=8284},
         ["src/features/equipment_view.lua"] = {hash="14d6f882f2b48d1b937603949a7d21b81027e49b", size=1721},
         ["src/features/weapon_info.lua"] = {hash="f7559370e8c0e00804dd9ca7b63c3ebc17f8c882", size=10821},
