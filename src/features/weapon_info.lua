@@ -22,6 +22,26 @@ local colors = U.palette
 local trim = U.trim
 local normalize = U.normalize
 
+-- Drabinka zgodna z dawnym parserem, rozszerzona do nowej skali 1-7.
+-- Serwer potwierdzil jawnie "w dobrym stanie" jako 6/7.
+local CONDITION_LEVELS = {
+    ["w znakomitym stanie"] = 7,
+    ["w dobrym stanie"] = 6,
+    ["w kiepskim stanie"] = 5,
+    ["liczne walki wyryly swoje pietno"] = 4,
+    ["w zlym stanie"] = 3,
+    ["w bardzo zlym stanie"] = 2,
+    ["natychmiastowa konserwacja"] = 1,
+}
+
+local DURATION_RANGES = {
+    ["bardzo dlugo"] = ">48h",
+    ["dlugo"] = "24-48h",
+    ["troche"] = "6-24h",
+    ["krotko"] = "1-6h",
+    ["bardzo krotko"] = "<1h",
+}
+
 local function parse_money(text)
     local raw = normalize(text)
     local value = {mt=0, z=0, s=0, m=0}
@@ -59,14 +79,32 @@ local function format_weight(grams)
     return tostring(math.floor(grams)) .. " g"
 end
 
-local function condition_color(text, P)
+local function condition_level(text)
     local key = normalize(text)
-    if key:find("znakomitym", 1, true) then return P.lavender end
-    if key:find("dobrym", 1, true) then return P.mint end
-    if key:find("kiepskim", 1, true) then return P.yellow end
-    if key:find("zlym", 1, true) then return P.peach end
-    if key:find("bardzo zlym", 1, true) then return P.rose end
+    if CONDITION_LEVELS[key] then return CONDITION_LEVELS[key] end
+    if key:find("znakomitym", 1, true) then return 7 end
+    if key:find("dobrym", 1, true) then return 6 end
+    if key:find("kiepskim", 1, true) then return 5 end
+    if key:find("liczne walki", 1, true) then return 4 end
+    if key:find("bardzo zlym", 1, true) then return 2 end
+    if key:find("zlym", 1, true) then return 3 end
+    if key:find("natychmiastowej konserwacji", 1, true) then return 1 end
+    return nil
+end
+
+local function condition_color(text, P)
+    local level = condition_level(text)
+    if level == 7 then return P.lavender end
+    if level == 6 then return P.mint end
+    if level == 5 or level == 4 then return P.yellow end
+    if level == 3 then return P.peach end
+    if level and level <= 2 then return P.rose end
     return P.text
+end
+
+local function duration_range(text)
+    local key = normalize(text)
+    return DURATION_RANGES[key] or trim(text)
 end
 
 function W:touch_capture()
@@ -101,8 +139,8 @@ end
 function W:on_condition(description, current, maximum)
     local c = self:ensure_capture()
     c.condition_text = trim(description)
-    c.condition = tonumber(current)
-    c.condition_max = tonumber(maximum)
+    c.condition = tonumber(current) or condition_level(description)
+    c.condition_max = tonumber(maximum) or (c.condition and 7 or nil)
 end
 
 function W:on_physical(item_name, amount, unit, milliliters)
@@ -188,34 +226,34 @@ function W:show_summary()
 
     local details = {}
     if c.condition and c.condition_max then
-        details[#details + 1] = P.text_muted .. "stan " .. condition_color(c.condition_text, P)
+        details[#details + 1] = P.text_muted .. "stan: " .. condition_color(c.condition_text, P)
             .. tostring(c.condition) .. "/" .. tostring(c.condition_max)
     elseif c.condition_text then
-        details[#details + 1] = P.text_muted .. "stan " .. condition_color(c.condition_text, P) .. c.condition_text
+        details[#details + 1] = P.text_muted .. "stan: " .. condition_color(c.condition_text, P) .. c.condition_text
     end
     if c.value then
-        details[#details + 1] = P.text_muted .. "wartosc " .. colored_money(c.value, P)
+        details[#details + 1] = P.text_muted .. "wartosc: " .. colored_money(c.value, P)
     end
     if c.magic then details[#details + 1] = P.lavender .. "MAGIA" end
     if #details > 0 then hecho("\n  " .. table.concat(details, P.text_muted .. "  |  ")) end
 
     local physical = {}
-    if c.grams then physical[#physical + 1] = P.text_muted .. "waga " .. P.text .. format_weight(c.grams) end
-    if c.milliliters then physical[#physical + 1] = P.text_muted .. "objetosc " .. P.text .. tostring(c.milliliters) .. " ml" end
-    if c.duration then physical[#physical + 1] = P.text_muted .. "czas " .. P.text .. c.duration end
+    if c.grams then physical[#physical + 1] = P.text_muted .. "waga: " .. P.text .. format_weight(c.grams) end
+    if c.milliliters then physical[#physical + 1] = P.text_muted .. "objetosc: " .. P.text .. tostring(c.milliliters) .. " ml" end
+    if c.duration then physical[#physical + 1] = P.text_muted .. "czas: " .. P.text .. duration_range(c.duration) end
     if #physical > 0 then hecho("\n  " .. table.concat(physical, P.text_muted .. "  |  ")) end
 
     if c.kind == "weapon" then
         local weapon = {}
-        if c.weapon_type then weapon[#weapon + 1] = P.text_muted .. "typ " .. P.text .. c.weapon_type end
-        if c.grip then weapon[#weapon + 1] = P.text_muted .. "chwyt " .. P.text .. c.grip end
-        if c.damage then weapon[#weapon + 1] = P.text_muted .. "obrazenia " .. P.text .. c.damage end
+        if c.weapon_type then weapon[#weapon + 1] = P.text_muted .. "typ: " .. P.text .. c.weapon_type end
+        if c.grip then weapon[#weapon + 1] = P.text_muted .. "chwyt: " .. P.text .. c.grip end
+        if c.damage then weapon[#weapon + 1] = P.text_muted .. "obrazenia: " .. P.text .. c.damage end
         if #weapon > 0 then hecho("\n  " .. table.concat(weapon, P.text_muted .. "  |  ")) end
 
         if c.balance and c.effectiveness then
-            hecho("\n  " .. P.text_muted .. "WYW " .. P.blue .. tostring(c.balance)
-                .. P.text_muted .. "  |  SKUT " .. P.mint .. tostring(c.effectiveness)
-                .. P.text_muted .. "  |  SUMA " .. P.lavender .. tostring(c.balance + c.effectiveness))
+            hecho("\n  " .. P.text_muted .. "WYW: " .. P.blue .. tostring(c.balance)
+                .. P.text_muted .. "  |  SKUT: " .. P.mint .. tostring(c.effectiveness)
+                .. P.text_muted .. "  |  SUMA: " .. P.lavender .. tostring(c.balance + c.effectiveness))
         end
     elseif c.kind == "armor" then
         if #(c.armor or {}) == 0 then
@@ -226,7 +264,7 @@ function W:show_summary()
                 parts[#parts + 1] = P.text_muted .. row.location .. " " .. P.mint
                     .. tostring(row.pierce) .. "/" .. tostring(row.slash) .. "/" .. tostring(row.blunt)
             end
-            hecho("\n  " .. P.text_muted .. "KP  " .. table.concat(parts, P.text_muted .. "  |  "))
+            hecho("\n  " .. P.text_muted .. "KP: " .. table.concat(parts, P.text_muted .. "  |  "))
         end
     end
 
@@ -238,6 +276,7 @@ function W:show_help()
     hecho("\n\n" .. P.lavender .. "SPRZET - OCENA"
         .. "\n" .. P.text_muted .. "Parser oceny sprzetu nie ukrywa ani nie przebudowuje odpowiedzi MUD-a."
         .. "\n" .. P.text_muted .. "Po surowej ocenie dopisuje podsumowanie stanu, wartosci, masy, objetosci, czasu, magii oraz parametrow broni lub KP."
+        .. "\n" .. P.text_muted .. "Stan opisowy jest mapowany na skale 1-7; czas sluzenia na przyblizony zakres godzin."
         .. "\n" .. P.text_muted .. "Dla broni SUMA = WYW + SKUT; nie zakladamy obecnie zadnej maksymalnej skali."
         .. "\n\n" .. P.mint .. "/bron pomoc" .. P.text_muted .. "  ta pomoc\n")
 end
@@ -262,6 +301,16 @@ function W:install()
     self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
         [[^Wyglada na to, ze jest (.+?stanie)\.\s*$]],
         function() if W.capture then W:on_condition(matches[2]) end end
+    )
+
+    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
+        [[^Wyglada na to, ze liczne walki wyryly na (?:nim|niej) swoje pietno\.\s*$]],
+        function() if W.capture then W:on_condition("liczne walki wyryly swoje pietno") end end
+    )
+
+    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
+        [[^Wyglada na to, ze wym(?:aga|ga) natychmiastowej konserwacji i moze peknac w kazdej chwili\.\s*$]],
+        function() if W.capture then W:on_condition("natychmiastowa konserwacja") end end
     )
 
     self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
