@@ -3,7 +3,7 @@
 Nakładka do oficjalnych skryptów **Chimera MUD** dla Mudleta. Projekt nie modyfikuje kodu upstreamu; korzysta z jego GMCP, eventów i publicznych struktur.
 
 Serwer: `chimera.co.pl:2300`  
-Aktualna wersja ChimeraVIP: **0.103**  
+Aktualna wersja ChimeraVIP: **0.111**<br>
 Wersja upstreamu potwierdzona w działającym runtime: **4.3**
 
 ## Instalacja
@@ -29,7 +29,7 @@ Aktualizacja istniejącej instalacji:
 /cvip aktualizuj
 ```
 
-Updater 2.0 korzysta z manifestu v2 i po pierwszym przejściu pobiera tylko pliki, których Git blob SHA zmienił się względem lokalnego `installed_manifest.lua`. Aktualizacja jest przygotowywana w stagingu, sprawdza rozmiary plików i tworzy backup przed podmianą.
+Updater 2.0 korzysta z manifestu v2 i po pierwszym przejściu pobiera tylko pliki, których Git blob SHA zmienił się względem lokalnego `installed_manifest.lua`. Aktualizacja jest przygotowywana w stagingu i tworzy backup przed podmianą. Od 0.111 updater ustala commit przez API GitHuba i z niego pobiera manifest oraz pliki. Weryfikuje rozmiar, Git blob SHA-1 i składnię Lua. Timeout pozwala ponowić pobieranie; rollback obejmuje również VERSION i installed_manifest.lua. Mechanizm dotyczy aktualizatora działającego od 0.111; przejście ze starszego wydania wykonuje jeszcze starszy updater.
 
 ## Interfejs
 
@@ -63,7 +63,7 @@ Liczy pudła przeciwników, uniki, parowania, zasłony, ciosy zatrzymane pancerz
 
 Auto-wsparcie obserwuje dane drużyny i walki z GMCP Chimery. Gdy relacje pozwalają ustalić cel lidera, pilnuje aby postać biła ten sam cel.
 
-Jedna próba wsparcia wysyła `wesprzyj` dwukrotnie z krótkim odstępem i podlega cooldownowi.
+Próba wsparcia podlega cooldownowi. Drugie `wesprzyj` jest wysyłane tylko wtedy, gdy nadal jest potrzebne, cel lidera pozostaje ten sam i postać jest na tej samej lokacji.
 
 ## Tracker XP
 
@@ -147,4 +147,4 @@ GitHub Actions uruchamia `tools/release_check.lua`. Checker pilnuje zgodności `
 
 ## Zgodność
 
-ChimeraVIP jest nakładką zależną od oficjalnych skryptów Chimery. Aktualnie działanie zostało potwierdzone z upstreamem **4.3**. Integracje z publicznymi strukturami upstreamu powinny być ponownie sprawdzane po większych zmianach oficjalnych skryptów.
+Rdzeń i tekstowe moduły ChimeraVIP mogą się inicjalizować bez oficjalnego UI. Motyw, stopka i kontrolki oficjalnych funkcji nadal zależą od jego struktur. Adapter runtime udostępnia drużynę, walkę oraz lokację bezpośrednio z GMCP (z fallbackiem lokacji do starszego adaptera). `/cvip diagnostyka` pokazuje obecność zależności oraz błędy ładowania. Aktualnie działanie zostało potwierdzone z upstreamem **4.3**. Integracje z publicznymi strukturami upstreamu powinny być ponownie sprawdzane po większych zmianach oficjalnych skryptów.

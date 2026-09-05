@@ -3,7 +3,7 @@ chimera_overlay = chimera_overlay or chimera_vip
 
 local C = chimera_vip
 C.name = "ChimeraVIP"
-C.version = C.version or "0.110"
+C.version = C.version or "0.111"
 C.tested_upstream = "4.3"
 C.handlers = C.handlers or {}
 C.ready = false
@@ -22,9 +22,8 @@ function C:get_upstream_version()
 end
 
 function C:is_ready()
-    return type(scripts) == "table"
-        and type(scripts.ui) == "table"
-        and type(scripts.ui.themes) == "table"
+    return type(self.util) == "table" and type(self.runtime) == "table"
+        and #(self.load_errors or {}) == 0
 end
 
 function C:signal_ready(reason)

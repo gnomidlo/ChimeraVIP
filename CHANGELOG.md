@@ -1,3 +1,7 @@
+## 0.111
+
+Stabilizacja reloadu, korelacji defensywy i auto-wsparcia. Updater z przypiętym commitem, walidacją plików i rollbackiem metadanych. Adapter GMCP oraz diagnostyka zależności. Szczegóły: `releases/0.111.md`.
+
 # Changelog
 
 ## 0.74 — 2026-08-27

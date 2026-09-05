@@ -16,8 +16,8 @@ D.handlers = D.handlers or {}
 D.pending_hits = D.pending_hits or {}
 D.max_events = 200
 D.hit_delay = 0.06
-D.defense_grace_ms = 100
-D.recent_defense_ms = D.recent_defense_ms or 0
+D.line_results = {}
+D.line_order = {}
 D.started_at = D.started_at or os.time()
 
 local colors = U.palette
@@ -52,20 +52,59 @@ function D:clear_pending_hits()
     for _,pending in ipairs(self.pending_hits or {}) do if pending.timer then pcall(killTimer,pending.timer) end; pending.cancelled=true end
     self.pending_hits={}
 end
-function D:cancel_latest_pending_hit()
-    for i=#self.pending_hits,1,-1 do local p=self.pending_hits[i]; if p and not p.cancelled then p.cancelled=true; if p.timer then pcall(killTimer,p.timer) end; table.remove(self.pending_hits,i); return true end end
-    return false
+-- Capture the cursor before any prefix/output moves it. Identical text on
+-- different buffer lines is deliberately treated as different attacks.
+function D:line_key(raw)
+    if type(getLineNumber) == "function" then
+        local ok, number = pcall(getLineNumber)
+        if ok and type(number) == "number" then return "line:" .. number end
+    end
+    -- Without a buffer identity, do not merge unrelated attacks by their text.
+end
+function D:line_result(key)
+    local item=key and self.line_results[key]
+    return item and now_ms()-item.time<250 and item.kind or nil
+end
+function D:remember_line(key, kind)
+    if not key then return end
+    if not self.line_results[key] then self.line_order[#self.line_order+1] = key end
+    self.line_results[key] = {kind=kind,time=now_ms()}
+    while #self.line_order > self.max_events do
+        self.line_results[table.remove(self.line_order, 1)] = nil
+    end
+end
+function D:cancel_line_hit(key)
+    if not key then return end
+    for i=#self.pending_hits,1,-1 do
+        local pending = self.pending_hits[i]
+        if pending.key == key then
+            pending.cancelled = true
+            if pending.timer then pcall(killTimer, pending.timer) end
+            table.remove(self.pending_hits, i)
+        end
+    end
+end
+function D:observe_line(raw)
+    if #self.pending_hits==0 then return end
+    local key = self:line_key(raw)
+    for _, pending in ipairs(self.pending_hits) do
+        if pending.key == key then pending.raw = tostring(raw or "") end
+    end
 end
 function D:new_session()
     self:clear_pending_hits()
     self.session={miss=0,dodge=0,parry=0,block=0,armor=0,hits={brak=0,niskie=0,srednie=0,wysokie=0},parry_items={},block_items={},armor_items={},events={}}
-    self.recent_defense_ms=0; self.started_at=os.time()
+    self.line_results={}; self.line_order={}; self.started_at=os.time()
 end
 if type(D.session)~="table" then D:new_session() end
 
 function D:add_event(kind,detail,raw)
     local S=self.session; if not S then self:new_session(); S=self.session end
-    if kind~="hit" then self.recent_defense_ms=now_ms(); self:cancel_latest_pending_hit() end
+    if kind~="hit" then
+        local key=self:line_key(raw)
+        if self:line_result(key) then return end
+        self:remember_line(key,kind); self:cancel_line_hit(key)
+    end
     if kind=="miss" then S.miss=S.miss+1
     elseif kind=="dodge" then S.dodge=S.dodge+1
     elseif kind=="parry" then S.parry=S.parry+1; detail=normalize_item(detail); if detail~="" then S.parry_items[detail]=(S.parry_items[detail] or 0)+1 end
@@ -89,11 +128,18 @@ end
 function D:queue_incoming_hit(level,raw)
     local map={otrzymane_brak="brak",otrzymane_niskie="niskie",otrzymane_srednie="srednie",otrzymane_wysokie="wysokie",brak="brak",niskie="niskie",srednie="srednie",wysokie="wysokie"}
     local normalized=map[tostring(level or "")]; if not normalized then return end
-    if now_ms()-(self.recent_defense_ms or 0)<=self.defense_grace_ms then return end
-    local pending={level=normalized,raw=tostring(raw or ""),cancelled=false}; self.pending_hits[#self.pending_hits+1]=pending
+    local key=self:line_key(raw)
+    if self:line_result(key) then return end
+    for _, item in ipairs(self.pending_hits) do
+        if key and item.key==key then return end
+    end
+    local pending={key=key,level=normalized,raw=tostring(raw or ""),cancelled=false}
+    self.pending_hits[#self.pending_hits+1]=pending
     pending.timer=tempTimer(self.hit_delay,function()
         if pending.cancelled then return end
         for i,item in ipairs(D.pending_hits) do if item==pending then table.remove(D.pending_hits,i); break end end
+        if D:is_defense_line(pending.raw) or pending.raw:match("^%s*otrzymane_") then return end
+        D:remember_line(pending.key,"hit")
         D:add_event("hit",pending.level,pending.raw)
     end)
 end
@@ -167,8 +213,13 @@ function D:install_runtime()
     self:add_trigger([[lecz\s+tobie\s+udaje\s+sie\s+uniknac\s+tego\s+ciosu\.]],[[chimera_vip.defense_tracker:add_event("dodge", nil, line)]])
     self:add_trigger([[nie\s+udaje\s+sie\s+trafic\s+ciebie\b]],[[chimera_vip.defense_tracker:add_event("miss", nil, line)]])
     self:add_trigger([[lecz\s+caly\s+impet\s+uderzenia\s+wyparowany\s+zostaje\s+przez\s+(.+?)\.\s*$]],[[chimera_vip.defense_tracker:add_event("armor", matches[2], line)]])
+    self:add_trigger([[^.*$]], function() D:observe_line(line) end)
     local ok,id=pcall(tempAlias,[[^/def(?:\s+(.*))?$]],[[chimera_vip.defense_tracker:command(matches[2] or "")]]); if ok and id then self.alias_ids[#self.alias_ids+1]=id end
 end
 if U and U.replace_handler then U.replace_handler(D,"incoming_hit","chimeraVipIncomingHit",function(_,level,raw) D:on_incoming_hit(level,raw) end) end
+D:clear_pending_hits()
+U.replace_handler(D,"disconnect","sysDisconnectionEvent",function()
+    D:clear_pending_hits(); D.line_results={}; D.line_order={}
+end)
 D:install_runtime(); raiseEvent("chimeraVipDefenseReady",D.session)
 return D

@@ -9,7 +9,8 @@ chimera_overlay.footer_controls = CTRL
 CTRL.handlers = CTRL.handlers or {}
 CTRL.buttons = CTRL.buttons or {}
 CTRL.button_widths = CTRL.button_widths or {}
-CTRL.refresh_timer = nil
+CTRL.refresh_timer = CTRL.refresh_timer or nil
+CTRL.render_cache = {}
 
 local function P()
     if C.pastel_ui and C.pastel_ui.colors then return C.pastel_ui.colors end
@@ -71,27 +72,8 @@ function CTRL:click(key)
     local state = def and def.state and def.state() or nil
     if state and state.clickable == false then return end
 
-    if key == "hidden" then
-        self:call_global("scripts_ui_info_hidden_click")
-    elseif key == "sneaky" then
-        self:call_global("scripts_ui_info_sneaky_click")
-    elseif key == "attack" then
-        self:call_global("scripts_ui_info_attack_mode_click")
-    elseif key == "collect" then
-        self:call_global("scripts_ui_info_collect_mode")
-    elseif key == "lamp" then
-        self:call_global("scripts_ui_info_lamp_click")
-    elseif key == "cover" then
-        self:call_global("scripts_ui_info_cover_ready_click")
-    elseif key == "combat" then
-        local combat = scripts and scripts.character and scripts.character.combat_state
-        if combat and type(combat.run_command) == "function" then
-            local ok, err = pcall(function() combat:run_command() end)
-            if not ok then self:warn("Blad kontrolki walki: " .. tostring(err)) end
-        else
-            self:warn("Funkcja sterowania walka nie jest dostepna.")
-        end
-    end
+    local ok,err=C.runtime:action(key)
+    if not ok then self:warn(tostring(err)); return end
 
     -- Część oficjalnych modułów aktualizuje stan z niewielkim opóźnieniem.
     tempTimer(0.05, function() CTRL:update_all() end)
@@ -262,6 +244,7 @@ function CTRL:destroy_ui()
     end
     self.buttons = {}
     self.button_widths = {}
+    self.render_cache = {}
 end
 
 function CTRL:button_css(color, clickable)
@@ -292,18 +275,27 @@ function CTRL:update_button(def)
         clickable=false, action="niedostępne",
     }
 
+    if not C.runtime:can_action(def.key) then
+        state.clickable=false; state.action="niedostępne: brak zależności"
+    end
     local width = self.button_widths[def.key] or 30
     local clickable = state.clickable ~= false
     local label = self:display_label(def, state, width)
 
-    b:setStyleSheet(self:button_css(state.color or P().text_muted, clickable))
-    b:echo("<center>" .. tostring(label) .. "</center>")
+    local css = self:button_css(state.color or P().text_muted, clickable)
+    local html = "<center>" .. U.escape_html(label) .. "</center>"
 
     local tooltip = "<b>" .. def.title .. "</b>"
         .. "<br>Typ: " .. tostring(def.kind or "kontrolka")
         .. "<br>Stan: <b>" .. tostring(state.text or "brak danych") .. "</b>"
         .. "<br><br>Kliknięcie: " .. tostring(state.action or "wykonaj akcję") .. "."
 
+    local cached = self.render_cache[def.key]
+    if cached and cached.button == b and cached.css == css and cached.html == html
+        and cached.tooltip == tooltip and cached.clickable == clickable then return end
+    b:setStyleSheet(css)
+    b:echo(html)
+    self.render_cache[def.key] = {button=b, css=css, html=html, tooltip=tooltip, clickable=clickable}
     pcall(setLabelToolTip, b.name, tooltip, 8)
     pcall(setLabelCursor, b.name, clickable and "PointingHand" or "ArrowCursor")
 end
