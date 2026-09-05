@@ -10,6 +10,7 @@ chimera_overlay.pastel_ui = UI
 UI.theme_name = "chimera_vip_pastel"
 UI.handlers = UI.handlers or {}
 UI.applying = false
+if UI.ensure_timer then pcall(killTimer, UI.ensure_timer) end
 UI.ensure_timer = nil
 UI.colors = UI.colors or {
     background = "#12151D", background_soft = "#181C26", separator = "#2B303C", inactive = "#303542",

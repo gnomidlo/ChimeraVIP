@@ -135,7 +135,7 @@ end
 
 function HUD:update_compass()
     if not self.compass_buttons then return end
-    local info=gmcp and gmcp.room and gmcp.room.info
+    local info=C.runtime:room()
     if type(info)~="table" then return end
     self.active_directions={}
     if type(info.exits)=="table" then for _,cmd in pairs(info.exits) do if self:is_direction(cmd) then self.active_directions[cmd]=true end end end
@@ -313,6 +313,7 @@ end
 
 U.replace_handler(HUD,"theme_ready","chimeraThemeReady",function() HUD:schedule_rebuild() end)
 U.replace_handler(HUD,"window_resize","sysWindowResizeEvent",function() HUD:schedule_rebuild() end)
+U.replace_handler(HUD,"room_native","gmcp.Room.Info",function() HUD:update_compass() end)
 U.replace_handler(HUD,"room_info","gmcp.room.info",function() HUD:update_compass() end)
 U.replace_handler(HUD,"char_vitals","gmcp.Char.Vitals",function() HUD:update_vitals() end)
 if C.theme_ready then HUD:schedule_rebuild() end

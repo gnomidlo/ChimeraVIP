@@ -25,6 +25,7 @@ local function exists_script(name)
 end
 
 function I:set_official_gags_enabled(enabled)
+    if not (scripts and scripts.ui) then return false end
     local fn = enabled and _G.enableScript or _G.disableScript
     if type(fn) ~= "function" then return false end
 

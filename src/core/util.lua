@@ -195,8 +195,9 @@ function U.write_file(path, content)
     if dir then U.ensure_dir(dir) end
     local f, err = io.open(path, "wb")
     if not f then return false, err end
-    f:write(content or "")
-    f:close()
+    local written,write_err=f:write(content or "")
+    local closed,close_err=f:close()
+    if not written or not closed then return false,write_err or close_err end
     return true
 end
 

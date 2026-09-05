@@ -39,7 +39,11 @@ local function start_local()
     return ok
 end
 
-if start_local() then return end
+if exists(C.root_dir .. "/src/init.lua") then
+    start_local()
+    -- A module error is not permission to reinstall an existing runtime.
+    return
+end
 
 local staging = C.root_dir .. "/.install"
 local manifest_path = staging .. "/manifest.lua"
