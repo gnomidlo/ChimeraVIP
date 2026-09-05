@@ -60,7 +60,7 @@ return {
         ["src/ui/settings_apply.lua"] = {hash="e070e54d2df9f142a418ef23188af03e9e450f29", size=1239},
         ["src/ui/settings_panel.lua"] = {hash="99c445764d61b2caf22bed63ad814ad91adc8c22", size=8801},
         ["src/features/combat_colors.lua"] = {hash="c7fc6702b7bc994c67a7ac1d1ed1108ef8402050", size=10746},
-        ["src/features/defense_tracker.lua"] = {hash="ae5f544d8554e73b39b4de2de7ee41d684b8c047", size=13999},
+        ["src/features/defense_tracker.lua"] = {hash="6911379fe29c49db64190e581a457eaf522cb079", size=14030},
         ["src/features/auto_support.lua"] = {hash="9e98d679c3bbb95887b5a7d66a9f3830b74c25c1", size=7995},
         ["src/features/xp_tracker.lua"] = {hash="8898db835008bd3a6a3a1d8316ad1bdbbee4c66b", size=16365},
         ["src/features/stats.lua"] = {hash="13d52cc1f6e51a7d6cbde05d484e3534bf1df225", size=13818},

@@ -49,6 +49,10 @@ D:new_session(); cursor=41; D:on_incoming_hit('wysokie','partial'); D:new_sessio
 assert(D:known_hits()==0 and #D.pending_hits==0,'reset left pending hit')
 cursor=50; D:on_incoming_hit('wysokie','partial'); dofile('src/features/defense_tracker.lua')
 assert(#D.pending_hits==0,'reload left pending hit')
+D:new_session(); local line_number=getLineNumber; getLineNumber=nil
+D:on_incoming_hit('niskie','first'); D:on_incoming_hit('niskie','second'); D:observe_line('unrelated'); flush(D)
+assert(D:known_hits()==2 and D.session.events[1].raw=='first' and D.session.events[2].raw=='second')
+getLineNumber=line_number
 print('PASS defense bursts, trigger order, duplicate, full text, reset and reload')
 local sent={}
 function send(command) sent[#sent+1]=command end

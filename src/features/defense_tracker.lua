@@ -87,6 +87,7 @@ end
 function D:observe_line(raw)
     if #self.pending_hits==0 then return end
     local key = self:line_key(raw)
+    if not key then return end
     for _, pending in ipairs(self.pending_hits) do
         if pending.key == key then pending.raw = tostring(raw or "") end
     end
