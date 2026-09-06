@@ -1,3 +1,7 @@
+## 0.112
+
+Ocena sprzętu rozpoznaje rodzajowe końcówki opisów stanu oraz właściwe skale 1-5 i 1-7. Szczegóły: `releases/0.112.md`.
+
 ## 0.111
 
 Stabilizacja reloadu, korelacji defensywy i auto-wsparcia. Updater z przypiętym commitem, walidacją plików i rollbackiem metadanych. Adapter GMCP oraz diagnostyka zależności. Szczegóły: `releases/0.111.md`.

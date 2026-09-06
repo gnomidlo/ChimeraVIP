@@ -25,3 +25,5 @@ jobs:
         run: lua5.1 tools/runtime_test.lua
       - name: Test updater integrity and rollback
         run: lua5.1 tools/updater_test.lua
+      - name: Test equipment appraisal grammar and durability
+        run: lua5.1 tools/equipment_test.lua
