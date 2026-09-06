@@ -17,6 +17,8 @@ W.alias_ids = W.alias_ids or {}
 W.capture = nil
 W.capture_timer = W.capture_timer or nil
 W.capture_timeout = 4
+W.summary_timer = W.summary_timer or nil
+W.summary_delay = 0.35
 
 local colors = U.palette
 local trim = U.trim
@@ -126,6 +128,11 @@ function W:touch_capture()
 end
 
 function W:start(item_name)
+    if type(self.capture) == "table" and self.capture.complete then
+        self:finish_summary(self.capture)
+    else
+        self:reset_capture()
+    end
     self.capture = {item_name=trim(item_name), armor={}, magic=false}
     self:touch_capture()
 end
@@ -140,6 +147,26 @@ function W:reset_capture()
     self.capture = nil
     if self.capture_timer then pcall(killTimer, self.capture_timer) end
     self.capture_timer = nil
+    if self.summary_timer then pcall(killTimer, self.summary_timer) end
+    self.summary_timer = nil
+end
+
+function W:finish_summary(captured)
+    if type(captured) ~= "table" or self.capture ~= captured then return end
+    if self.summary_timer then pcall(killTimer, self.summary_timer) end
+    self.summary_timer = nil
+    self:show_summary()
+    self:reset_capture()
+end
+
+function W:schedule_summary()
+    local captured = self.capture
+    if type(captured) ~= "table" then return end
+    captured.complete = true
+    if self.summary_timer then pcall(killTimer, self.summary_timer) end
+    self.summary_timer = tempTimer(self.summary_delay, function()
+        if W.capture == captured then W:finish_summary(captured) end
+    end)
 end
 
 function W:on_condition(description, current, maximum)
@@ -171,7 +198,9 @@ function W:on_duration(duration)
 end
 
 function W:on_magic()
-    self:ensure_capture().magic = true
+    local c = self:ensure_capture()
+    c.magic = true
+    if c.complete then self:finish_summary(c) end
 end
 
 function W:on_weapon_header(weapon_type, grip)
@@ -191,8 +220,7 @@ function W:on_weapon_scores(balance_text, balance, effectiveness_text, effective
     c.balance = tonumber(balance)
     c.effectiveness_text = trim(effectiveness_text)
     c.effectiveness = tonumber(effectiveness)
-    self:show_summary()
-    self:reset_capture()
+    self:schedule_summary()
 end
 
 function W:parse_armor(text)
@@ -210,8 +238,7 @@ function W:on_armor(text)
     local c = self:ensure_capture()
     c.kind = "armor"
     c.armor = self:parse_armor(text)
-    self:show_summary()
-    self:reset_capture()
+    self:schedule_summary()
 end
 
 function W:show_summary()
