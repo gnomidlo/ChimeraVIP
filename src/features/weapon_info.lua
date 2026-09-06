@@ -23,13 +23,28 @@ local trim = U.trim
 local normalize = U.normalize
 
 local CONDITION_LEVELS = {
-    ["w znakomitym stanie"] = 7,
-    ["w dobrym stanie"] = 6,
-    ["w kiepskim stanie"] = 5,
-    ["liczne walki wyryly swoje pietno"] = 4,
-    ["w zlym stanie"] = 3,
-    ["w bardzo zlym stanie"] = 2,
-    ["natychmiastowa konserwacja"] = 1,
+    -- "w znakomitym stanie" jest wspolne dla skal 5- i 7-stopniowej;
+    -- maksimum ustalamy dopiero, gdy linia KP/broni okresli rodzaj sprzetu.
+    ["w znakomitym stanie"] = {maximum=true},
+
+    -- Pozostaly sprzet, w tym tarcze: skala 1-5.
+    ["lekko podniszczony"] = {current=4, maximum=5},
+    ["lekko podniszczona"] = {current=4, maximum=5},
+    ["lekko podniszczone"] = {current=4, maximum=5},
+    ["w kiepskim stanie"] = {current=3, maximum=5},
+    ["w oplakanym stanie"] = {current=2, maximum=5},
+    ["gotowy sie rozpasc w kazdej chwili"] = {current=1, maximum=5},
+    ["gotowa sie rozpasc w kazdej chwili"] = {current=1, maximum=5},
+    ["gotowe sie rozpasc w kazdej chwili"] = {current=1, maximum=5},
+
+    -- Bron: skala 1-7.
+    ["w dobrym stanie"] = {current=6, maximum=7},
+    ["liczne walki wyryly swoje pietno"] = {current=5, maximum=7},
+    ["w zlym stanie"] = {current=4, maximum=7},
+    ["w bardzo zlym stanie"] = {current=3, maximum=7},
+    ["wymaga natychmiastowej konserwacji"] = {current=2, maximum=7},
+    ["wymagaja natychmiastowej konserwacji"] = {current=2, maximum=7},
+    ["moze peknac w kazdej chwili"] = {current=1, maximum=7},
 }
 
 local DURATION_RANGES = {
@@ -76,24 +91,16 @@ end
 
 local function condition_level(text)
     local key = normalize(text)
-    if CONDITION_LEVELS[key] then return CONDITION_LEVELS[key] end
-    if key:find("znakomitym", 1, true) then return 7 end
-    if key:find("dobrym", 1, true) then return 6 end
-    if key:find("kiepskim", 1, true) then return 5 end
-    if key:find("liczne walki", 1, true) then return 4 end
-    if key:find("bardzo zlym", 1, true) then return 2 end
-    if key:find("zlym", 1, true) then return 3 end
-    if key:find("natychmiastowej konserwacji", 1, true) then return 1 end
-    return nil
+    return CONDITION_LEVELS[key]
 end
 
-local function condition_color(text, P)
-    local level = condition_level(text)
-    if level == 7 then return P.lavender end
-    if level == 6 then return P.mint end
-    if level == 5 or level == 4 then return P.yellow end
-    if level == 3 then return P.peach end
-    if level and level <= 2 then return P.rose end
+local function condition_color(current, maximum, P)
+    if not current or not maximum then return P.text end
+    if current == maximum then return P.lavender end
+    if maximum == 7 and current == 6 then return P.mint end
+    if current >= 4 then return P.yellow end
+    if current == 3 then return P.peach end
+    if current <= 2 then return P.rose end
     return P.text
 end
 
@@ -138,8 +145,10 @@ end
 function W:on_condition(description, current, maximum)
     local c = self:ensure_capture()
     c.condition_text = trim(description)
-    c.condition = tonumber(current) or condition_level(description)
-    c.condition_max = tonumber(maximum) or (c.condition and 7 or nil)
+    local mapped = condition_level(description)
+    c.condition = tonumber(current) or (mapped and mapped.current)
+    c.condition_max = tonumber(maximum) or (mapped and mapped.maximum ~= true and mapped.maximum or nil)
+    c.condition_is_maximum = mapped and mapped.maximum == true or false
 end
 
 function W:on_physical(item_name, amount, unit, milliliters)
@@ -211,6 +220,10 @@ function W:show_summary()
     local P = colors()
     local title = trim(c.item_name)
     if title == "" then title = "przedmiot" end
+    if c.condition_is_maximum and not c.condition_max then
+        c.condition_max = c.kind == "weapon" and 7 or 5
+        c.condition = c.condition_max
+    end
 
     hecho("\n" .. P.separator .. "-------------------------------------------------------")
     if c.magic then
@@ -221,10 +234,10 @@ function W:show_summary()
 
     local details = {}
     if c.condition and c.condition_max then
-        details[#details + 1] = P.text_muted .. "stan: " .. condition_color(c.condition_text, P)
+        details[#details + 1] = P.text_muted .. "stan: " .. condition_color(c.condition, c.condition_max, P)
             .. tostring(c.condition) .. "/" .. tostring(c.condition_max)
     elseif c.condition_text then
-        details[#details + 1] = P.text_muted .. "stan: " .. condition_color(c.condition_text, P) .. c.condition_text
+        details[#details + 1] = P.text_muted .. "stan: " .. P.text .. c.condition_text
     end
     if c.value then details[#details + 1] = P.text_muted .. "wartosc: " .. colored_money(c.value, P) end
     if #details > 0 then hecho("\n  " .. table.concat(details, P.text_muted .. "  |  ")) end
@@ -265,7 +278,8 @@ function W:show_help()
     hecho("\n\n" .. P.lavender .. "SPRZET - OCENA"
         .. "\n" .. P.text_muted .. "Parser oceny sprzetu nie ukrywa ani nie przebudowuje odpowiedzi MUD-a."
         .. "\n" .. P.text_muted .. "Przedmioty magiczne maja wyrozniony naglowek OCENA - nazwa | MAGIA."
-        .. "\n" .. P.text_muted .. "Stan opisowy jest mapowany na skale 1-7; czas sluzenia na przyblizony zakres godzin."
+        .. "\n" .. P.text_muted .. "Stan opisowy: skala 1-5 dla tarcz i pozostalego sprzetu, 1-7 dla broni."
+        .. "\n" .. P.text_muted .. "Czas sluzenia jest mapowany na przyblizony zakres godzin."
         .. "\n" .. P.text_muted .. "KP jest rozbite na klute, ciete i obuchowe, aby latwo porownac ochrone lokacji."
         .. "\n" .. P.text_muted .. "Dla broni SUMA = WYW + SKUT; nie zakladamy obecnie zadnej maksymalnej skali."
         .. "\n\n" .. P.mint .. "/bron pomoc" .. P.text_muted .. "  ta pomoc\n")
@@ -277,10 +291,10 @@ function W:install()
     self:reset_capture()
 
     self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger([[^Oceniasz starannie (.+)\.\s*$]], function() W:start(matches[2]) end)
-    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger([[^Wyglada na to, ze jest (.+?stanie)\.\s*\[(\d+)/(\d+)\]\s*$]], function() W:on_condition(matches[2], matches[3], matches[4]) end)
-    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger([[^Wyglada na to, ze jest (.+?stanie)\.\s*$]], function() if W.capture then W:on_condition(matches[2]) end end)
+    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger([[^Wyglada na to, ze jest (.+?)\.\s*\[(\d+)/(\d+)\]\s*$]], function() if W.capture then W:on_condition(matches[2], matches[3], matches[4]) end end)
+    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger([[^Wyglada na to, ze jest (w (?:znakomitym|dobrym|kiepskim|oplakanym|zlym|bardzo zlym) stanie|lekko podniszczon(?:y|a|e)|gotow(?:y|a|e) sie rozpasc w kazdej chwili)\.\s*$]], function() if W.capture then W:on_condition(matches[2]) end end)
     self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger([[^Wyglada na to, ze liczne walki wyryly na (?:nim|niej) swoje pietno\.\s*$]], function() if W.capture then W:on_condition("liczne walki wyryly swoje pietno") end end)
-    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger([[^Wyglada na to, ze wym(?:aga|ga) natychmiastowej konserwacji i moze peknac w kazdej chwili\.\s*$]], function() if W.capture then W:on_condition("natychmiastowa konserwacja") end end)
+    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger([[^Wyglada na to, ze (wymag(?:a|aja) natychmiastowej konserwacji|moze peknac w kazdej chwili)(?: i moze peknac w kazdej chwili)?\.\s*$]], function() if W.capture then W:on_condition(matches[2]) end end)
     self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger([[^Oceniasz, ze (.+?) wazy (\d+) (gramow|kilogramow), zas (?:jego|jej|ich) objetosc wynosi (\d+) mililitrow\.\s*$]], function() W:on_physical(matches[2], matches[3], matches[4], matches[5]) end)
     self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger([[^Wydaje ci sie, ze jest wart(?:a|e)? (.+?)\.\s*$]], function() W:on_value(matches[2]) end)
     self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger([[^Wyglada na to, ze mogl(?:by|aby|oby) ci jeszcze (.+?) sluzyc\.\s*$]], function() W:on_duration(matches[2]) end)

@@ -3,7 +3,7 @@
 Nakładka do oficjalnych skryptów **Chimera MUD** dla Mudleta. Projekt nie modyfikuje kodu upstreamu; korzysta z jego GMCP, eventów i publicznych struktur.
 
 Serwer: `chimera.co.pl:2300`  
-Aktualna wersja ChimeraVIP: **0.111**<br>
+Aktualna wersja ChimeraVIP: **0.112**<br>
 Wersja upstreamu potwierdzona w działającym runtime: **4.3**
 
 ## Instalacja

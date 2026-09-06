@@ -1,14 +1,13 @@
 return {
     name = "ChimeraVIP",
-    version = "0.111",
+    version = "0.112",
     schema = 2,
     tested_upstream = "4.3",
     raw_base = "https://raw.githubusercontent.com/gnomidlo/ChimeraVIP/main/",
     changes = {
-        "Runtime: jeden timer kontrolek i cache renderowania",
-        "Walka: korelacja obrony po linii i aktualny cel wsparcia",
-        "Updater: jeden commit, hashe, skladnia i rollback metadanych",
-        "GMCP: adapter danych i diagnostyka zaleznosci",
+        "Sprzet: zenskie i nijakie koncowki opisow stanu",
+        "Sprzet: skala 1-5 dla tarcz i pozostalego sprzetu",
+        "Sprzet: skala 1-7 dla broni",
     },
     files = {
         "loader.lua",
@@ -46,7 +45,7 @@ return {
     file_meta = {
         ["loader.lua"] = {hash="1381414d89e55d2fad70beb8f42e48098d4b1802", size=4501},
         ["src/init.lua"] = {hash="1735ceccb35b7cdfd5a888e6331b96f2f5eee537", size=1928},
-        ["src/core/bootstrap.lua"] = {hash="a8c62444574548f3d78bb7968933d663455b66d6", size=1471},
+        ["src/core/bootstrap.lua"] = {hash="729d4f9d180538c7a6043c33e121b05251845d43", size=1471},
         ["src/core/util.lua"] = {hash="7561cd9259be9ff0ce74228e9048eef0b5aba280", size=6686},
         ["src/core/hash.lua"] = {hash="362c18bf131c9939d03b59dd50568d66de8f6a5e", size=2118},
         ["src/integrations/runtime.lua"] = {hash="e8e4a7efac14fcb7ac6f6f0d3cc473f42e556d7a", size=2649},
@@ -72,7 +71,7 @@ return {
         ["src/features/containers.lua"] = {hash="c5462c4929412da93fb780c277388a925e27b065", size=5027},
         ["src/features/skills_view.lua"] = {hash="5eaa6d89119dd439d9beebee6bfacd73de98e699", size=8284},
         ["src/features/equipment_view.lua"] = {hash="14d6f882f2b48d1b937603949a7d21b81027e49b", size=1721},
-        ["src/features/weapon_info.lua"] = {hash="e5ab4666699fd6ae4cbae6aa115b1686e964669c", size=13281},
+        ["src/features/weapon_info.lua"] = {hash="864ce1ddd2a6ee6a7cd63c243c7b0bd53dde104c", size=14326},
         ["src/ui/footer_controls.lua"] = {hash="7c5cc9bd01de155992a81f520475ba72b2096061", size=12941},
         ["src/ui/module_controls.lua"] = {hash="d678888ba23e8955db0d108b6de6ad75265837cb", size=3660}
     },
