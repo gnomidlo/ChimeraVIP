@@ -1,3 +1,7 @@
+## 0.113
+
+Podsumowanie oceny sprzętu uwzględnia linię o zaklętej magii pojawiającą się po parametrach broni lub pancerza. Szczegóły: `releases/0.113.md`.
+
 ## 0.112
 
 Ocena sprzętu rozpoznaje rodzajowe końcówki opisów stanu oraz właściwe skale 1-5 i 1-7. Szczegóły: `releases/0.112.md`.
