@@ -217,6 +217,7 @@ function ST:build_snapshot()
     local odw = self.current.Odw or 0
     self.last = {
         header=self.header, stats=copy_table(self.current), physical=fiz, mental=ment,
+        physical_average=fiz / 3, mental_average=ment / 2,
         courage=odw, total=fiz + ment + odw, captured_at=os.time(),
     }
     return self.last
@@ -364,15 +365,13 @@ ST.trigger_ids[#ST.trigger_ids + 1] = tempRegexTrigger(
         local snapshot = ST:build_snapshot()
         local P = colors()
         local line_sep = "\n  " .. P.separator .. "--------------------------------------------------\n"
-        local line_sum = string.format(
-            "  %sSuma: %sFiz %s%d %s| %sMent %s%d %s| %sOdw %s%d %s| %sLacznie %s%d",
-            P.text, P.blue, P.mint, snapshot.physical, P.text_muted,
-            P.lavender, P.mint, snapshot.mental, P.text_muted,
-            P.yellow, P.mint, snapshot.courage, P.text_muted,
-            P.lavender, P.peach, snapshot.total
+        local line_avg = string.format(
+            "  %sSrednia: %sFiz %s%.1f %s| %sMent %s%.1f",
+            P.text, P.blue, P.mint, snapshot.physical_average, P.text_muted,
+            P.lavender, P.mint, snapshot.mental_average
         )
 
-        hecho(stat_line .. line_sep .. line_sum)
+        hecho(stat_line .. line_sep .. line_avg)
         local record, event_kind, diff, spent = ST:update_progress(snapshot)
         ST:show_progress_footer(record, event_kind, diff, spent)
         hecho("\n")
