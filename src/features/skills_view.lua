@@ -32,6 +32,10 @@ local pad = U.pad_right
 local colors = U.palette
 local gag_line = U.gag_line
 
+local NAME_WIDTH = 22
+local LEVEL_WIDTH = 22
+local PERCENT_WIDTH = 7
+
 local function value_color(value, P)
     value = tonumber(value) or 0
     if value < 20 then return P.rose end
@@ -135,18 +139,18 @@ end
 function S:print_skill(skill, previous)
     local P = colors()
     local delta = previous and (skill.value - previous.value) or 0
-    hecho(P.text .. pad(skill.name, 22)
-        .. P.text_muted .. pad(skill.level, 22)
-        .. value_color(skill.value, P) .. string.format("%4s", format_percent(skill.value))
+    hecho(P.text .. pad(skill.name, NAME_WIDTH)
+        .. P.text_muted .. pad(skill.level, LEVEL_WIDTH)
+        .. value_color(skill.value, P) .. string.format("%" .. tostring(PERCENT_WIDTH) .. "s", format_percent(skill.value))
         .. "  " .. delta_text(delta, "%", P))
 end
 
 function S:print_ability(ability, previous)
     local P = colors()
     local delta = previous and (ability.percent - previous.percent) or 0
-    hecho(P.text .. pad(ability.name, 22)
-        .. P.text_muted .. pad(ability.level, 22)
-        .. value_color(ability.percent, P) .. string.format("%7s", format_percent(ability.percent))
+    hecho(P.text .. pad(ability.name, NAME_WIDTH)
+        .. P.text_muted .. pad(ability.level, LEVEL_WIDTH)
+        .. value_color(ability.percent, P) .. string.format("%" .. tostring(PERCENT_WIDTH) .. "s", format_percent(ability.percent))
         .. "  " .. delta_percent(delta, P))
 end
 
@@ -173,7 +177,7 @@ function S:finish_skills()
     local P = colors()
     if #capture.order > 0 then
         hecho("\n\n" .. P.lavender .. "UMIEJETNOSCI"
-            .. "\n" .. P.separator .. "-------------------------------------------------------\n\n")
+            .. "\n" .. P.separator .. "-------------------------------------------------------\n")
         for _, key in ipairs(capture.order) do
             self:print_skill(capture.skills[key], self.previous_skills[key])
             hecho("\n")
@@ -182,7 +186,7 @@ function S:finish_skills()
 
     if #capture.ability_order > 0 then
         hecho("\n" .. P.lavender .. "ZDOLNOSCI"
-            .. "\n" .. P.separator .. "-------------------------------------------------------\n\n")
+            .. "\n" .. P.separator .. "-------------------------------------------------------\n")
         for _, key in ipairs(capture.ability_order) do
             self:print_ability(capture.abilities[key], self.previous_abilities[key])
             hecho("\n")
