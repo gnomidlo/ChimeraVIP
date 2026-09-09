@@ -15,6 +15,10 @@ for word in ('jedenascie dwanascie trzynascie czternascie pietnascie szesnascie 
     check(word .. ' monet', tostring(expected), 'monet')
     expected = expected + 1
 end
+check('siedmioro kurzych jajek', '7', 'kurzych jajek')
+check('dwoje jajek', '2', 'jajek')
+check('czworo pisklat', '4', 'pisklat')
+check('dwadziescioro jajek', '20', 'jajek')
 check('jedenascie mithrylowych monet', '11', 'mithrylowych monet')
 check('dwadziescia srebrnych monet', '20', 'srebrnych monet')
 check('wiele zlotych monet', '~', 'zlotych monet')
