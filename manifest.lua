@@ -1,13 +1,13 @@
 return {
     name = "ChimeraVIP",
-    version = "0.114",
+    version = "0.115",
     schema = 2,
     tested_upstream = "4.3",
     raw_base = "https://raw.githubusercontent.com/gnomidlo/ChimeraVIP/main/",
     changes = {
-        "Pojemniki: obsluga liczebnikow zbiorowych dwoje, troje, czworo itd.",
-        "Pojemniki: liczebniki zbiorowe rozpoznawane do dwadziesciorga sztuk",
-        "Testy: przypadek siedmioro kurzych jajek zabezpieczony w CI",
+        "Cechy: srednia cech fizycznych zamiast sumy",
+        "Cechy: srednia cech mentalnych zamiast sumy",
+        "Cechy: odwage i laczna sume usunieto z podsumowania",
     },
     files = {
         "loader.lua",
@@ -45,7 +45,7 @@ return {
     file_meta = {
         ["loader.lua"] = {hash="1381414d89e55d2fad70beb8f42e48098d4b1802", size=4501},
         ["src/init.lua"] = {hash="1735ceccb35b7cdfd5a888e6331b96f2f5eee537", size=1928},
-        ["src/core/bootstrap.lua"] = {hash="9def13478868d61bb36d847748794c5b22291f3e", size=1471},
+        ["src/core/bootstrap.lua"] = {hash="90eadb92aea930df58b87dff7ddadf401fbf6f75", size=1471},
         ["src/core/util.lua"] = {hash="7561cd9259be9ff0ce74228e9048eef0b5aba280", size=6686},
         ["src/core/hash.lua"] = {hash="362c18bf131c9939d03b59dd50568d66de8f6a5e", size=2118},
         ["src/integrations/runtime.lua"] = {hash="e8e4a7efac14fcb7ac6f6f0d3cc473f42e556d7a", size=2649},
@@ -62,7 +62,7 @@ return {
         ["src/features/defense_tracker.lua"] = {hash="6911379fe29c49db64190e581a457eaf522cb079", size=14030},
         ["src/features/auto_support.lua"] = {hash="9e98d679c3bbb95887b5a7d66a9f3830b74c25c1", size=7995},
         ["src/features/xp_tracker.lua"] = {hash="8898db835008bd3a6a3a1d8316ad1bdbbee4c66b", size=16365},
-        ["src/features/stats.lua"] = {hash="13d52cc1f6e51a7d6cbde05d484e3534bf1df225", size=13818},
+        ["src/features/stats.lua"] = {hash="f6f04abb793f20ad794483b3d41952cd60561f38", size=13741},
         ["src/features/report_actions.lua"] = {hash="fd94ede283c639df08b8316e286f3bc3d694555b", size=552},
         ["src/features/characters.lua"] = {hash="fc3f0f5a113eb83f54f148106cc099492f1d38ff", size=20914},
         ["src/features/settings_bindings.lua"] = {hash="3015d9994667fc4959029f8faf76c69f67ab7d3f", size=2959},
