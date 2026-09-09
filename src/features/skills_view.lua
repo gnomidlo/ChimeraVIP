@@ -1,5 +1,5 @@
 -- ChimeraVIP / Skills View
--- Czytelne umiejetnosci i staz z deltami snapshotow oraz paragonami sesyjnymi.
+-- Czytelne umiejetnosci, zdolnosci i staz z deltami snapshotow oraz przyrostami sesyjnymi.
 
 chimera_vip = chimera_vip or {}
 chimera_overlay = chimera_overlay or chimera_vip
@@ -17,6 +17,7 @@ S.skill_timer = nil
 S.job_capture = nil
 S.job_timer = nil
 S.previous_skills = S.previous_skills or {}
+S.previous_abilities = S.previous_abilities or {}
 S.previous_jobs = S.previous_jobs or {}
 S.session_gains = S.session_gains or {}
 S.capture_delay = 0.30
@@ -48,9 +49,26 @@ local function delta_text(delta, suffix, P)
     return ""
 end
 
+local function format_percent(value)
+    value = tonumber(value) or 0
+    if math.abs(value - math.floor(value + 0.5)) < 0.000001 then
+        return string.format("%d%%", math.floor(value + 0.5))
+    end
+    if math.abs(value) < 1 then return string.format("%.2f%%", value) end
+    return string.format("%.1f%%", value)
+end
+
+local function delta_percent(delta, P)
+    delta = tonumber(delta) or 0
+    if math.abs(delta) < 0.000001 then return "" end
+    local sign = delta > 0 and "+" or ""
+    local color = delta > 0 and P.mint or P.rose
+    return color .. sign .. format_percent(delta)
+end
+
 function S:start_skills()
     if self.skill_timer then pcall(killTimer, self.skill_timer) end
-    self.skill_capture = {skills={}, order={}}
+    self.skill_capture = {skills={}, order={}, abilities={}, ability_order={}}
     self.skill_timer = nil
 end
 
@@ -71,6 +89,28 @@ function S:add_skill(name, level, value)
     self.skill_capture.skills[key] = {name=name, level=level, value=value}
 end
 
+function S:add_ability(name, level, value, maximum)
+    if not self.skill_capture then return end
+    name, level = trim(name), trim(level)
+    value, maximum = tonumber(value), tonumber(maximum)
+    if name == "" or level == "" or not value or not maximum or maximum <= 0 then return end
+    local key = normalize(name)
+    if not self.skill_capture.abilities[key] then self.skill_capture.ability_order[#self.skill_capture.ability_order + 1] = key end
+    self.skill_capture.abilities[key] = {
+        name=name, level=level, value=value, maximum=maximum,
+        percent=(value / maximum) * 100,
+    }
+end
+
+function S:parse_ability_line(line)
+    if not self.skill_capture then return false end
+    line = trim(line)
+    local name, level, value, maximum = line:match("^(.-):%s+(.+)%s+%[(%d+)/(%d+)%]%s*$")
+    if not name then return false end
+    self:add_ability(name, level, value, maximum)
+    return true
+end
+
 function S:parse_skill_line(line)
     if not self.skill_capture then return false end
     line = trim(line)
@@ -84,7 +124,7 @@ function S:parse_skill_line(line)
         return true
     end
 
-    local name, level, value = line:match("^(.-):%s+(%S+)%s+%[(%d+)%]%s*$")
+    local name, level, value = line:match("^(.-):%s+(.+)%s+%[(%d+)%]%s*$")
     if name then
         self:add_skill(name, level, value)
         return true
@@ -96,9 +136,18 @@ function S:print_skill(skill, previous)
     local P = colors()
     local delta = previous and (skill.value - previous.value) or 0
     hecho(P.text .. pad(skill.name, 22)
-        .. P.text_muted .. pad(skill.level, 16)
-        .. value_color(skill.value, P) .. string.format("%3d", skill.value)
-        .. "  " .. delta_text(delta, "", P))
+        .. P.text_muted .. pad(skill.level, 22)
+        .. value_color(skill.value, P) .. string.format("%4s", format_percent(skill.value))
+        .. "  " .. delta_text(delta, "%", P))
+end
+
+function S:print_ability(ability, previous)
+    local P = colors()
+    local delta = previous and (ability.percent - previous.percent) or 0
+    hecho(P.text .. pad(ability.name, 22)
+        .. P.text_muted .. pad(ability.level, 22)
+        .. value_color(ability.percent, P) .. string.format("%7s", format_percent(ability.percent))
+        .. "  " .. delta_percent(delta, P))
 end
 
 function S:show_session_gains()
@@ -119,21 +168,41 @@ function S:finish_skills()
     local capture = self.skill_capture
     if not capture then return end
     self.skill_capture = nil
-    if #capture.order == 0 then return end
+    if #capture.order == 0 and #capture.ability_order == 0 then return end
 
     local P = colors()
-    hecho("\n\n" .. P.lavender .. "UMIEJETNOSCI"
-        .. "\n" .. P.separator .. "-------------------------------------------------------\n\n")
-    for _, key in ipairs(capture.order) do
-        self:print_skill(capture.skills[key], self.previous_skills[key])
-        hecho("\n")
+    if #capture.order > 0 then
+        hecho("\n\n" .. P.lavender .. "UMIEJETNOSCI"
+            .. "\n" .. P.separator .. "-------------------------------------------------------\n\n")
+        for _, key in ipairs(capture.order) do
+            self:print_skill(capture.skills[key], self.previous_skills[key])
+            hecho("\n")
+        end
     end
+
+    if #capture.ability_order > 0 then
+        hecho("\n" .. P.lavender .. "ZDOLNOSCI"
+            .. "\n" .. P.separator .. "-------------------------------------------------------\n\n")
+        for _, key in ipairs(capture.ability_order) do
+            self:print_ability(capture.abilities[key], self.previous_abilities[key])
+            hecho("\n")
+        end
+    end
+
     self:show_session_gains()
     hecho("\n")
 
     self.previous_skills = {}
     for key, skill in pairs(capture.skills) do
         self.previous_skills[key] = {name=skill.name, level=skill.level, value=skill.value}
+    end
+
+    self.previous_abilities = {}
+    for key, ability in pairs(capture.abilities) do
+        self.previous_abilities[key] = {
+            name=ability.name, level=ability.level, value=ability.value,
+            maximum=ability.maximum, percent=ability.percent,
+        }
     end
 end
 
@@ -221,6 +290,27 @@ function S:install()
         S:start_jobs()
         send("staz", false)
     end)
+
+    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
+        [[^\s*Zdolnosci:\s*$]],
+        function()
+            if S.skill_capture then
+                gag_line()
+                S:touch_skill_timer()
+            end
+        end
+    )
+
+    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
+        [[^\s*.+?:\s+.+\[\d+/\d+\]\s*$]],
+        function()
+            if not S.skill_capture then return end
+            if S:parse_ability_line(getCurrentLine()) then
+                gag_line()
+                S:touch_skill_timer()
+            end
+        end
+    )
 
     self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
         [[^\s*.+?:\s+.+\[\d+\].*$]],
