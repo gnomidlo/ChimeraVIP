@@ -1,13 +1,13 @@
 return {
     name = "ChimeraVIP",
-    version = "0.113",
+    version = "0.114",
     schema = 2,
     tested_upstream = "4.3",
     raw_base = "https://raw.githubusercontent.com/gnomidlo/ChimeraVIP/main/",
     changes = {
-        "Sprzet: podsumowanie czeka na opcjonalna linie o magii",
-        "Sprzet: natychmiastowe oznaczenie MAGIA po wykryciu zakletego przedmiotu",
-        "Sprzet: ochrona przed podwojnym podsumowaniem oceny",
+        "Pojemniki: obsluga liczebnikow zbiorowych dwoje, troje, czworo itd.",
+        "Pojemniki: liczebniki zbiorowe rozpoznawane do dwadziesciorga sztuk",
+        "Testy: przypadek siedmioro kurzych jajek zabezpieczony w CI",
     },
     files = {
         "loader.lua",
@@ -45,7 +45,7 @@ return {
     file_meta = {
         ["loader.lua"] = {hash="1381414d89e55d2fad70beb8f42e48098d4b1802", size=4501},
         ["src/init.lua"] = {hash="1735ceccb35b7cdfd5a888e6331b96f2f5eee537", size=1928},
-        ["src/core/bootstrap.lua"] = {hash="1ffca7198fd571d5cb8adbaa5deae3dc5c8fa18b", size=1471},
+        ["src/core/bootstrap.lua"] = {hash="9def13478868d61bb36d847748794c5b22291f3e", size=1471},
         ["src/core/util.lua"] = {hash="7561cd9259be9ff0ce74228e9048eef0b5aba280", size=6686},
         ["src/core/hash.lua"] = {hash="362c18bf131c9939d03b59dd50568d66de8f6a5e", size=2118},
         ["src/integrations/runtime.lua"] = {hash="e8e4a7efac14fcb7ac6f6f0d3cc473f42e556d7a", size=2649},
@@ -68,7 +68,7 @@ return {
         ["src/features/settings_bindings.lua"] = {hash="3015d9994667fc4959029f8faf76c69f67ab7d3f", size=2959},
         ["src/features/characters_delete_ui.lua"] = {hash="dd70e429d43a1f57e8785689063547063d2bf9bf", size=2077},
         ["src/ui/characters_help_panel.lua"] = {hash="634fbd308f81451b545bc9c6dabbb2f8c068e54b", size=8887},
-        ["src/features/containers.lua"] = {hash="c5462c4929412da93fb780c277388a925e27b065", size=5027},
+        ["src/features/containers.lua"] = {hash="d33681551be253a91b3ab7786f02f97f27725553", size=5363},
         ["src/features/skills_view.lua"] = {hash="5eaa6d89119dd439d9beebee6bfacd73de98e699", size=8284},
         ["src/features/equipment_view.lua"] = {hash="14d6f882f2b48d1b937603949a7d21b81027e49b", size=1721},
         ["src/features/weapon_info.lua"] = {hash="52eb2d36cc98e34e10c1609f898c760a40848385", size=15302},
