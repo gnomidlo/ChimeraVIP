@@ -1,13 +1,13 @@
 return {
     name = "ChimeraVIP",
-    version = "0.117",
+    version = "0.118",
     schema = 2,
     tested_upstream = "4.3",
     raw_base = "https://raw.githubusercontent.com/gnomidlo/ChimeraVIP/main/",
     changes = {
-        "Umiejetnosci: wyrownane kolumny z sekcja Zdolnosci",
-        "Umiejetnosci: wspolna szerokosc kolumny procentowej",
-        "Widok: usunieta pusta linia pod separatorami Umiejetnosci i Zdolnosci",
+        "Pacholki: zwarta karta poziomu wyszkolenia",
+        "Pacholki: najwazniejsze XP i poziom widoczne na pierwszy rzut oka",
+        "Pacholki: oryginalny wieloliniowy raport zastapiony czytelnym podsumowaniem",
     },
     files = {
         "loader.lua",
@@ -37,6 +37,7 @@ return {
         "src/ui/characters_help_panel.lua",
         "src/features/containers.lua",
         "src/features/skills_view.lua",
+        "src/features/retainer_progress.lua",
         "src/features/equipment_view.lua",
         "src/features/weapon_info.lua",
         "src/ui/footer_controls.lua",
@@ -44,8 +45,8 @@ return {
     },
     file_meta = {
         ["loader.lua"] = {hash="1381414d89e55d2fad70beb8f42e48098d4b1802", size=4501},
-        ["src/init.lua"] = {hash="1735ceccb35b7cdfd5a888e6331b96f2f5eee537", size=1928},
-        ["src/core/bootstrap.lua"] = {hash="9d3f05981c62b0a52bf66f183352595b6b22d8df", size=1471},
+        ["src/init.lua"] = {hash="bf19e4c34553b6a20b2a33e60a7dd651782568b5", size=1971},
+        ["src/core/bootstrap.lua"] = {hash="3a400d83c9ade3f4d3a19cd7fe601bc42e71fb68", size=1471},
         ["src/core/util.lua"] = {hash="7561cd9259be9ff0ce74228e9048eef0b5aba280", size=6686},
         ["src/core/hash.lua"] = {hash="362c18bf131c9939d03b59dd50568d66de8f6a5e", size=2118},
         ["src/integrations/runtime.lua"] = {hash="e8e4a7efac14fcb7ac6f6f0d3cc473f42e556d7a", size=2649},
@@ -70,9 +71,10 @@ return {
         ["src/ui/characters_help_panel.lua"] = {hash="634fbd308f81451b545bc9c6dabbb2f8c068e54b", size=8887},
         ["src/features/containers.lua"] = {hash="d33681551be253a91b3ab7786f02f97f27725553", size=5363},
         ["src/features/skills_view.lua"] = {hash="99908ba3803682ef1e798ccd2969d5c9e4b8f478", size=11788},
+        ["src/features/retainer_progress.lua"] = {hash="edf8e28dfcb94cc2b8d007eb2af8f54383742888", size=4076},
         ["src/features/equipment_view.lua"] = {hash="14d6f882f2b48d1b937603949a7d21b81027e49b", size=1721},
         ["src/features/weapon_info.lua"] = {hash="52eb2d36cc98e34e10c1609f898c760a40848385", size=15302},
-        ["src/ui/footer_controls.lua"] = {hash="7c5cc9bd01de155992a81f520475ba72b2096061", size=12941},
+        ["src/ui/footer_controls.lua"] = {hash="c5eb429b3c854ba1116ac6cad7925989d1a8c41b", size=12941},
         ["src/ui/module_controls.lua"] = {hash="d678888ba23e8955db0d108b6de6ad75265837cb", size=3660}
     },
     remove = {
