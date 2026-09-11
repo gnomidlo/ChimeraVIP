@@ -74,7 +74,7 @@ return {
         ["src/features/retainer_progress.lua"] = {hash="edf8e28dfcb94cc2b8d007eb2af8f54383742888", size=4076},
         ["src/features/equipment_view.lua"] = {hash="14d6f882f2b48d1b937603949a7d21b81027e49b", size=1721},
         ["src/features/weapon_info.lua"] = {hash="52eb2d36cc98e34e10c1609f898c760a40848385", size=15302},
-        ["src/ui/footer_controls.lua"] = {hash="c5eb429b3c854ba1116ac6cad7925989d1a8c41b", size=12941},
+        ["src/ui/footer_controls.lua"] = {hash="7c5cc9bd01de155992a81f520475ba72b2096061", size=12941},
         ["src/ui/module_controls.lua"] = {hash="d678888ba23e8955db0d108b6de6ad75265837cb", size=3660}
     },
     remove = {
