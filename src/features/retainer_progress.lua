@@ -56,6 +56,13 @@ local function display_role(role)
     return tostring(role or ""):gsub("_", " ")
 end
 
+local function display_warning(warning)
+    warning = normalize(warning)
+    if warning == "" then return "" end
+    if warning == "za ciezki przy obecnej charyzmie" then return "ZA CIEZKI" end
+    return warning:upper()
+end
+
 function R:show_card()
     local c = self.capture
     if not c or not c.name or not c.role or not c.level or not c.total or not c.since_call or not c.to_next then
@@ -100,7 +107,7 @@ function R:start_roster()
     touch_roster()
 end
 
-function R:add_roster_entry(index, name, role, level, status, obedience)
+function R:add_roster_entry(index, name, role, level, status, obedience, warning)
     if not self.roster then return false end
     self.roster.entries[#self.roster.entries + 1] = {
         index = tonumber(index) or (#self.roster.entries + 1),
@@ -109,6 +116,7 @@ function R:add_roster_entry(index, name, role, level, status, obedience)
         level = tonumber(level) or 0,
         status = normalize(status),
         obedience = tonumber(obedience) or 0,
+        warning = normalize(warning),
     }
     gag_line()
     touch_roster()
@@ -144,6 +152,7 @@ function R:show_roster(limit_text, charisma)
     for _, entry in ipairs(roster.entries) do
         local active = entry.status == "przy tobie"
         local status_text = active and "PRZY TOBIE" or (entry.status == "czeka na wezwanie" and "czeka" or entry.status)
+        local warning_text = display_warning(entry.warning)
         local row_color = active and P.mint or P.text
         hecho("\n" .. row_color
             .. "  " .. pad(tostring(entry.index), 3)
@@ -152,6 +161,9 @@ function R:show_roster(limit_text, charisma)
             .. P.peach .. pad(tostring(entry.level), 6)
             .. P.yellow .. pad(tostring(entry.obedience), 9)
             .. (active and P.mint or P.text_muted) .. status_text)
+        if warning_text ~= "" then
+            hecho(P.text_muted .. "   " .. P.rose .. warning_text)
+        end
     end
 
     hecho("\n" .. P.separator .. "------------------------------------------------------------------------")
@@ -225,10 +237,10 @@ function R:install()
     )
 
     self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
-        [[^\s*(\d+)\.\s+(\S+)\s+(\S+)\s+poziom\s+(\d+)\s+(.+?)\s+\(wymaga posluchu\s+(\d+)\)\s*$]],
+        [[^\s*(\d+)\.\s+(\S+)\s+(\S+)\s+poziom\s+(\d+)\s+(.+?)\s+\(wymaga posluchu\s+(\d+)(?:;\s*(.+?))?\)\s*$]],
         function()
             if not R.roster then return end
-            R:add_roster_entry(matches[2], matches[3], matches[4], matches[5], matches[6], matches[7])
+            R:add_roster_entry(matches[2], matches[3], matches[4], matches[5], matches[6], matches[7], matches[8])
         end
     )
 
