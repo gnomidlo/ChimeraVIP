@@ -1,13 +1,13 @@
 return {
     name = "ChimeraVIP",
-    version = "0.119",
+    version = "0.120",
     schema = 2,
     tested_upstream = "4.3",
     raw_base = "https://raw.githubusercontent.com/gnomidlo/ChimeraVIP/main/",
     changes = {
-        "Pacholki: czytelna tabela calej listy pacholkow",
-        "Pacholki: wyroznienie aktywnego pacholka i kolumn poziomu oraz posluchu",
-        "Pacholki: podsumowanie charyzmy, aktywnych pacholkow i wykorzystanego posluchu",
+        "Pacholki: obsluga dodatkowych ostrzezen przy wpisach listy",
+        "Pacholki: za ciezki przy obecnej charyzmie oznaczany jako ZA CIEZKI",
+        "Pacholki: ostrzezenia wyroznione osobnym kolorem bez rozbijania tabeli",
     },
     files = {
         "loader.lua",
@@ -46,7 +46,7 @@ return {
     file_meta = {
         ["loader.lua"] = {hash="1381414d89e55d2fad70beb8f42e48098d4b1802", size=4501},
         ["src/init.lua"] = {hash="bf19e4c34553b6a20b2a33e60a7dd651782568b5", size=1971},
-        ["src/core/bootstrap.lua"] = {hash="751b7ee15261b9ca4f1afe1222bc0177ea34a323", size=1471},
+        ["src/core/bootstrap.lua"] = {hash="a64d430034907bbaa31901b64809047de4122e6a", size=1471},
         ["src/core/util.lua"] = {hash="7561cd9259be9ff0ce74228e9048eef0b5aba280", size=6686},
         ["src/core/hash.lua"] = {hash="362c18bf131c9939d03b59dd50568d66de8f6a5e", size=2118},
         ["src/integrations/runtime.lua"] = {hash="e8e4a7efac14fcb7ac6f6f0d3cc473f42e556d7a", size=2649},
@@ -71,7 +71,7 @@ return {
         ["src/ui/characters_help_panel.lua"] = {hash="634fbd308f81451b545bc9c6dabbb2f8c068e54b", size=8887},
         ["src/features/containers.lua"] = {hash="d33681551be253a91b3ab7786f02f97f27725553", size=5363},
         ["src/features/skills_view.lua"] = {hash="99908ba3803682ef1e798ccd2969d5c9e4b8f478", size=11788},
-        ["src/features/retainer_progress.lua"] = {hash="ce26e722021423014ec8dbe1c2804a39768aea29", size=8344},
+        ["src/features/retainer_progress.lua"] = {hash="4a45a38e4375237d539756fce1bc1024b4e23d0e", size=8817},
         ["src/features/equipment_view.lua"] = {hash="14d6f882f2b48d1b937603949a7d21b81027e49b", size=1721},
         ["src/features/weapon_info.lua"] = {hash="52eb2d36cc98e34e10c1609f898c760a40848385", size=15302},
         ["src/ui/footer_controls.lua"] = {hash="7c5cc9bd01de155992a81f520475ba72b2096061", size=12941},
