@@ -81,7 +81,7 @@ function XP:new_session()
     self.session = {
         started_at=nil, last_kill_at=nil, active_seconds=0, total_xp=0,
         kills=0, own_kills=0, group_kills=0, own_xp=0, group_xp=0,
-        events={}, rate_events={}, mob_stats={},
+        events={}, rate_events={}, mob_stats={}, killer_stats={},
     }
 end
 
@@ -101,6 +101,21 @@ function XP:rebuild_mob_stats(events)
     return stats
 end
 
+function XP:rebuild_killer_stats(events)
+    local stats = {}
+    for _, event in ipairs(events or {}) do
+        if not event.own then
+            local killer = trim(event.killer)
+            if killer ~= "" then
+                stats[killer] = stats[killer] or {name=killer,xp=0,kills=0}
+                stats[killer].xp = stats[killer].xp + (tonumber(event.xp) or 0)
+                stats[killer].kills = stats[killer].kills + 1
+            end
+        end
+    end
+    return stats
+end
+
 function XP:ensure_session_schema()
     if type(self.session) ~= "table" then self:new_session(); return end
     local S = self.session
@@ -109,6 +124,7 @@ function XP:ensure_session_schema()
     S.group_xp = tonumber(S.group_xp) or 0
 
     if type(S.mob_stats) ~= "table" then S.mob_stats = self:rebuild_mob_stats(S.events) end
+    if type(S.killer_stats) ~= "table" then S.killer_stats = self:rebuild_killer_stats(S.events) end
     if type(S.rate_events) ~= "table" then
         S.rate_events = {}
         local cutoff = os.time() - self.rolling_window * 2
@@ -159,6 +175,31 @@ function XP:update_mob_stats(event)
     if event.classification == "rule" then data.builtin = true end
 end
 
+function XP:update_killer_stats(event)
+    if event.own then return end
+    local killer = trim(event.killer)
+    if killer == "" then return end
+    local stats = self.session.killer_stats
+    stats[killer] = stats[killer] or {name=killer,xp=0,kills=0}
+    stats[killer].xp = stats[killer].xp + event.xp
+    stats[killer].kills = stats[killer].kills + 1
+end
+
+function XP:get_killer_stats()
+    local list = {}
+    for _, data in pairs(self.session.killer_stats or {}) do
+        list[#list+1] = {name=data.name, xp=data.xp or 0, kills=data.kills or 0}
+    end
+    table.sort(list, function(a,b)
+        if a.kills == b.kills then
+            if a.xp == b.xp then return tostring(a.name) < tostring(b.name) end
+            return a.xp > b.xp
+        end
+        return a.kills > b.kills
+    end)
+    return list
+end
+
 function XP:add_event(raw_mob, amount, killer, own)
     amount = tonumber(amount); if not amount then return end
     local now = os.time(); local S = self.session
@@ -167,12 +208,13 @@ function XP:add_event(raw_mob, amount, killer, own)
     S.last_kill_at = now
 
     local mob, classification = self:classify_mob(raw_mob)
-    local event = {time=now,xp=amount,mob_raw=trim(raw_mob),mob=mob,classification=classification,killer=killer,own=own==true}
+    local event = {time=now,xp=amount,mob_raw=trim(raw_mob),mob=mob,classification=classification,killer=trim(killer),own=own==true}
     S.events[#S.events + 1] = event
     while #S.events > self.max_recent_events do table.remove(S.events, 1) end
     S.rate_events[#S.rate_events + 1] = event
     self:prune_rate_events(now)
     self:update_mob_stats(event)
+    self:update_killer_stats(event)
 
     S.total_xp = S.total_xp + amount; S.kills = S.kills + 1
     if own then S.own_kills=S.own_kills+1; S.own_xp=S.own_xp+amount else S.group_kills=S.group_kills+1; S.group_xp=S.group_xp+amount end
@@ -242,9 +284,19 @@ function XP:show_summary()
         ..Cc.text_muted.."Aktywnie   "..Cc.text..string.format("%12s",format_time(active_seconds)).."\n\n"
         ..Cc.text_muted.."Zdobyto    "..Cc.peach..string.format("%12s xp",format_integer(S.total_xp)).."\n"
         ..Cc.text_muted.."Zabici     "..Cc.text..string.format("%12s",format_integer(S.kills)).."\n"
-        ..Cc.text_muted.."  ty       "..Cc.text..string.format("%6s",format_integer(S.own_kills))..Cc.text_muted.." / "..Cc.peach..format_integer(S.own_xp).." xp\n"
-        ..Cc.text_muted.."  druzyna  "..Cc.text..string.format("%6s",format_integer(S.group_kills))..Cc.text_muted.." / "..Cc.peach..format_integer(S.group_xp).." xp\n"
-        ..Cc.text_muted.."XP / kill  "..Cc.text..string.format("%12s",format_integer(average)).."\n"
+        ..Cc.text_muted.."  ty       "..Cc.text..string.format("%6s",format_integer(S.own_kills))..Cc.text_muted.." / "..Cc.peach..format_integer(S.own_xp).." xp")
+
+    for _, data in ipairs(self:get_killer_stats()) do
+        hecho("\n"..Cc.text_muted.."  "..pad(data.name,18)..Cc.text..string.format("%6s",format_integer(data.kills))
+            ..Cc.text_muted.." / "..Cc.peach..format_integer(data.xp).." xp")
+    end
+
+    if S.group_kills > 0 then
+        hecho("\n"..Cc.text_muted.."  druzyna razem      "..Cc.text..string.format("%6s",format_integer(S.group_kills))
+            ..Cc.text_muted.." / "..Cc.peach..format_integer(S.group_xp).." xp")
+    end
+
+    hecho("\n"..Cc.text_muted.."XP / kill  "..Cc.text..string.format("%12s",format_integer(average)).."\n"
         ..Cc.text_muted.."Top mob    "..Cc.mint..top_text.."\n\n"
         ..Cc.text_muted.."TERAZ      "..Cc.mint..string.format("%12s",format_rate(current_rate))..trend_text.."\n"
         ..Cc.text_muted.."AKTYWNIE   "..Cc.blue..string.format("%12s",format_rate(active_rate)).."\n"
