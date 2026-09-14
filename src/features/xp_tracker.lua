@@ -204,8 +204,59 @@ function XP:get_killer_stats()
     return list
 end
 
+local function add_group_name(names, name)
+    local key = normalize(name)
+    if key ~= "" then names[key] = true end
+end
+
+function XP:get_current_group_names()
+    local names = {}
+
+    local group_state = gmcp and gmcp.Chimera and gmcp.Chimera.Group and gmcp.Chimera.Group.State
+    if group_state and type(group_state.members) == "table" then
+        for _, member in pairs(group_state.members) do
+            if type(member) == "table" and member.self ~= 1 then
+                add_group_name(names, member.name)
+            end
+        end
+        return names, "Chimera.Group.State"
+    end
+
+    local room_entities = gmcp and gmcp.Chimera and gmcp.Chimera.Room and gmcp.Chimera.Room.Entities
+    if room_entities and type(room_entities.entities) == "table" then
+        for _, entity in pairs(room_entities.entities) do
+            if type(entity) == "table" and entity.self ~= 1
+                and (entity.relation == "group" or entity.group_role == "member") then
+                add_group_name(names, entity.name)
+            end
+        end
+        return names, "Chimera.Room.Entities"
+    end
+
+    local objects = gmcp and gmcp.objects and gmcp.objects.data
+    if type(objects) == "table" then
+        for _, object in pairs(objects) do
+            if type(object) == "table" and object.avatar ~= true and object.team == true then
+                add_group_name(names, object.chimera_command_name or object.desc)
+            end
+        end
+        return names, "objects.data"
+    end
+
+    return names, nil
+end
+
+function XP:is_current_group_killer(killer)
+    local key = normalize(killer)
+    if key == "" then return false end
+    local names = self:get_current_group_names()
+    return names[key] == true
+end
+
 function XP:add_event(raw_mob, amount, killer, own)
     amount = tonumber(amount); if not amount then return end
+    if not own and not self:is_current_group_killer(killer) then return end
+
     local now = os.time(); local S = self.session
     if not S.started_at then S.started_at = now end
     if S.last_kill_at then local gap = now - S.last_kill_at; S.active_seconds = S.active_seconds + math.min(math.max(gap, 0), self.active_timeout) end
@@ -363,18 +414,18 @@ function XP:show_help()
     local Cc=self.colors
     local rows={
         {"/xp","podsumowanie sesji"},
-        {"/xp mobs","statystyki typów mobów"},
-        {"/xp mob <nazwa>","szczegóły typu"},
-        {"/xp last [N]","ostatnie N zabójstw"},
-        {"/xp reset","wyzeruj sesję"},
+        {"/xp mobs","statystyki typow mobow"},
+        {"/xp mob <nazwa>","szczegoly typu"},
+        {"/xp last [N]","ostatnie N zabojstw"},
+        {"/xp reset","wyzeruj sesje"},
         {"/xp pomoc","ta pomoc"},
     }
     local command_width=0
     for _,row in ipairs(rows) do command_width=math.max(command_width,U and U.text_width and U.text_width(row[1]) or #row[1]) end
     command_width=command_width+2
     hecho("\n\n"..Cc.lavender.."XP — POMOC\n"..Cc.separator.."--------------------------------------------------"
-        .."\n"..Cc.text_muted.."Sesyjny licznik doświadczenia, zabójstw, XP/h i wydajności typów przeciwników."
-        .."\n"..Cc.text_muted.."Niestandardowe typy mobów są utrzymywane centralnie w ChimeraVIP.\n")
+        .."\n"..Cc.text_muted.."Sesyjny licznik doswiadczenia, zabojstw, XP/h i wydajnosci typow przeciwnikow."
+        .."\n"..Cc.text_muted.."Niestandardowe typy mobow sa utrzymywane centralnie w ChimeraVIP.\n")
     for _,row in ipairs(rows) do hecho("\n"..Cc.text..pad(row[1],command_width)..Cc.text_muted..row[2]) end
     finish_output()
 end
