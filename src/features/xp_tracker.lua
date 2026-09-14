@@ -333,31 +333,41 @@ function XP:show_summary()
         elseif trend<=-3 then trend_text=string.format("  %s↘ %.1f%%",Cc.rose,trend)
         else trend_text=string.format("  %s→ %.1f%%",Cc.text_muted,trend) end
     end
-    local top=self:get_mob_stats()[1]; local top_text=top and (top.name.." ("..format_integer(top.xp).." xp)") or "..."
+
+    local top=self:get_mob_stats()[1]
+    local top_text=top and (top.name.." ("..format_integer(top.xp).." xp)") or "..."
     local killers=self:get_killer_stats()
     local killer_name_width=12
     for _,data in ipairs(killers) do killer_name_width=math.max(killer_name_width,text_width(data.name)) end
-    if S.group_kills>0 then killer_name_width=math.max(killer_name_width,text_width("DRUZYNA RAZEM")) end
+    killer_name_width=math.max(killer_name_width,text_width("DRUZYNA RAZEM"))
 
-    local function killer_row(name,kills,xp,name_color)
-        hecho("\n  "..(name_color or Cc.text)..pad(name,killer_name_width+2)
-            ..Cc.text..string.format("%7s",format_integer(kills))
-            ..Cc.peach..string.format("%14s",format_integer(xp)))
+    local function percent(value,total)
+        if not total or total<=0 then return "0.0%" end
+        return string.format("%.1f%%",value/total*100)
     end
 
+    local function killer_row(name,kills,xp,name_color,total_row)
+        local kill_share=total_row and "100.0%" or percent(kills,S.kills)
+        local xp_share=total_row and "100.0%" or percent(xp,S.total_xp)
+        hecho("\n  "..(name_color or Cc.text)..pad(name,killer_name_width+2)
+            ..Cc.text..string.format("%7s",format_integer(kills))
+            ..Cc.text_muted..string.format("%9s",kill_share)
+            ..Cc.peach..string.format("%14s",format_integer(xp))
+            ..Cc.text_muted..string.format("%9s",xp_share))
+    end
+
+    local table_width=killer_name_width+41
     hecho("\n\n"..Cc.lavender.."XP — SESJA\n"..Cc.separator.."------------------------------------------\n"
         ..Cc.text_muted.."Czas       "..Cc.text..string.format("%12s",format_time(session_seconds)).."\n"
         ..Cc.text_muted.."Aktywnie   "..Cc.text..string.format("%12s",format_time(active_seconds)).."\n\n"
-        ..Cc.text_muted.."Zdobyto    "..Cc.peach..string.format("%12s xp",format_integer(S.total_xp)).."\n"
-        ..Cc.text_muted.."Zabici     "..Cc.text..string.format("%12s",format_integer(S.kills)).."\n\n"
-        ..Cc.text_muted.."  "..pad("KTO",killer_name_width+2)..string.format("%7s", "ZABICIA")..string.format("%14s", "XP"))
+        ..Cc.text_muted.."  "..pad("KTO",killer_name_width+2)
+        ..string.format("%7s","ZABICIA")..string.format("%9s","UDZIAL")
+        ..string.format("%14s","XP")..string.format("%9s","UDZIAL"))
 
-    killer_row("TY",S.own_kills,S.own_xp,Cc.mint)
-    for _,data in ipairs(killers) do killer_row(data.name,data.kills,data.xp,Cc.text) end
-    if S.group_kills>0 then
-        hecho("\n  "..Cc.separator..string.rep("-",killer_name_width+23))
-        killer_row("DRUZYNA RAZEM",S.group_kills,S.group_xp,Cc.lavender)
-    end
+    killer_row("TY",S.own_kills,S.own_xp,Cc.mint,false)
+    for _,data in ipairs(killers) do killer_row(data.name,data.kills,data.xp,Cc.text,false) end
+    hecho("\n  "..Cc.separator..string.rep("-",table_width))
+    killer_row("DRUZYNA RAZEM",S.kills,S.total_xp,Cc.lavender,true)
 
     hecho("\n\n"..Cc.text_muted.."XP / kill  "..Cc.text..string.format("%12s",format_integer(average)).."\n"
         ..Cc.text_muted.."Top mob    "..Cc.mint..top_text.."\n\n"
