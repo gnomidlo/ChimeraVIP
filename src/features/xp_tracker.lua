@@ -45,6 +45,10 @@ local function pad(text, width)
     if U and U.pad_right then return U.pad_right(text, width) end
     text=tostring(text or ""); return text .. string.rep(" ", math.max(0, width-#text))
 end
+local function text_width(text)
+    if U and U.text_width then return U.text_width(text) end
+    return #tostring(text or "")
+end
 local function finish_output() hecho("\n") end
 
 local function actions(kind)
@@ -279,24 +283,32 @@ function XP:show_summary()
         else trend_text=string.format("  %s→ %.1f%%",Cc.text_muted,trend) end
     end
     local top=self:get_mob_stats()[1]; local top_text=top and (top.name.." ("..format_integer(top.xp).." xp)") or "..."
+    local killers=self:get_killer_stats()
+    local killer_name_width=12
+    for _,data in ipairs(killers) do killer_name_width=math.max(killer_name_width,text_width(data.name)) end
+    if S.group_kills>0 then killer_name_width=math.max(killer_name_width,text_width("DRUZYNA RAZEM")) end
+
+    local function killer_row(name,kills,xp,name_color)
+        hecho("\n  "..(name_color or Cc.text)..pad(name,killer_name_width+2)
+            ..Cc.text..string.format("%7s",format_integer(kills))
+            ..Cc.peach..string.format("%14s",format_integer(xp)))
+    end
+
     hecho("\n\n"..Cc.lavender.."XP — SESJA\n"..Cc.separator.."------------------------------------------\n"
         ..Cc.text_muted.."Czas       "..Cc.text..string.format("%12s",format_time(session_seconds)).."\n"
         ..Cc.text_muted.."Aktywnie   "..Cc.text..string.format("%12s",format_time(active_seconds)).."\n\n"
         ..Cc.text_muted.."Zdobyto    "..Cc.peach..string.format("%12s xp",format_integer(S.total_xp)).."\n"
-        ..Cc.text_muted.."Zabici     "..Cc.text..string.format("%12s",format_integer(S.kills)).."\n"
-        ..Cc.text_muted.."  ty       "..Cc.text..string.format("%6s",format_integer(S.own_kills))..Cc.text_muted.." / "..Cc.peach..format_integer(S.own_xp).." xp")
+        ..Cc.text_muted.."Zabici     "..Cc.text..string.format("%12s",format_integer(S.kills)).."\n\n"
+        ..Cc.text_muted.."  "..pad("KTO",killer_name_width+2)..string.format("%7s", "ZABICIA")..string.format("%14s", "XP"))
 
-    for _, data in ipairs(self:get_killer_stats()) do
-        hecho("\n"..Cc.text_muted.."  "..pad(data.name,18)..Cc.text..string.format("%6s",format_integer(data.kills))
-            ..Cc.text_muted.." / "..Cc.peach..format_integer(data.xp).." xp")
+    killer_row("TY",S.own_kills,S.own_xp,Cc.mint)
+    for _,data in ipairs(killers) do killer_row(data.name,data.kills,data.xp,Cc.text) end
+    if S.group_kills>0 then
+        hecho("\n  "..Cc.separator..string.rep("-",killer_name_width+23))
+        killer_row("DRUZYNA RAZEM",S.group_kills,S.group_xp,Cc.lavender)
     end
 
-    if S.group_kills > 0 then
-        hecho("\n"..Cc.text_muted.."  druzyna razem      "..Cc.text..string.format("%6s",format_integer(S.group_kills))
-            ..Cc.text_muted.." / "..Cc.peach..format_integer(S.group_xp).." xp")
-    end
-
-    hecho("\n"..Cc.text_muted.."XP / kill  "..Cc.text..string.format("%12s",format_integer(average)).."\n"
+    hecho("\n\n"..Cc.text_muted.."XP / kill  "..Cc.text..string.format("%12s",format_integer(average)).."\n"
         ..Cc.text_muted.."Top mob    "..Cc.mint..top_text.."\n\n"
         ..Cc.text_muted.."TERAZ      "..Cc.mint..string.format("%12s",format_rate(current_rate))..trend_text.."\n"
         ..Cc.text_muted.."AKTYWNIE   "..Cc.blue..string.format("%12s",format_rate(active_rate)).."\n"
