@@ -1,13 +1,13 @@
 return {
     name = "ChimeraVIP",
-    version = "0.125",
+    version = "0.126",
     schema = 2,
     tested_upstream = "4.3",
     raw_base = "https://raw.githubusercontent.com/gnomidlo/ChimeraVIP/main/",
     changes = {
-        "XP: DRUZYNA RAZEM obejmuje teraz cala druzyne razem z postacia gracza",
-        "XP: usunieto zduplikowane pola Zdobyto i Zabici z podsumowania sesji",
-        "XP: tabela pokazuje procentowy udzial kazdej osoby w dobiciach i XP druzyny",
+        "XP: dodano krotkie podsumowanie po zabiciu przeciwnika bez gagowania logu walki",
+        "XP: karta pokazuje mianownik celu z GMCP, dobijajacego oraz nagrody XP gracza i druzyny",
+        "XP: wartosci nagrod sa wyrownane przed nazwa postaci dla czytelnego ukladu",
     },
     files = {
         "loader.lua",
@@ -47,7 +47,7 @@ return {
     file_meta = {
         ["loader.lua"] = {hash="1381414d89e55d2fad70beb8f42e48098d4b1802", size=4501},
         ["src/init.lua"] = {hash="53ee0ed877fadce51cf438880bf229fcf0f0e656", size=2015},
-        ["src/core/bootstrap.lua"] = {hash="8bd49e0219316895f8b9be1ca261625f87df7866", size=1471},
+        ["src/core/bootstrap.lua"] = {hash="528824c08e6eb1870154c423c9dc06edd2a38b7e", size=1471},
         ["src/core/util.lua"] = {hash="7561cd9259be9ff0ce74228e9048eef0b5aba280", size=6686},
         ["src/core/hash.lua"] = {hash="362c18bf131c9939d03b59dd50568d66de8f6a5e", size=2118},
         ["src/integrations/runtime.lua"] = {hash="e8e4a7efac14fcb7ac6f6f0d3cc473f42e556d7a", size=2649},
@@ -63,7 +63,7 @@ return {
         ["src/features/combat_colors.lua"] = {hash="c7fc6702b7bc994c67a7ac1d1ed1108ef8402050", size=10746},
         ["src/features/defense_tracker.lua"] = {hash="6911379fe29c49db64190e581a457eaf522cb079", size=14030},
         ["src/features/auto_support.lua"] = {hash="9e98d679c3bbb95887b5a7d66a9f3830b74c25c1", size=7995},
-        ["src/features/xp_tracker.lua"] = {hash="c0099b3bf18aa821859dd5a644cb9edbe9c1efb8", size=20726},
+        ["src/features/xp_tracker.lua"] = {hash="eeffc793efd62e9c9f1ecec37b060c8dd806db95", size=23570},
         ["src/features/stats.lua"] = {hash="f6f04abb793f20ad794483b3d41952cd60561f38", size=13741},
         ["src/features/stats_compact_view.lua"] = {hash="9b0405f3783465a42df38a24e8a4fa2c81f1ec51", size=4274},
         ["src/features/report_actions.lua"] = {hash="fd94ede283c639df08b8316e286f3bc3d694555b", size=552},
