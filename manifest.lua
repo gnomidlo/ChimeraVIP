@@ -1,13 +1,12 @@
 return {
     name = "ChimeraVIP",
-    version = "0.126",
+    version = "0.127",
     schema = 2,
     tested_upstream = "4.3",
     raw_base = "https://raw.githubusercontent.com/gnomidlo/ChimeraVIP/main/",
     changes = {
-        "XP: dodano krotkie podsumowanie po zabiciu przeciwnika bez gagowania logu walki",
-        "XP: karta pokazuje mianownik celu z GMCP, dobijajacego oraz nagrody XP gracza i druzyny",
-        "XP: wartosci nagrod sa wyrownane przed nazwa postaci dla czytelnego ukladu",
+        "XP: karta zabicia ma teraz separator takze nad podsumowaniem",
+        "XP: wydzielono warstwe prezentacji karty zabicia bez zmian logiki naliczania",
     },
     files = {
         "loader.lua",
@@ -29,6 +28,7 @@ return {
         "src/features/defense_tracker.lua",
         "src/features/auto_support.lua",
         "src/features/xp_tracker.lua",
+        "src/features/xp_kill_card_view.lua",
         "src/features/stats.lua",
         "src/features/stats_compact_view.lua",
         "src/features/report_actions.lua",
@@ -46,8 +46,8 @@ return {
     },
     file_meta = {
         ["loader.lua"] = {hash="1381414d89e55d2fad70beb8f42e48098d4b1802", size=4501},
-        ["src/init.lua"] = {hash="53ee0ed877fadce51cf438880bf229fcf0f0e656", size=2015},
-        ["src/core/bootstrap.lua"] = {hash="528824c08e6eb1870154c423c9dc06edd2a38b7e", size=1471},
+        ["src/init.lua"] = {hash="fbc8d42fc31223a619af15140f9e3b8c6364726c", size=2058},
+        ["src/core/bootstrap.lua"] = {hash="19b77fc1b55183d09f42a11a5d0fcf5a8d0fea60", size=1471},
         ["src/core/util.lua"] = {hash="7561cd9259be9ff0ce74228e9048eef0b5aba280", size=6686},
         ["src/core/hash.lua"] = {hash="362c18bf131c9939d03b59dd50568d66de8f6a5e", size=2118},
         ["src/integrations/runtime.lua"] = {hash="e8e4a7efac14fcb7ac6f6f0d3cc473f42e556d7a", size=2649},
@@ -64,6 +64,7 @@ return {
         ["src/features/defense_tracker.lua"] = {hash="6911379fe29c49db64190e581a457eaf522cb079", size=14030},
         ["src/features/auto_support.lua"] = {hash="9e98d679c3bbb95887b5a7d66a9f3830b74c25c1", size=7995},
         ["src/features/xp_tracker.lua"] = {hash="eeffc793efd62e9c9f1ecec37b060c8dd806db95", size=23570},
+        ["src/features/xp_kill_card_view.lua"] = {hash="2bf985dba91536ac5f857d921e36e2e4fd4c4041", size=1374},
         ["src/features/stats.lua"] = {hash="f6f04abb793f20ad794483b3d41952cd60561f38", size=13741},
         ["src/features/stats_compact_view.lua"] = {hash="9b0405f3783465a42df38a24e8a4fa2c81f1ec51", size=4274},
         ["src/features/report_actions.lua"] = {hash="fd94ede283c639df08b8316e286f3bc3d694555b", size=552},
