@@ -2,7 +2,7 @@ name: ChimeraVIP release check
 
 on:
   push:
-    branches: [main]
+    branches: [main, standalone-v2]
   pull_request:
 
 jobs:
@@ -29,3 +29,5 @@ jobs:
         run: lua5.1 tools/updater_test.lua
       - name: Test equipment appraisal grammar and durability
         run: lua5.1 tools/equipment_test.lua
+      - name: Test standalone foundation
+        run: lua5.1 tools/standalone_test.lua
