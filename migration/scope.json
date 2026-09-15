@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "name": "ChimeraVIP standalone + mapper",
+  "required_sources": ["vip"],
+  "official_policy": "reference-and-optional-backlog",
+  "capabilities": [
+    {"id": "independent_boot", "label": "Start przy zainstalowanej, wyłączonej Chimerze", "status": "pending", "evidence": []},
+    {"id": "vip_features", "label": "Obecne funkcje VIP działają bez oficjalnego runtime", "status": "pending", "evidence": []},
+    {"id": "own_ui", "label": "Własny interfejs i stopka VIP", "status": "pending", "evidence": []},
+    {"id": "gmcp_state", "label": "Własne GMCP, stan postaci, drużyny i walki", "status": "pending", "evidence": []},
+    {"id": "mapper_view_position", "label": "Wyświetlanie istniejącej mapy i lokalizacja GMCP", "status": "pending", "evidence": []},
+    {"id": "mapper_navigation", "label": "Poruszanie i potwierdzany chodzik /idz, /opoz, /stop", "status": "pending", "evidence": []},
+    {"id": "data_preservation", "label": "Zachowanie mapy, ustawień i baz VIP", "status": "pending", "evidence": []},
+    {"id": "package_lifecycle", "label": "Instalacja, restart, reload i powrót do poprzedniej konfiguracji", "status": "pending", "evidence": []}
+  ]
+}

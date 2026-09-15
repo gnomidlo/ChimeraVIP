@@ -2,6 +2,14 @@
 
 Data analizy: 15 września 2026 r.
 
+**Aktualizacja zakresu po decyzji użytkownika:** pierwsze wydanie to obecne
+funkcje ChimeraVIP + mapper, przy zainstalowanej i wyłączonej oficjalnej Chimerze.
+Pełne zastępowanie oficjalnej paczki nie jest już celem wydania. Pozostałe
+mechanizmy dodajemy selektywnie później. Obowiązujący zakres i kryteria:
+[migration/README.md](../migration/README.md), `migration/scope.json`.
+Poniższa analiza wszystkich podsystemów pozostaje materiałem odniesienia;
+etapy opcjonalne nie blokują pierwszego wydania.
+
 Dokument rozdziela ustalenia wynikające z kodu od proponowanego sposobu migracji. Propozycje architektury, priorytety i kryteria odbioru są rekomendacją, a nie opisem już wdrożonych funkcji.
 
 ## 1. Cel i zakres
@@ -13,7 +21,7 @@ Warunek niezależności: VIP nie potrzebuje oficjalnego loadera, UI, globalnych 
 Rozróżniamy dwa wyniki:
 
 - **Samodzielność techniczna:** VIP działa przy całkowicie nieuruchomionej oficjalnej paczce.
-- **Kompletność funkcjonalna:** każda funkcja oficjalnej paczki z inwentaryzacji ma działający odpowiednik VIP albo zastępujący ją moduł VIP. Funkcji odłożonych nie zaliczamy do ukończonych; rezygnacja z nich wymaga osobnej decyzji użytkownika.
+- **Kompletność pierwszego wydania:** obecne funkcje VIP i mapper działają samodzielnie. Pełna inwentaryzacja oficjalnej paczki jest materiałem odniesienia, nie listą obowiązkowych portów. Użytkownik dopuścił wycinanie starych mechanizmów i sukcesywne dodawanie reszty; nie oznaczamy funkcji odłożonych jako już wdrożonych.
 
 Ten dokument jest planem. Nie wprowadza zmian w kodzie repozytoriów, ustawieniach Mudleta ani konfiguracji użytkownika.
 
@@ -71,6 +79,10 @@ Wspólny rejestr ma przechowywać ID wszystkich timerów, handlerów, triggerów
 
 ## 5. Decyzje: zachować, adaptować, napisać
 
+Tabela przedstawia możliwości adaptacji. Do pierwszego wydania należą VIP,
+własny GMCP/UI, mapper oraz ich konieczne zależności. Pełny ekwipunek użytkowy,
+transport, zioła i pozostałe dodatki są opcjonalne i nie wymagają teraz portu.
+
 | Podsystem | Proponowane działanie | Zakres źródeł oficjalnych / zależności |
 |---|---|---|
 | Pomoc, konfiguracja, aktualizator VIP | Zachować i rozszerzyć | Manifest, kontrola integralności, osobne dane użytkownika; dodać migracje schematów i status samodzielności. |
@@ -89,6 +101,9 @@ Wspólny rejestr ma przechowywać ID wszystkich timerów, handlerów, triggerów
 To lista podsystemów do adaptacji, nie gotowa lista plików do skopiowania. Dla każdego portu trzeba domknąć zależności: funkcje pomocnicze, dane, assety, definicje JSON, zdarzenia i timery. Przykład: oficjalna lampa używa nazwanego timera `lamp_info_timer` i triggerów spoza swojego pliku Lua.
 
 ## 6. Etapy realizacji i odbiór
+
+Pierwsze wydanie obejmuje E0–E4, niezbędną dla obecnego VIP część E5 oraz E9.
+E6–E8 to zakres późniejszy. Te etapy nie blokują samodzielnego VIP z mapperem.
 
 ### E0 — inwentaryzacja migracyjna i punkt powrotu
 
@@ -190,13 +205,13 @@ Osobnymi modułami przenieść zakres pozostały w rejestrze E0: zioła, bazy NP
 
 Moduły zachowują własne ustawienia w przestrzeni VIP. Nie przenosić oficjalnego autoaktualizatora, globalnego loadera wszystkich modułów, systemu automatycznego odtwarzania oficjalnej paczki ani drugiej implementacji funkcji już obsługiwanych przez VIP. Wymagane przez portowane funkcje dane i assety muszą należeć do wydania VIP.
 
-**Odbiór:** brak nierozstrzygniętych pozycji w rejestrze kompletności; moduły opcjonalne mogą być wyłączone bez zatrzymania rdzenia.
+**Odbiór opcjonalnego rozszerzenia:** rozliczone pozycje wybrane do danego rozszerzenia; moduły opcjonalne mogą być wyłączone bez zatrzymania rdzenia. Ten etap nie jest warunkiem wydania VIP + mapper.
 
 ### E9 — przełączenie profilu i wydanie
 
 Przeprowadzić procedurę z sekcji 7, testy z sekcji 9 i przegląd danych z sekcji 8. Przygotować instrukcję powrotu oraz aktualizację manifestu, instalatora, pomocy i diagnostyki.
 
-Etapy E0–E8 prowadzić na osobnej gałęzi i w kopii profilu. Nie publikować niekompletnego trybu samodzielnego jako domyślnej aktualizacji działającej paczki. Możliwe są wydania testowe, ale muszą jawnie wskazywać, których funkcji jeszcze brakuje.
+Prace prowadzić na osobnej gałęzi i w kopii profilu. Wydanie obejmuje uzgodniony zakres VIP + mapper; nie czeka na E6–E8. Nie publikować prototypu z brakującymi funkcjami tego zakresu jako domyślnej aktualizacji działającej paczki. Wydania testowe muszą jawnie wskazywać ograniczenia.
 
 **Odbiór:** użytkownik może pozostawić oficjalną paczkę zainstalowaną i wyłączoną, zrestartować profil i korzystać z całego uzgodnionego zakresu wyłącznie w VIP.
 
@@ -247,11 +262,11 @@ Wąski adapter może zachować wybrane stare nazwy komend lub zdarzeń, jeżeli 
 | Chodzik | Trasa, opóźnienie, stop, wznowienie, blokada, portal, zmęczenie i niespodziewany ruch zgodne z testami. |
 | Drużyna i walka | Aktualny lider, cele i kondycje; poprawna obsługa dwóch podobnych nazw; jedno auto-wsparcie. |
 | XP | Własne i drużynowe zabicia, obcy zabójca, szybkie kolejne zabicia, brak/stary `Combat.Kill`, reset oczekujących nagród. |
-| Ekwipunek i transport | Pozytywne scenariusze oraz odmowa/timeout/przerwanie dla każdej operacji wieloetapowej. |
+| Ekwipunek i transport (rozszerzenia późniejsze) | Pozytywne scenariusze oraz odmowa/timeout/przerwanie dla każdej dodanej operacji wieloetapowej; nie blokują pierwszego wydania. |
 | Mapa po imporcie | Zgodne liczby pokoi i obszarów, powiązania, wyjścia i metadane; brak niezamierzonych zmian układu. |
 | Aktualizacja i rollback VIP | Integralność plików, zachowanie danych i możliwość powrotu do zgodnej wersji. |
 | Dłuższa sesja | Obserwacja liczby zasobów, błędów i czasu obsługi zdarzeń bez narastającego dublowania działań. |
-| Kompletność | Każda pozycja z inwentaryzacji E0 ma zakończony test lub wyraźnie uzgodniony status. |
+| Kompletność | Rozliczone obecne funkcje VIP oraz kryteria mappera i samodzielności z `migration/scope.json`. Oficjalne dodatki pozostają opcjonalne. |
 
 Rozszerzyć istniejące testy VIP i przenieść adekwatne testy oficjalne: `mapper_chimera_walker`, `mapper_gmcp_only`, `mapper_chimera_reconcile`, `mapper_change_area_selection`, `chimera_condition_window_gmcp`, testy transportów, bazy NPC i wędkarstwa.
 
@@ -262,8 +277,8 @@ Istniejące testy używają atrap funkcji Mudleta. Zaliczenie ich oraz kontroli 
 Proponowane punkty kontrolne:
 
 1. **Rdzeń samodzielny:** E1–E3; niezależny start, dane i UI. To jeszcze nie kompletna paczka do codziennej gry.
-2. **Podstawowy zestaw użytkowy:** E4–E6; własna mapa, drużyna, bindy i ekwipunek.
-3. **Pełne zastąpienie:** E7–E9 i zamknięta inwentaryzacja E0; transporty, dodatki oraz odbiór na docelowej konfiguracji.
+2. **Pierwsze wydanie VIP + mapper:** E4, wymagane przez obecny VIP elementy E5 i odbiór E9. Działają obecne funkcje VIP i mapper; oficjalna paczka pozostaje wyłączona.
+3. **Opcjonalne rozszerzenia:** wybrane elementy E6–E8 według potrzeb, dodawane sukcesywnie. Pełne odtworzenie oficjalnej paczki nie jest wymagane.
 
 Największe ryzyka to: niepełne wyłączenie loadera, ukryte wywołania starych aliasów, kopiowanie Lua bez definicji JSON, mieszanie snapshotów różnych lokacji, używanie niewłaściwego identyfikatora celu, utrata danych mapy oraz założenie, że udany reload dowodzi poprawnego zimnego startu.
 
@@ -291,4 +306,3 @@ Wszystkie poniższe odsyłacze wskazują badane commity, a nie ruchomą gałąź
 - [Chimera: dopasowanie mapy](https://gitlab.com/bfbps-group/chimera-mud-skrypty/-/blob/2e6c3372220483b4e70b3f5cb24a4777437d5c6c/src/resources/mapper/chimera_reconcile.lua)
 - [Chimera: lampa i zewnętrzne triggery/timery](https://gitlab.com/bfbps-group/chimera-mud-skrypty/-/blob/2e6c3372220483b4e70b3f5cb24a4777437d5c6c/src/resources/skrypty/inventory/lampa.lua)
 - [Chimera: opis pochodzenia i licencji](https://gitlab.com/bfbps-group/chimera-mud-skrypty/-/blob/2e6c3372220483b4e70b3f5cb24a4777437d5c6c/README.md)
-

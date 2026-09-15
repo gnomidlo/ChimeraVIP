@@ -4,6 +4,12 @@ Status: **szkielet deweloperski 2.0.0-dev.1, nie paczka do codziennej gry**.
 
 Plan: [standalone-v2-plan.md](standalone-v2-plan.md).
 
+Aktualny cel pierwszego wydania: **obecne funkcje VIP + mapper przy wyłączonej
+oficjalnej Chimerze**. Pozostałe oficjalne mechanizmy są opcjonalne. Pełny spis
+źródeł pozostaje materiałem odniesienia; nie wymaga już przeniesienia całości.
+Kryteria gotowości określa `migration/scope.json`. To zmiana zakresu prac,
+nie informacja o wdrożeniu mappera lub przepięciu wszystkich modułów VIP.
+
 ## Co działa w tym etapie
 
 - Osobny punkt startu, bez oficjalnego loadera, UI i aktualizatora 1.x.

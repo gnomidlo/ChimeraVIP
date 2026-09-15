@@ -90,6 +90,53 @@ class MigrationAuditTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "Inventory changed"):
                 audit.read_inventories(root)
 
+    def scope(self, status="pending"):
+        return {"schema": 1, "required_sources": ["vip"],
+                "official_policy": "reference-and-optional-backlog",
+                "capabilities": [{"id": key, "label": key, "status": status,
+                                  "evidence": ["proof.md"] if status == "verified" else []}
+                                 for key in sorted(audit.FIRST_RELEASE_CAPABILITIES)]}
+
+    def test_optional_official_sources_do_not_block_vip_mapper_release(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "proof.md").touch()
+            (root / "native.lua").touch()
+            inventories = self.fixture() + [{"source": "vip", "files": [
+                {"path": "src/feature.lua", "sha256": "e" * 64}]}]
+            decision = {"id": "vip:file:src/feature.lua", "source_sha256": "e" * 64,
+                        "status": "replaced", "reason": "Standalone feature",
+                        "targets": ["native.lua"], "tests": ["proof.md"]}
+            decisions = {"schema": 1, "items": [decision]}
+            self.assertEqual(len(audit.check(inventories, decisions, root)[0]), 3)
+            self.assertEqual(audit.release_status(inventories, decisions, self.scope("verified"), root), ([], []))
+            decisions["items"] = []
+            missing, pending = audit.release_status(inventories, decisions, self.scope("verified"), root)
+            self.assertEqual(missing, ["vip:file:src/feature.lua"])
+            self.assertEqual(pending, [])
+
+    def test_mapper_and_independence_require_verified_evidence(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "proof.md").touch()
+            decisions = {"schema": 1, "items": []}
+            scope = self.scope()
+            _, pending = audit.release_status(self.fixture(), decisions, scope, root)
+            self.assertIn("mapper_navigation", pending)
+            self.assertIn("independent_boot", pending)
+            scope = self.scope("verified")
+            scope["capabilities"][0]["evidence"] = []
+            with self.assertRaisesRegex(ValueError, "Missing capability evidence"):
+                audit.release_status(self.fixture(), decisions, scope, root)
+            scope = self.scope()
+            scope["capabilities"].pop()
+            with self.assertRaisesRegex(ValueError, "Incomplete first-release"):
+                audit.release_status(self.fixture(), decisions, scope, root)
+            scope = self.scope()
+            scope["required_sources"] = []
+            with self.assertRaisesRegex(ValueError, "preserve the VIP"):
+                audit.release_status(self.fixture(), decisions, scope, root)
+
     def test_committed_report_is_current(self):
         inventories = audit.read_inventories(audit.BASE)
         decisions = json.loads((audit.BASE / "decisions.json").read_text())

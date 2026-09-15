@@ -2,9 +2,12 @@
 
 Raport generowany przez `python3 tools/migration_audit.py report`.
 
-To ewidencja zakresu, nie wynik testu gry. Każdy plik w `src/` i każda
-definicja Mudleta wymagają osobnego wskazania odpowiednika i testów.
-Foldery, definicje nieaktywne i zasoby także pozostają w spisie.
+Pierwsze wydanie: **obecne funkcje VIP + samodzielny mapper**.
+Oficjalna Chimera pozostaje zainstalowana i wyłączona.
+
+Pełny spis obu repozytoriów służy jako materiał odniesienia. Nie wymaga
+przeniesienia całej oficjalnej paczki. Foldery, definicje nieaktywne
+i zasoby pozostają w spisie, także jeśli nie należą do pierwszego wydania.
 
 | Źródło | Pliki repozytorium | Pliki src | Definicje Mudleta (z folderami) |
 |---|---:|---:|---:|
@@ -13,7 +16,16 @@ Foldery, definicje nieaktywne i zasoby także pozostają w spisie.
 
 Ukończone pozycje: **0**. Nierozliczone: **3588**.
 
-**Wydanie kompletnej migracji: ZABLOKOWANE.**
+Powyższe liczby dotyczą pełnej ewidencji źródeł, a nie zakresu wydania 2.0.
+
+## Gotowość pierwszego wydania
+
+Nierozliczone pozycje VIP: **33**. Niepotwierdzone kryteria: **8**.
+
+**VIP + mapper: NIEGOTOWE.**
+
+Brak odpowiedników opcjonalnych funkcji oficjalnej Chimery nie blokuje tego zakresu.
+Kryteria i dowody: `migration/scope.json`.
 
 Nawet kompletna ewidencja nie potwierdza działania w Mudlecie ani zgodności z serwerem.
 Istnienie pliku testu nie oznacza jego wykonania; za uruchomienie odpowiada CI.
@@ -40,5 +52,6 @@ Istnienie pliku testu nie oznacza jego wykonania; za uruchomienie odpowiada CI.
 | triggers | 929 |
 
 Szczegóły: `migration/official-inventory.json`, `migration/vip-inventory.json`.
-Decyzje: `migration/decisions.json`. Brak decyzji oznacza pracę do wykonania,
-a nie zgodę na usunięcie funkcji. Nie uruchomiono ani nie skopiowano kodu upstreamu.
+Decyzje: `migration/decisions.json`. Brak decyzji dla VIP oznacza pracę do wykonania.
+Nierozliczone źródła oficjalne pozostają materiałem do selektywnego wykorzystania później.
+Ten raport nie uruchamia ani nie kopiuje kodu upstreamu.

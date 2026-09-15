@@ -25,6 +25,10 @@ SOURCES = {
     },
 }
 KINDS = {x + ".json": x for x in ("aliases", "triggers", "keys", "timers", "scripts")}
+FIRST_RELEASE_CAPABILITIES = {
+    "independent_boot", "vip_features", "own_ui", "gmcp_state",
+    "mapper_view_position", "mapper_navigation", "data_preservation", "package_lifecycle",
+}
 
 
 def git(repo, *args, data=None):
@@ -184,13 +188,52 @@ def check(inventories, decisions, root=ROOT):
     return sorted(set(required) - resolved), len(resolved)
 
 
-def report(inventories, decisions):
+def release_status(inventories, decisions, scope, root=ROOT):
+    """VIP + mapper readiness, distinct from full upstream inventory accounting."""
+    if scope.get("schema") != 1 or scope.get("required_sources") != ["vip"]:
+        raise ValueError("First release must preserve the VIP source scope")
+    if scope.get("official_policy") != "reference-and-optional-backlog":
+        raise ValueError("Invalid official source policy")
+    missing, _ = check(inventories, decisions, root)
+    required = [key for key in missing if key.startswith("vip:")]
+    capabilities = scope.get("capabilities")
+    if not isinstance(capabilities, list):
+        raise ValueError("Missing first-release capabilities")
+    seen = set()
+    pending = []
+    for capability in capabilities:
+        key = capability["id"]
+        if key in seen or key not in FIRST_RELEASE_CAPABILITIES:
+            raise ValueError("Unknown or duplicate capability: " + key)
+        seen.add(key)
+        if capability.get("status") not in ("pending", "verified"):
+            raise ValueError("Invalid capability status: " + key)
+        if not isinstance(capability.get("evidence"), list):
+            raise ValueError("Invalid capability evidence: " + key)
+        if not capability.get("label", "").strip():
+            raise ValueError("Missing capability label: " + key)
+        if capability["status"] == "verified":
+            if not capability["evidence"] or not all(local_file(root, p) for p in capability["evidence"]):
+                raise ValueError("Missing capability evidence: " + key)
+        else:
+            pending.append(key)
+    if seen != FIRST_RELEASE_CAPABILITIES:
+        raise ValueError("Incomplete first-release capability list")
+    return required, pending
+
+
+def report(inventories, decisions, scope=None):
     missing, done = check(inventories, decisions)
+    if scope is None:
+        scope = json.loads((BASE / "scope.json").read_text())
+    required, pending = release_status(inventories, decisions, scope)
     rows = ["# Kompletność migracji ChimeraVIP 2.0", "",
             "Raport generowany przez `python3 tools/migration_audit.py report`.", "",
-            "To ewidencja zakresu, nie wynik testu gry. Każdy plik w `src/` i każda",
-            "definicja Mudleta wymagają osobnego wskazania odpowiednika i testów.",
-            "Foldery, definicje nieaktywne i zasoby także pozostają w spisie.", "",
+            "Pierwsze wydanie: **obecne funkcje VIP + samodzielny mapper**.",
+            "Oficjalna Chimera pozostaje zainstalowana i wyłączona.", "",
+            "Pełny spis obu repozytoriów służy jako materiał odniesienia. Nie wymaga",
+            "przeniesienia całej oficjalnej paczki. Foldery, definicje nieaktywne",
+            "i zasoby pozostają w spisie, także jeśli nie należą do pierwszego wydania.", "",
             "| Źródło | Pliki repozytorium | Pliki src | Definicje Mudleta (z folderami) |",
             "|---|---:|---:|---:|"]
     for inv in inventories:
@@ -199,7 +242,12 @@ def report(inventories, decisions):
             inv["source"], len(records), sum(r["path"].startswith("src/") for r in records),
             sum(len(r.get("definitions", [])) for r in records)))
     rows += ["", "Ukończone pozycje: **{}**. Nierozliczone: **{}**.".format(done, len(missing)),
-             "", "**Wydanie kompletnej migracji: " + ("ZABLOKOWANE" if missing else "ewidencja kompletna") + ".**", "",
+             "", "Powyższe liczby dotyczą pełnej ewidencji źródeł, a nie zakresu wydania 2.0.",
+             "", "## Gotowość pierwszego wydania", "",
+             "Nierozliczone pozycje VIP: **{}**. Niepotwierdzone kryteria: **{}**.".format(len(required), len(pending)),
+             "", "**VIP + mapper: " + ("NIEGOTOWE" if required or pending else "ewidencja kompletna") + ".**", "",
+             "Brak odpowiedników opcjonalnych funkcji oficjalnej Chimery nie blokuje tego zakresu.",
+             "Kryteria i dowody: `migration/scope.json`.", "",
              "Nawet kompletna ewidencja nie potwierdza działania w Mudlecie ani zgodności z serwerem.",
              "Istnienie pliku testu nie oznacza jego wykonania; za uruchomienie odpowiada CI.", "",
              "## Definicje oficjalnej paczki", "",
@@ -221,8 +269,9 @@ def report(inventories, decisions):
              "| Katalog src | Pliki |", "|---|---:|"]
     rows += ["| {} | {} |".format(k, v) for k, v in sorted(counts.items())]
     rows += ["", "Szczegóły: `migration/official-inventory.json`, `migration/vip-inventory.json`.",
-             "Decyzje: `migration/decisions.json`. Brak decyzji oznacza pracę do wykonania,",
-             "a nie zgodę na usunięcie funkcji. Nie uruchomiono ani nie skopiowano kodu upstreamu.", ""]
+             "Decyzje: `migration/decisions.json`. Brak decyzji dla VIP oznacza pracę do wykonania.",
+             "Nierozliczone źródła oficjalne pozostają materiałem do selektywnego wykorzystania później.",
+             "Ten raport nie uruchamia ani nie kopiuje kodu upstreamu.", ""]
     return "\n".join(rows)
 
 
@@ -249,12 +298,15 @@ def main(argv=None):
     inventories = read_inventories(BASE)
     decisions = json.loads((BASE / "decisions.json").read_text())
     missing, done = check(inventories, decisions)
+    scope = json.loads((BASE / "scope.json").read_text())
+    required, pending = release_status(inventories, decisions, scope)
     if args.command == "report":
         print(report(inventories, decisions), end="")
     else:
         print("Inventory valid: {} accounted for, {} unresolved.".format(done, len(missing)))
-    if args.command == "release-gate" and missing:
-        print("BLOCKED: unresolved migration scope. Not a complete standalone release.", file=sys.stderr)
+    if args.command == "release-gate" and (required or pending):
+        print("BLOCKED: VIP + mapper: {} unresolved VIP items, {} unverified capabilities.".format(
+            len(required), len(pending)), file=sys.stderr)
         return 1
     return 0
 
