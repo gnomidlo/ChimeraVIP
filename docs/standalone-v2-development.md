@@ -21,8 +21,25 @@ nie informacja o wdrożeniu mappera lub przepięciu wszystkich modułów VIP.
   anulowanie, timeout i reset sesji. Nie jest jeszcze podłączona do modułów gry.
 - Pełna [inwentaryzacja migracji](standalone-v2-coverage.md) obu repozytoriów
   oraz [zasady automatycznej weryfikacji](../migration/README.md).
+- Własna stopka na natywnych etykietach Mudleta: kondycja, siły, mana, sytość,
+  woda, obciążenie, postęp i nazwa lokacji. Przyciski obejmują kierunki oraz
+  maksymalnie dwa inne wyjścia (pozostałe nadal dostępne jako polecenia gry).
+  Brak danych jest oznaczany kreską; wartości po rozłączeniu są czyszczone.
+  Stopka korzysta wyłącznie ze stanu odebranego przez runtime VIP.
 
-Nie wdrożono jeszcze własnego UI, mappera, akcji, ekwipunku, importu danych ani pełnej normalizacji i korelacji GMCP. Odbiór `Combat.Kill` nie jest jeszcze usługą korelacji nagród XP. Flaga gotowości oznacza tylko gotowość tego rdzenia.
+Nie wdrożono jeszcze pełnego UI (okien drużyny, ustawień i kontrolek funkcji),
+mappera, modułów VIP, ekwipunku, importu danych ani pełnej normalizacji i korelacji
+GMCP. Stopka nie jest kopią całego dotychczasowego HUD: nie zawiera segmentowych
+pasków, licznika obrotów EXP ani stanu upojenia. Odbiór `Combat.Kill` nie jest
+jeszcze usługą korelacji nagród XP. Flaga gotowości oznacza gotowość rdzenia;
+status stopki jest wyświetlany osobno. Przy brakującym API etykiet (np. w testach
+bez interfejsu) rdzeń działa i podaje nazwę brakującej funkcji.
+
+Stopka używa [natywnego API UI Mudleta](https://wiki.mudlet.org/w/Manual:UI_Functions).
+Nie ładuje oficjalnych okien ani Geysera. Własne etykiety i callbacki należą do
+rejestru zasobów VIP. Zatrzymanie zwalnia etykiety i odtwarza dolny margines,
+jeśli w międzyczasie nie zmieniła go inna paczka. Testy sprawdzają zachowanie API
+na atrapach; wyglądu w prawdziwym Mudlecie jeszcze nie zweryfikowano.
 
 ## Uruchomienie przez programistę
 
@@ -42,12 +59,13 @@ Gałąź `standalone-v2` jest bazą prac 2.0. Pierwszy PR kieruje do niej gałą
 
 - E0: inwentaryzacja prywatnego profilu i potwierdzona procedura wyłączania oficjalnego startu.
 - E1/E2: rozszerzenie rejestru na moduły użytkowe, pełny model stanu i testy sesji/postaci/instancji na nagranych pakietach.
-- E3: własne UI i przepięcie obecnych widoków VIP.
+- E3: rozszerzenie własnej stopki, okna drużyny i przepięcie obecnych widoków VIP.
 
 ## Testy
 
 ```sh
 lua5.1 tools/standalone_test.lua
+lua5.1 tools/standalone_ui_test.lua
 lua5.1 tools/sequences_test.lua
 python3 tools/migration_audit.py check
 python3 tools/migration_audit_test.py

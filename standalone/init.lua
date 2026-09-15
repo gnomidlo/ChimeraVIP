@@ -1,5 +1,5 @@
 -- Developer entry point. Invoke loadfile(...)(absolute_checkout_directory).
--- This is not the stable loader and intentionally loads no updater or UI.
+-- This is not the stable loader and intentionally loads no updater.
 local root = ...
 assert(type(root)=="string" and root~="", "Podaj katalog checkoutu ChimeraVIP")
 if scripts_loaded==true or scripts~=nil or ateam~=nil or amap~=nil then
@@ -23,6 +23,7 @@ local ok, err = pcall(function()
     dofile(root .. "/standalone/protocol.lua")
     dofile(root .. "/standalone/runtime.lua")
     dofile(root .. "/standalone/sequences.lua")
+    dofile(root .. "/standalone/ui.lua")
     function C:stop()
         self.ready = false
         self.protocol:reset()
@@ -34,10 +35,12 @@ local ok, err = pcall(function()
             .. " | GMCP: " .. (self.protocol.subscribed and "subskrypcje wyslane" or "oczekiwanie")
             .. " | lokacja: " .. tostring(self.runtime:room_key() or "brak danych")
             .. " | bledy: " .. tostring(#self.lifecycle.errors)
-            .. "\nWersja deweloperska: bez UI, mappera, akcji i aktualizatora.\n")
+            .. " | stopka: " .. (self.ui.active and "ON" or "brak API: "..tostring(self.ui.unavailable))
+            .. "\nWersja deweloperska: bez mappera, pelnego UI, modulow VIP i aktualizatora.\n")
     end
     C.protocol:start()
     C.sequences:setup()
+    C.ui:start()
     local scope = C.lifecycle:open("commands")
     scope:alias([[^/cvip2(?:\s+(status|reload|stop))?$]], function()
         local command = matches[2]
