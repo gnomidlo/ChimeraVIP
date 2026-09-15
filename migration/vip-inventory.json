@@ -1,0 +1,656 @@
+{
+  "schema": 1,
+  "source": "vip",
+  "url": "https://github.com/gnomidlo/ChimeraVIP",
+  "commit": "a5e5951661ec53295663587769057cc25c5b867f",
+  "files": [
+    {
+      "path": ".github/workflows/release-check.yml",
+      "mode": "100644",
+      "size": 859,
+      "sha256": "b18ae5fe91e7f01038889cef245fc01fc63fac3c1c6ebbbe94ac4311bffc6800"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "mode": "100644",
+      "size": 12381,
+      "sha256": "ee51d1faf7b650b5e62c07a0481b26bce854aeb4a69c984f29e058a3392def50"
+    },
+    {
+      "path": "README.md",
+      "mode": "100644",
+      "size": 5566,
+      "sha256": "6289bae730de10ad968e3d968159807eb52864b9f8cf42e8fef45a6fa61c085e"
+    },
+    {
+      "path": "VERSION",
+      "mode": "100644",
+      "size": 6,
+      "sha256": "c6a811866d77ece2590774e8b08bb8e08cde5a44a689c15e2204c7e5eb5e1251"
+    },
+    {
+      "path": "loader.lua",
+      "mode": "100644",
+      "size": 4501,
+      "sha256": "1fbc59cc6f23fc687daadc328fa0168bb8dfd1af955b36f91c0d7403769c1103"
+    },
+    {
+      "path": "manifest.lua",
+      "mode": "100644",
+      "size": 5286,
+      "sha256": "a5a97ebe5630edb7a7b16cbbca6348efa0c8eb8b096032e9c87e846911535da2"
+    },
+    {
+      "path": "packages/CHIMERA_damage_prefixes.xml",
+      "mode": "100644",
+      "size": 6052,
+      "sha256": "e6d2f1d4e18c6e95ce8af506ed6da09c9704dfe7c47f29d80970fb8a787e15ea"
+    },
+    {
+      "path": "packages/ChimeraVIP.xml",
+      "mode": "100644",
+      "size": 2694,
+      "sha256": "6d410ccae595f21f0bef64f94c09288ea5c86b6c055ac6d21dd29e08eed6d0d5"
+    },
+    {
+      "path": "releases/0.100.md",
+      "mode": "100644",
+      "size": 907,
+      "sha256": "3bc769990637b8c042b5dfa6a86983b17b9fa5f509dce7a030939a14696865f9"
+    },
+    {
+      "path": "releases/0.101.md",
+      "mode": "100644",
+      "size": 1074,
+      "sha256": "46ae1b567bf78f106a2ebdb4860c4d1f91ce7b1ff878a8a4c6bc57baf4e49fdd"
+    },
+    {
+      "path": "releases/0.102.md",
+      "mode": "100644",
+      "size": 567,
+      "sha256": "7d297dbbbb062fc5194c876f7ffbfddd29a3aa8d40a384c1ea0586f785990cc2"
+    },
+    {
+      "path": "releases/0.103.md",
+      "mode": "100644",
+      "size": 597,
+      "sha256": "fe289e3f1e2e0382b6a768c385e8a1ac0079e368f27fdd97eb5cce404904939a"
+    },
+    {
+      "path": "releases/0.104.md",
+      "mode": "100644",
+      "size": 741,
+      "sha256": "fdb174c630512e49afbc08862219cd03b00c7e1ae113b7248cb48a61ed9446a3"
+    },
+    {
+      "path": "releases/0.105.md",
+      "mode": "100644",
+      "size": 330,
+      "sha256": "f0f2d18bdbf400f0585f458f5d9e6f61bc7d47ca417dc60c592240a6c0de8f00"
+    },
+    {
+      "path": "releases/0.106.md",
+      "mode": "100644",
+      "size": 591,
+      "sha256": "5ecf136a2e354802cd9e9981423c65ec056c91f9ff6e199727eb219f3a5d631d"
+    },
+    {
+      "path": "releases/0.107.md",
+      "mode": "100644",
+      "size": 437,
+      "sha256": "65cf1b03554914ce14c0a85d51bbc2b75225c2ae0014d3ca8bb72aca732451f2"
+    },
+    {
+      "path": "releases/0.108.md",
+      "mode": "100644",
+      "size": 617,
+      "sha256": "37886b05996ba68cbda75ba374ddeef44484b47b14370488c1b0c97d0f01d8d5"
+    },
+    {
+      "path": "releases/0.109.md",
+      "mode": "100644",
+      "size": 457,
+      "sha256": "68f7a8bc819b6bf2a10cf262c025ca7243e93de9f0bfbbf250b2680c1158a986"
+    },
+    {
+      "path": "releases/0.110.md",
+      "mode": "100644",
+      "size": 426,
+      "sha256": "5d1b4ea56fa675141d84277410702f34b2559a76f656c493864fc1a4613fec3a"
+    },
+    {
+      "path": "releases/0.111.md",
+      "mode": "100644",
+      "size": 1311,
+      "sha256": "9e38680a01ef8c7d3b10f768cbcae224299258b15078316fbcdf01b53e7fc779"
+    },
+    {
+      "path": "releases/0.112.md",
+      "mode": "100644",
+      "size": 556,
+      "sha256": "d8f325f2853f83a50fc718fcd560a029fb9cd9aa7dc5c30989849d890e829b87"
+    },
+    {
+      "path": "releases/0.113.md",
+      "mode": "100644",
+      "size": 528,
+      "sha256": "fd2e08ca5fe65c853a7029fa4b70c4749bf5bc0ba75102bbefaa330969dd7725"
+    },
+    {
+      "path": "releases/0.114.md",
+      "mode": "100644",
+      "size": 356,
+      "sha256": "ac385497caf3ec838c511851ff706101cca2bea975c7628152501e8a0c5fda56"
+    },
+    {
+      "path": "releases/0.115.md",
+      "mode": "100644",
+      "size": 386,
+      "sha256": "7afdaf21362fc789f111f7a4781bef92fcef1a0598e370b8adb1ea717296f734"
+    },
+    {
+      "path": "releases/0.116.md",
+      "mode": "100644",
+      "size": 407,
+      "sha256": "77c2044b53790d6409380312626cf765cb87bb68645b7416283f99f29171b868"
+    },
+    {
+      "path": "releases/0.117.md",
+      "mode": "100644",
+      "size": 313,
+      "sha256": "09061f8fdb26f92603488cb7a49b35213ba944320bdc6f9400cb84843ebfaa66"
+    },
+    {
+      "path": "releases/0.118.md",
+      "mode": "100644",
+      "size": 365,
+      "sha256": "d7a9b1feb118bb9e582e877e125592ce54a8d61b5f707dcbb940c9d5ed91b8ca"
+    },
+    {
+      "path": "releases/0.119.md",
+      "mode": "100644",
+      "size": 508,
+      "sha256": "29de85722b7cf5e9a95467d133d5274c91ea6378f6018b16e45a9fba8614997a"
+    },
+    {
+      "path": "releases/0.120.md",
+      "mode": "100644",
+      "size": 253,
+      "sha256": "d5e5562c4fb5e29400c87c5bfd37f191796cc89feed44e2b424ac9d95cbd79d2"
+    },
+    {
+      "path": "releases/0.121.md",
+      "mode": "100644",
+      "size": 270,
+      "sha256": "2b7ef6e1687926dd89c672a27ef77ba9a938556ea3c7c4f52426b39eee5b38cf"
+    },
+    {
+      "path": "releases/0.122.md",
+      "mode": "100644",
+      "size": 520,
+      "sha256": "dbe1e39b5b03275aa6ba72c7db81f53214526b90db296832261230adeac33000"
+    },
+    {
+      "path": "releases/0.123.md",
+      "mode": "100644",
+      "size": 365,
+      "sha256": "653dcb08d75d8cc246c74040d422f972872e2179537d83fc6e64102d331c6c5d"
+    },
+    {
+      "path": "releases/0.124.md",
+      "mode": "100644",
+      "size": 656,
+      "sha256": "8ca24418b8c53a00c9ae2d0c0da56ccd4b305cfca6a62761a8cc7b9709dc8253"
+    },
+    {
+      "path": "releases/0.125.md",
+      "mode": "100644",
+      "size": 528,
+      "sha256": "fff2306f1396bcd8958ea58ffaaeafd0bcc545badc8d53afeda4debdb7612a83"
+    },
+    {
+      "path": "releases/0.126.md",
+      "mode": "100644",
+      "size": 919,
+      "sha256": "f9257d376e70219c93f8a427625d862cdb70e4fcf6cec1bc14214215e713b0f2"
+    },
+    {
+      "path": "releases/0.127.md",
+      "mode": "100644",
+      "size": 227,
+      "sha256": "46e272405a11defad321e6c317b0a256961d8b50703472eb43d74120d730c402"
+    },
+    {
+      "path": "releases/0.67.md",
+      "mode": "100644",
+      "size": 1769,
+      "sha256": "d79a4742a7c8de17e571cb7a8502dbe536acee2e5b450070975ef8527b072027"
+    },
+    {
+      "path": "releases/0.68.md",
+      "mode": "100644",
+      "size": 1284,
+      "sha256": "d4f55045b882c1a4ac6b4f227e60d35f233c9d42b29cf1eadb524997aa21c3fd"
+    },
+    {
+      "path": "releases/0.69.md",
+      "mode": "100644",
+      "size": 739,
+      "sha256": "21c34fe14d8262ac0d9b192c391a9b776fd59f6d7d58af21d905a425ceea6eb9"
+    },
+    {
+      "path": "releases/0.70.md",
+      "mode": "100644",
+      "size": 1356,
+      "sha256": "7b12cec9d90c1b10673566459d85add12481b6ea5c34c19cb57017f9bc4789f9"
+    },
+    {
+      "path": "releases/0.71.md",
+      "mode": "100644",
+      "size": 1469,
+      "sha256": "6a8dbb49f919fcd87cc6144dc8ee161956e210f3ab570b1ec4ea0c3c469a7fab"
+    },
+    {
+      "path": "releases/0.72.md",
+      "mode": "100644",
+      "size": 1751,
+      "sha256": "5e3bb2d5cf7688d81102b003c17bd609540211fef8631c6c4bf023a592381010"
+    },
+    {
+      "path": "releases/0.73.md",
+      "mode": "100644",
+      "size": 1422,
+      "sha256": "d581fbc9e1c326c8c8ec3b714d686567a7cbb2f77a86dce28c632b76e110381f"
+    },
+    {
+      "path": "releases/0.74.md",
+      "mode": "100644",
+      "size": 1879,
+      "sha256": "e606fe73f42377644ead3a7130b28b953b334a84b64652ce12087d13bb09c457"
+    },
+    {
+      "path": "releases/0.75.md",
+      "mode": "100644",
+      "size": 1765,
+      "sha256": "c110f20c4ef6fbf01d73f2e5fad0cacc8eb6f2f372d30d2f94d175739b77a3a8"
+    },
+    {
+      "path": "releases/0.76.md",
+      "mode": "100644",
+      "size": 1276,
+      "sha256": "fe307841f92f0985ef5342d707bc12d6779d66dd26cf3b927ccce4c25caec781"
+    },
+    {
+      "path": "releases/0.77.md",
+      "mode": "100644",
+      "size": 1427,
+      "sha256": "6b8bbb7a0dbff88a0c5ce56bf30621d2cb07697e31bd0db1dd6d658d4a535cc9"
+    },
+    {
+      "path": "releases/0.78.md",
+      "mode": "100644",
+      "size": 1746,
+      "sha256": "361fe79195c1b79f15bef2de680d38585d3f943440d0fd2f41596d5a21737149"
+    },
+    {
+      "path": "releases/0.79.md",
+      "mode": "100644",
+      "size": 595,
+      "sha256": "fabebf32d30b4dbc4bb467774a3340bfbe607fce6b8394d5e36489d2b5b8394b"
+    },
+    {
+      "path": "releases/0.80.md",
+      "mode": "100644",
+      "size": 1139,
+      "sha256": "bfc8cd2ffbd913b9329b776f0b5b8d43cf7956893868529684eb019b34a1b245"
+    },
+    {
+      "path": "releases/0.81.md",
+      "mode": "100644",
+      "size": 1642,
+      "sha256": "b4804f58dd31be529143205e5e7919ab114e10d25d25a9420526603dcf6a50eb"
+    },
+    {
+      "path": "releases/0.82.md",
+      "mode": "100644",
+      "size": 1998,
+      "sha256": "ab5e406336fb114e6901027678cdff85259343a9d19e88aaacd0144a129dad31"
+    },
+    {
+      "path": "releases/0.83.md",
+      "mode": "100644",
+      "size": 1174,
+      "sha256": "6a59dd4725fe01a2cb8ec9a735cb454ca3ceb8b8da270c7e414ae9f562d4a904"
+    },
+    {
+      "path": "releases/0.84.md",
+      "mode": "100644",
+      "size": 672,
+      "sha256": "2d3c39a42aa2e9d89d5457e5866261c24d03a9a041162a9eb98b0e636b4a7826"
+    },
+    {
+      "path": "releases/0.85.md",
+      "mode": "100644",
+      "size": 538,
+      "sha256": "54c2be9a5b95ad2bdf3ee555588d8cd6c135830dfe07ce61bc06d243a4a0df07"
+    },
+    {
+      "path": "releases/0.86.md",
+      "mode": "100644",
+      "size": 753,
+      "sha256": "b6d8797a6143618b551a83a4b85899dec16ca0f9c16b70a598cfac52fd943e87"
+    },
+    {
+      "path": "releases/0.87.md",
+      "mode": "100644",
+      "size": 747,
+      "sha256": "b9efce6e8faa06602e25fa3fced2f10b18e889e763a2da8d2a9910992e00df38"
+    },
+    {
+      "path": "releases/0.88.md",
+      "mode": "100644",
+      "size": 507,
+      "sha256": "62902cc229b1ab77b178c8f0d75615f58a1dde9310f6890d4ac514fde388cf0c"
+    },
+    {
+      "path": "releases/0.89.md",
+      "mode": "100644",
+      "size": 849,
+      "sha256": "5ef4034f71fbee2ea7218341da5fcfccb989806d0165122172cae7cc27e8053b"
+    },
+    {
+      "path": "releases/0.90.md",
+      "mode": "100644",
+      "size": 738,
+      "sha256": "7cc5bb4ba945fa4cb4b2db6ec4d01f79d8eb25fe23c2544a4149b7aed557ffc2"
+    },
+    {
+      "path": "releases/0.91.md",
+      "mode": "100644",
+      "size": 314,
+      "sha256": "fa739d42accf995dbcb9c8f38f312101146f155b0a7b49e6caa916088fa7d68b"
+    },
+    {
+      "path": "releases/0.92.md",
+      "mode": "100644",
+      "size": 1042,
+      "sha256": "2d15d7bc3e5db376a6dcce506e912a8f6c566c54b9ed6ef6c73f2055878c8ca4"
+    },
+    {
+      "path": "releases/0.93.md",
+      "mode": "100644",
+      "size": 333,
+      "sha256": "d34f84835c49e2190046d0ea090360ff51bc30868fc8fa31daa979e0e8b4e2fd"
+    },
+    {
+      "path": "releases/0.94.md",
+      "mode": "100644",
+      "size": 769,
+      "sha256": "bcd3236a4f23c5278eb905d6ca054d2c38236f3799fe124dc06910a4f7254781"
+    },
+    {
+      "path": "releases/0.95.md",
+      "mode": "100644",
+      "size": 510,
+      "sha256": "666045e6f052d75ed912df9cac8322db38cc97e96d2a8f6930ea12eb20d56b0b"
+    },
+    {
+      "path": "releases/0.96.md",
+      "mode": "100644",
+      "size": 397,
+      "sha256": "8b3e66fa896a919e9b87212916e02b52d336736f919359eea854194c62fa5626"
+    },
+    {
+      "path": "releases/0.97.md",
+      "mode": "100644",
+      "size": 290,
+      "sha256": "0fdcebf85d1581c9ffe485d8792ac406d49e261aa49a99ec5c8008c6cce840f7"
+    },
+    {
+      "path": "releases/0.98.md",
+      "mode": "100644",
+      "size": 371,
+      "sha256": "82394ec10f6fb262ba6225f1f8e1351e0e3f4f395645c4e3d956eeb013521890"
+    },
+    {
+      "path": "releases/0.99.md",
+      "mode": "100644",
+      "size": 991,
+      "sha256": "c5225186a09188056d1afb3ebd279f105caa5e50a01eb70bcc9a2c8ea87c2a88"
+    },
+    {
+      "path": "src/core/bootstrap.lua",
+      "mode": "100644",
+      "size": 1471,
+      "sha256": "22273a4aae91a73461570b2a8344a32e6bc10d1eb3f4e6a2573506c157dbdbbc"
+    },
+    {
+      "path": "src/core/hash.lua",
+      "mode": "100644",
+      "size": 2118,
+      "sha256": "30a2bf0ad47b3024590d092788640fc71dc887538581585b68d1cf30c18d03d8"
+    },
+    {
+      "path": "src/core/help.lua",
+      "mode": "100644",
+      "size": 9973,
+      "sha256": "71c7ea7b417bc01680399d4706269f1ba2ff1b5536671b6e1a9f6f02bb96271b"
+    },
+    {
+      "path": "src/core/settings.lua",
+      "mode": "100644",
+      "size": 10762,
+      "sha256": "33baace98155c872d4d7c4e22a27ee39fbc443ae657578c7c66de18c8c41f732"
+    },
+    {
+      "path": "src/core/updater.lua",
+      "mode": "100644",
+      "size": 21181,
+      "sha256": "dae9cff31f4b7cb78a332f999028b79f689dc75667f421215b7a50a076cd0985"
+    },
+    {
+      "path": "src/core/util.lua",
+      "mode": "100644",
+      "size": 6686,
+      "sha256": "452063a7a68712cdde9ba115687718874d2b08a52e40e4dcebc9d801904ba801"
+    },
+    {
+      "path": "src/features/auto_support.lua",
+      "mode": "100644",
+      "size": 7995,
+      "sha256": "1954c287f378f57777896b6232a7f33bff54a2b7e5e7bd10eafb1882caa1d34a"
+    },
+    {
+      "path": "src/features/characters.lua",
+      "mode": "100644",
+      "size": 20914,
+      "sha256": "ae5409252f43e9101293b4df33ca065556ae7d1504723312b446d21f72ad07e4"
+    },
+    {
+      "path": "src/features/characters_delete_ui.lua",
+      "mode": "100644",
+      "size": 2077,
+      "sha256": "dc1dad776f6c273376e86f46560b338e31cc7bc7540a55e337fad0218d3bf8d1"
+    },
+    {
+      "path": "src/features/combat_colors.lua",
+      "mode": "100644",
+      "size": 10746,
+      "sha256": "f2be7e43f403b5f436371770ea5824fe00bb34d2db2b4e62db14942c75886ad3"
+    },
+    {
+      "path": "src/features/containers.lua",
+      "mode": "100644",
+      "size": 5363,
+      "sha256": "57843d54cf5ef874165cca9174b9b288d44bdc373707a6ef67ff238461359b67"
+    },
+    {
+      "path": "src/features/defense_tracker.lua",
+      "mode": "100644",
+      "size": 14030,
+      "sha256": "9503d8f79ffc69de5e6b1d838a5897e5046ff8f245b2d1eb57f4aab125bb8015"
+    },
+    {
+      "path": "src/features/equipment_view.lua",
+      "mode": "100644",
+      "size": 1721,
+      "sha256": "d7d4112f87cba237dca8803441f187a29601dc3be214eb096e65893adfbc83ac"
+    },
+    {
+      "path": "src/features/report_actions.lua",
+      "mode": "100644",
+      "size": 552,
+      "sha256": "53ea6e06ea9ceb7ea1b1877bca788d0dfa702437c103042fb2bece9a1b6535aa"
+    },
+    {
+      "path": "src/features/retainer_progress.lua",
+      "mode": "100644",
+      "size": 8817,
+      "sha256": "2f50494755ced5b74d1eec630745d0598583da2c85312877f75c68f489193041"
+    },
+    {
+      "path": "src/features/settings_bindings.lua",
+      "mode": "100644",
+      "size": 2959,
+      "sha256": "42d548df74e6ee2282f2c242a12411a8d85088d092b0c951886cd18f4db43bc5"
+    },
+    {
+      "path": "src/features/skills_view.lua",
+      "mode": "100644",
+      "size": 11788,
+      "sha256": "373ace3ae39908c085b610abfa78369401ff7d450b6ca00a690300c4f00f6339"
+    },
+    {
+      "path": "src/features/stats.lua",
+      "mode": "100644",
+      "size": 13741,
+      "sha256": "0bf08b0cfa292cc28a357eb6a9877fc6fb0e34a78f5893486bc09e4043b100ce"
+    },
+    {
+      "path": "src/features/stats_compact_view.lua",
+      "mode": "100644",
+      "size": 4274,
+      "sha256": "50fe8f0617e35ab0a9a59bf19efe07364eb2a6e954a1bdca2aedec63692c4396"
+    },
+    {
+      "path": "src/features/weapon_info.lua",
+      "mode": "100644",
+      "size": 15302,
+      "sha256": "c873372a47a7ed29f16030c9039018b01c9fa744fb38456e7b33007e93df3937"
+    },
+    {
+      "path": "src/features/xp_kill_card_view.lua",
+      "mode": "100644",
+      "size": 1374,
+      "sha256": "050fb8e3e064d32ab3e25c9409735c8222d470e2a76914d2d209cfb0ab38060c"
+    },
+    {
+      "path": "src/features/xp_tracker.lua",
+      "mode": "100644",
+      "size": 23570,
+      "sha256": "0d355e8747673eb34e6d1c9b75fd4647ee7a218ad8650ae41ac676e42eabf197"
+    },
+    {
+      "path": "src/init.lua",
+      "mode": "100644",
+      "size": 2058,
+      "sha256": "14eb682da75a3aa5e010d5e66efd68b7bbd3cd444d2f0bb50ff9b8bc47fa1435"
+    },
+    {
+      "path": "src/integrations/chimera.lua",
+      "mode": "100644",
+      "size": 3051,
+      "sha256": "10ee54818286f2fec70756b4c051f23b11fb3f7e1631de6b578f728a692ef5c3"
+    },
+    {
+      "path": "src/integrations/defense_combat.lua",
+      "mode": "100644",
+      "size": 1665,
+      "sha256": "dc62e1f7e198ac5aed81067367e852d15b0a4277af815b3e5e711021c5b77227"
+    },
+    {
+      "path": "src/integrations/runtime.lua",
+      "mode": "100644",
+      "size": 2649,
+      "sha256": "6d75075972c190b7bb8e27dcffeca4780c5614c853ccd698a5f0150a8ebbd876"
+    },
+    {
+      "path": "src/theme/pastel.lua",
+      "mode": "100644",
+      "size": 6265,
+      "sha256": "f3108118e11a4e60756c2bf82eea07b735e741890f15a8a33d1c505f2bf9046a"
+    },
+    {
+      "path": "src/ui/characters_help_panel.lua",
+      "mode": "100644",
+      "size": 8887,
+      "sha256": "2e7befb15a49f1b164e34252143927166a4f2c0da55618f3742ddf17b1da3a3e"
+    },
+    {
+      "path": "src/ui/footer_controls.lua",
+      "mode": "100644",
+      "size": 12941,
+      "sha256": "f7ecbaf9596c0116b6da3ddc2e1841f61eaffb21d4f440847a1acb8e5ee15567"
+    },
+    {
+      "path": "src/ui/module_controls.lua",
+      "mode": "100644",
+      "size": 3660,
+      "sha256": "f846783cb06e585ebbaee5ab4a234053fc6fedd1b34907b4b7771a09a0c59261"
+    },
+    {
+      "path": "src/ui/quiet_footer.lua",
+      "mode": "100644",
+      "size": 18753,
+      "sha256": "d2842000f65ee0e20effd1a801336140c0fd37238aeb6de8a63b3ffbc6af2f60"
+    },
+    {
+      "path": "src/ui/settings_apply.lua",
+      "mode": "100644",
+      "size": 1239,
+      "sha256": "94f2d8db48392b03482afbfa648f18bd0af56c65ccdc2c41d309e509c0b86b3f"
+    },
+    {
+      "path": "src/ui/settings_panel.lua",
+      "mode": "100644",
+      "size": 8801,
+      "sha256": "d651acbce6beba7a78f6481732653b1854b5ee229d97b6146754fe566cf721ac"
+    },
+    {
+      "path": "tools/containers_test.lua",
+      "mode": "100644",
+      "size": 1196,
+      "sha256": "5142e83e49b1f1ca606d8b85ed9fdd8fe293834afbd03b6769386a17e0607519"
+    },
+    {
+      "path": "tools/equipment_test.lua",
+      "mode": "100644",
+      "size": 3638,
+      "sha256": "3195a89f9dadc0b8d2d34e1248aa2fec359f16eabf757c8fcd3fa5074afadc0e"
+    },
+    {
+      "path": "tools/release_check.lua",
+      "mode": "100644",
+      "size": 3984,
+      "sha256": "d1a228b1e33a86d09584a6d8409c2397880985d5c2f1e88727e042492c90af04"
+    },
+    {
+      "path": "tools/runtime_test.lua",
+      "mode": "100644",
+      "size": 6245,
+      "sha256": "0e97f483fdc2bc3439f6ae2e20d294eb5d77d8982d94be1e6a7939a4e07a85b7"
+    },
+    {
+      "path": "tools/skills_test.lua",
+      "mode": "100644",
+      "size": 1219,
+      "sha256": "b68718ecaf450292be28ad4163ffd22ec23114aa09855989882b59e7a0ea6ad8"
+    },
+    {
+      "path": "tools/updater_test.lua",
+      "mode": "100644",
+      "size": 4512,
+      "sha256": "f709f10d2d19191d5955a1dbeffcf918a150722b8ed821fed591aaf8d1d72ebf"
+    }
+  ]
+}

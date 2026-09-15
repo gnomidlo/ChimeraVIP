@@ -1,5 +1,9 @@
 # ChimeraVIP
 
+Prace nad samodzielnym **ChimeraVIP 2.0** prowadzone sa osobno od wydania 1.x:
+[plan migracji](docs/standalone-v2-plan.md) i [stan prototypu oraz testowanie](docs/standalone-v2-development.md).
+Prototyp nie ma jeszcze UI ani mappera; ponizsza instalacja dotyczy stabilnej wersji 1.x.
+
 Nakładka do oficjalnych skryptów **Chimera MUD** dla Mudleta. Projekt nie modyfikuje kodu upstreamu; korzysta z jego GMCP, eventów i publicznych struktur.
 
 Serwer: `chimera.co.pl:2300`  
