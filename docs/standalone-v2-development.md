@@ -26,9 +26,17 @@ nie informacja o wdrożeniu mappera lub przepięciu wszystkich modułów VIP.
   maksymalnie dwa inne wyjścia (pozostałe nadal dostępne jako polecenia gry).
   Brak danych jest oznaczany kreską; wartości po rozłączeniu są czyszczone.
   Stopka korzysta wyłącznie ze stanu odebranego przez runtime VIP.
+- Pierwsza obsługa [mappera i chodzika](standalone-v2-mapper.md): istniejąca mapa,
+  lokalizacja przez hash/`chimera_id`, `/idz`, `/opoz`, `/stop` oraz natywne okno mapy.
+- Integracja 18 plików istniejącego VIP: ustawienia, kolory walki, obrona,
+  automatyczne wsparcie, XP i karty zabicia, statystyki i raporty, postacie,
+  pojemniki, umiejętności, pachołki oraz ocena sprzętu. Lista źródeł znajduje się
+  w `standalone/features.lua`; oryginalne pliki `src/` pozostają wspólne z 1.x.
+- Własne przyciski `KOL` i `AS` w stopce oraz `/kolory on|off` i `/wsparcie on|off`.
+  `/cvip` pokazuje pomoc samodzielnego zestawu.
 
-Nie wdrożono jeszcze pełnego UI (okien drużyny, ustawień i kontrolek funkcji),
-mappera, modułów VIP, ekwipunku, importu danych ani pełnej normalizacji i korelacji
+Nie wdrożono jeszcze pełnego UI (okien drużyny i ustawień),
+pełnych funkcji mappera, kompletnej migracji danych ani pełnej normalizacji i korelacji
 GMCP. Stopka nie jest kopią całego dotychczasowego HUD: nie zawiera segmentowych
 pasków, licznika obrotów EXP ani stanu upojenia. Odbiór `Combat.Kill` nie jest
 jeszcze usługą korelacji nagród XP. Flaga gotowości oznacza gotowość rdzenia;
@@ -41,9 +49,30 @@ rejestru zasobów VIP. Zatrzymanie zwalnia etykiety i odtwarza dolny margines,
 jeśli w międzyczasie nie zmieniła go inna paczka. Testy sprawdzają zachowanie API
 na atrapach; wyglądu w prawdziwym Mudlecie jeszcze nie zweryfikowano.
 
+## Integracja funkcji VIP
+
+Moduły działają we wspólnym środowisku Lua 5.1, które rejestruje ich aliasy,
+triggery, handlery i timery w cyklu życia wersji 2.0. Odczyty GMCP otrzymują
+kopie stanu rdzenia, a powiadomienia trafiają do modułów po przetworzeniu pakietu.
+Nie tworzymy globalnych zamienników `scripts`, `ateam` ani `amap`.
+Wyłączanie nazwanych triggerów oficjalnej paczki nie jest wykonywane.
+Stare callbacki i linki konsoli tracą możliwość wykonania po zatrzymaniu lub reloadzie.
+
+Zapis odbywa się w katalogu profilu `ChimeraVIP-v2/`, z zachowaniem wewnętrznych
+nazw plików modułów (np. `ChimeraVIP-v2/ChimeraVIP-data/settings.lua`). Jeśli
+nowego pliku jeszcze nie ma, odczyt może skorzystać z danych VIP 1.x. Oryginały
+nie są nadpisywane. Błąd odczytu zatrzymuje start i dalsze zapisy. Podmiana pliku
+korzysta z pliku tymczasowego; na systemach odmawiających nadpisania przez rename
+poprzednia wersja zostaje w `.bak`. Nie jest to importer danych oficjalnej Chimery.
+
+XP korzysta z istniejących komunikatów tekstowych. Wzbogacanie karty zabicia
+przez niepowiązane zdarzenie `Combat.Kill` i stary cache obiektów jest pominięte
+do wdrożenia korelacji z sesją i nagrodą. Lampa, automatyczne zbieranie i inne
+akcje oficjalnej stopki nadal nie są udostępnione.
+
 ## Uruchomienie przez programistę
 
-1. Pobierz checkout gałęzi z pierwszym PR-em 2.0 do osobnego katalogu.
+1. Pobierz checkout aktualnej gałęzi integracyjnej 2.0 do osobnego katalogu.
 2. Użyj osobnego testowego profilu Mudleta, z GMCP włączonym i bez uruchomionych oficjalnych skryptów oraz VIP 1.x. Profil używany do gry pozostaje bez zmian.
 3. Uruchom lokalny punkt startu, podając rzeczywistą ścieżkę checkoutu (przykład Windows):
 
@@ -58,17 +87,21 @@ Gałąź `standalone-v2` jest bazą prac 2.0. Pierwszy PR kieruje do niej gałą
 ## Następne kroki
 
 - E0: inwentaryzacja prywatnego profilu i potwierdzona procedura wyłączania oficjalnego startu.
-- E1/E2: rozszerzenie rejestru na moduły użytkowe, pełny model stanu i testy sesji/postaci/instancji na nagranych pakietach.
-- E3: rozszerzenie własnej stopki, okna drużyny i przepięcie obecnych widoków VIP.
+- E1/E2: pełny model stanu i testy sesji/postaci/instancji na nagranych pakietach.
+- E3: okno drużyny i ustawień, dopracowanie mappera oraz osobna paczka instalacyjna 2.0.
 
 ## Testy
 
 ```sh
 lua5.1 tools/standalone_test.lua
 lua5.1 tools/standalone_ui_test.lua
+lua5.1 tools/mapper_test.lua
+lua5.1 tools/features_test.lua
 lua5.1 tools/sequences_test.lua
 python3 tools/migration_audit.py check
 python3 tools/migration_audit_test.py
 ```
 
 Testy używają atrap Mudleta. Nie zastępują testu połączenia, instalacji i zachowania profilu z zainstalowaną, wyłączoną Chimerą. Cały kod pierwszego etapu jest własny; nie skopiowano kodu oficjalnej paczki.
+Test integracji ładuje rzeczywiste moduły i wywołuje ich zarejestrowane callbacki,
+ale podstawia `matches`; nie uruchamia silnika PCRE Mudleta.
