@@ -14,8 +14,10 @@ XP.active_timeout = 120
 XP.rolling_window = 600
 XP.min_rate_seconds = 10
 XP.max_recent_events = 100
+XP.reward_window = 5
 XP.trigger_ids = XP.trigger_ids or {}
 XP.alias_ids = XP.alias_ids or {}
+XP.pending_rewards = {}
 
 XP.rules = {
     { name = "krasnolud chaosu", match = "krasnoluda chaosu" },
@@ -253,9 +255,79 @@ function XP:is_current_group_killer(killer)
     return names[key] == true
 end
 
+function XP:prune_pending_rewards(now)
+    now = now or os.time()
+    local kept = {}
+    for _, reward in ipairs(self.pending_rewards or {}) do
+        if now - (tonumber(reward.time) or 0) <= self.reward_window then kept[#kept+1] = reward end
+    end
+    self.pending_rewards = kept
+end
+
+function XP:clear_pending_rewards()
+    self.pending_rewards = {}
+end
+
+function XP:remember_reward(name, amount)
+    amount = tonumber(amount)
+    name = trim(name)
+    if not amount or name == "" or not self:is_current_group_killer(name) then return end
+
+    local now = os.time()
+    self:prune_pending_rewards(now)
+    local key = normalize(name)
+    for _, reward in ipairs(self.pending_rewards) do
+        if normalize(reward.name) == key then
+            reward.name = name
+            reward.xp = amount
+            reward.time = now
+            return
+        end
+    end
+    self.pending_rewards[#self.pending_rewards+1] = {name=name, xp=amount, time=now}
+end
+
+function XP:get_kill_card_context(raw_mob, killer, own)
+    local mob_name = trim(raw_mob)
+    local killer_name = own and "TY" or trim(killer)
+    local kill = gmcp and gmcp.Chimera and gmcp.Chimera.Combat and gmcp.Chimera.Combat.Kill
+
+    if type(kill) == "table" and type(kill.victim) == "table" and trim(kill.victim.name) ~= "" then
+        if own and tonumber(kill.by_self) == 1 then
+            mob_name = trim(kill.victim.name)
+        elseif not own and type(kill.killer) == "table"
+            and normalize(kill.killer.name) == normalize(killer) then
+            mob_name = trim(kill.victim.name)
+            if trim(kill.killer.name) ~= "" then killer_name = trim(kill.killer.name) end
+        end
+    end
+
+    return mob_name, killer_name
+end
+
+function XP:show_kill_card(raw_mob, amount, killer, own)
+    local Cc = self.colors
+    local mob_name, killer_name = self:get_kill_card_context(raw_mob, killer, own)
+    self:prune_pending_rewards(os.time())
+
+    local function reward_row(xp, name, name_color)
+        local xp_text = "+"..format_integer(xp).." xp"
+        hecho("\n"..Cc.yellow..string.format("%11s",xp_text).."  "..(name_color or Cc.text)..name)
+    end
+
+    hecho("\n"..Cc.peach..string.upper(mob_name)..Cc.text_muted.." GRYZIE PIACH")
+    hecho("\n"..Cc.text_muted.."Dobija: "..Cc.lavender..killer_name)
+    reward_row(amount,"TY",Cc.mint)
+    for _, reward in ipairs(self.pending_rewards) do
+        reward_row(reward.xp,reward.name,Cc.text)
+    end
+    hecho("\n"..Cc.separator.."-------------------------")
+    self:clear_pending_rewards()
+end
+
 function XP:add_event(raw_mob, amount, killer, own)
     amount = tonumber(amount); if not amount then return end
-    if not own and not self:is_current_group_killer(killer) then return end
+    if not own and not self:is_current_group_killer(killer) then self:clear_pending_rewards(); return end
 
     local now = os.time(); local S = self.session
     if not S.started_at then S.started_at = now end
@@ -274,6 +346,7 @@ function XP:add_event(raw_mob, amount, killer, own)
     S.total_xp = S.total_xp + amount; S.kills = S.kills + 1
     if own then S.own_kills=S.own_kills+1; S.own_xp=S.own_xp+amount else S.group_kills=S.group_kills+1; S.group_xp=S.group_xp+amount end
     raiseEvent("chimeraVipXpGained", amount, mob, own == true)
+    self:show_kill_card(raw_mob, amount, killer, own)
 end
 
 function XP:get_window_stats(from_time, to_time)
@@ -417,6 +490,7 @@ end
 
 function XP:reset()
     self:new_session()
+    self:clear_pending_rewards()
     hecho("\n"..self.colors.mint.."[XP] Sesja wyzerowana.\n")
 end
 
@@ -440,6 +514,7 @@ function XP:show_help()
     finish_output()
 end
 
+table.insert(XP.trigger_ids,tempRegexTrigger([[^(.+?) otrzymal(?:a|o)? (\d+) expa\.$]],function() XP:remember_reward(matches[2],matches[3]) end))
 table.insert(XP.trigger_ids,tempRegexTrigger([[^(Zabilas|Zabiles) (.+)\. \[(\d+)xp\]$]],function() XP:add_event(matches[3],matches[4],"TY",true) end))
 table.insert(XP.trigger_ids,tempRegexTrigger([[^(.+?) (zabil|zabila) (.+)\. \[(\d+)xp\]$]],function() XP:add_event(matches[4],matches[5],matches[2],false) end))
 
