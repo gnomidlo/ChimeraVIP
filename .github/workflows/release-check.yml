@@ -39,6 +39,16 @@ jobs:
         run: lua5.1 tools/mapper_test.lua
       - name: Test standalone VIP feature integration
         run: lua5.1 tools/features_test.lua
+      - name: Verify standalone package matches sources
+        run: python3 tools/build_standalone.py --check
+      - name: Test extracted standalone package
+        run: python3 tools/package_test.py
+      - name: Upload standalone development installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: ChimeraVIP2-installer
+          path: packages/ChimeraVIP2.mpackage
+          if-no-files-found: error
       - name: Validate complete migration inventory
         run: python3 tools/migration_audit.py check
       - name: Test migration accounting and source snapshots

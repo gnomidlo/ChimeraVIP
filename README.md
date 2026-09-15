@@ -2,7 +2,10 @@
 
 Prace nad samodzielnym **ChimeraVIP 2.0** prowadzone sa osobno od wydania 1.x:
 [plan migracji](docs/standalone-v2-plan.md) i [stan prototypu oraz testowanie](docs/standalone-v2-development.md).
-Prototyp nie ma jeszcze UI ani mappera; ponizsza instalacja dotyczy stabilnej wersji 1.x.
+Wersja deweloperska 2.0 ma własną stopkę, podstawowy mapper i podłączone moduły VIP.
+[Instalacja ChimeraVIP2.mpackage](docs/standalone-v2-install.md) nie wymaga ręcznego
+ładowania plików Lua. Paczka nie została jeszcze sprawdzona w prawdziwym Mudlecie.
+Poniższa instalacja dotyczy wersji 1.x zależnej od oficjalnej Chimery.
 
 Nakładka do oficjalnych skryptów **Chimera MUD** dla Mudleta. Projekt nie modyfikuje kodu upstreamu; korzysta z jego GMCP, eventów i publicznych struktur.
 
