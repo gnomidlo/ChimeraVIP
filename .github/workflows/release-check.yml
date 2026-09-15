@@ -35,6 +35,8 @@ jobs:
         run: lua5.1 tools/sequences_test.lua
       - name: Test standalone footer and UI lifecycle
         run: lua5.1 tools/standalone_ui_test.lua
+      - name: Test native mapper and confirmed walking
+        run: lua5.1 tools/mapper_test.lua
       - name: Validate complete migration inventory
         run: python3 tools/migration_audit.py check
       - name: Test migration accounting and source snapshots

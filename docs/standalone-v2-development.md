@@ -26,9 +26,11 @@ nie informacja o wdrożeniu mappera lub przepięciu wszystkich modułów VIP.
   maksymalnie dwa inne wyjścia (pozostałe nadal dostępne jako polecenia gry).
   Brak danych jest oznaczany kreską; wartości po rozłączeniu są czyszczone.
   Stopka korzysta wyłącznie ze stanu odebranego przez runtime VIP.
+- Pierwsza obsługa [mappera i chodzika](standalone-v2-mapper.md): istniejąca mapa,
+  lokalizacja przez hash/`chimera_id`, `/idz`, `/opoz`, `/stop` oraz natywne okno mapy.
 
 Nie wdrożono jeszcze pełnego UI (okien drużyny, ustawień i kontrolek funkcji),
-mappera, modułów VIP, ekwipunku, importu danych ani pełnej normalizacji i korelacji
+pełnych funkcji mappera, modułów VIP, ekwipunku, importu danych ani pełnej normalizacji i korelacji
 GMCP. Stopka nie jest kopią całego dotychczasowego HUD: nie zawiera segmentowych
 pasków, licznika obrotów EXP ani stanu upojenia. Odbiór `Combat.Kill` nie jest
 jeszcze usługą korelacji nagród XP. Flaga gotowości oznacza gotowość rdzenia;
@@ -66,6 +68,7 @@ Gałąź `standalone-v2` jest bazą prac 2.0. Pierwszy PR kieruje do niej gałą
 ```sh
 lua5.1 tools/standalone_test.lua
 lua5.1 tools/standalone_ui_test.lua
+lua5.1 tools/mapper_test.lua
 lua5.1 tools/sequences_test.lua
 python3 tools/migration_audit.py check
 python3 tools/migration_audit_test.py
