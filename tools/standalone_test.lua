@@ -9,9 +9,10 @@ function killTimer(n) timers[n]=nil end
 function tempAlias(pattern, fn) local n=id(); aliases[n]={pattern=pattern,fn=fn}; return n end
 function killAlias(n) aliases[n]=nil end
 function sendGMCP(value) requests[#requests+1]=value end
-function raiseEvent() end
+local emit
+function raiseEvent(...) return emit(...) end
 local function count(t) local n=0; for _ in pairs(t) do n=n+1 end; return n end
-local function emit(event, ...)
+emit = function(event, ...)
     local pending={}; for _,h in pairs(handlers) do if h.event==event then pending[#pending+1]=h.fn end end
     for _,fn in ipairs(pending) do fn(event, ...) end
 end
@@ -86,5 +87,18 @@ assert(not C.protocol.subscribed)
 sendGMCP=original_send
 emit('sysProtocolEnabled','GMCP')
 assert(C.protocol.subscribed)
+-- Exercise the integration, not just the sequence service in isolation.
+local commands={}
+function send(command) commands[#commands+1]=command end
+local step={command='n',event='ack',timeout=3,confirm=function() return true end}
+local started, run=C.sequences:start('disconnect',{step,step})
+assert(started and #commands==1)
+emit('sysDisconnectionEvent')
+assert(run.result=='session changed' and count(timers)==0)
+emit('sysProtocolEnabled','GMCP')
+started,run=C.sequences:start('reload',{step,step})
+assert(started and #commands==2)
+C=boot()
+assert(run.result=='reload' and count(timers)==0 and #commands==2)
 C:stop()
 print('PASS standalone startup, GMCP, room isolation, reload, stop and stale callbacks')

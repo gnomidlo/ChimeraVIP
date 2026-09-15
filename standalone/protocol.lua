@@ -9,6 +9,7 @@ function P:reset()
     self.subscribed = false
     self.epoch = self.epoch + 1
     self.snapshots = {}
+    raiseEvent("chimeraVipV2SessionReset", self.epoch)
 end
 
 function P:subscribe()

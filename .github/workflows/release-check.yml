@@ -31,3 +31,9 @@ jobs:
         run: lua5.1 tools/equipment_test.lua
       - name: Test standalone foundation
         run: lua5.1 tools/standalone_test.lua
+      - name: Test confirmed standalone command sequences
+        run: lua5.1 tools/sequences_test.lua
+      - name: Validate complete migration inventory
+        run: python3 tools/migration_audit.py check
+      - name: Test migration accounting and source snapshots
+        run: python3 tools/migration_audit_test.py

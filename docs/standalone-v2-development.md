@@ -11,6 +11,10 @@ Plan: [standalone-v2-plan.md](standalone-v2-plan.md).
 - Własne subskrypcje GMCP oraz kopie odebranych pakietów postaci, lokacji, obiektów, grupy i walki.
 - Reset przy rozłączeniu, obsługa ponownego ładowania i odrzucanie niepasujących pokojem danych w publicznym odczycie walki.
 - Diagnostyka `/cvip2 status`, przeładowanie `/cvip2 reload`, zatrzymanie `/cvip2 stop`.
+- Wspólna usługa sekwencji: oczekiwanie przed wysłaniem polecenia, potwierdzenie,
+  anulowanie, timeout i reset sesji. Nie jest jeszcze podłączona do modułów gry.
+- Pełna [inwentaryzacja migracji](standalone-v2-coverage.md) obu repozytoriów
+  oraz [zasady automatycznej weryfikacji](../migration/README.md).
 
 Nie wdrożono jeszcze własnego UI, mappera, akcji, ekwipunku, importu danych ani pełnej normalizacji i korelacji GMCP. Odbiór `Combat.Kill` nie jest jeszcze usługą korelacji nagród XP. Flaga gotowości oznacza tylko gotowość tego rdzenia.
 
@@ -38,6 +42,9 @@ Gałąź `standalone-v2` jest bazą prac 2.0. Pierwszy PR kieruje do niej gałą
 
 ```sh
 lua5.1 tools/standalone_test.lua
+lua5.1 tools/sequences_test.lua
+python3 tools/migration_audit.py check
+python3 tools/migration_audit_test.py
 ```
 
 Testy używają atrap Mudleta. Nie zastępują testu połączenia, instalacji i zachowania profilu z zainstalowaną, wyłączoną Chimerą. Cały kod pierwszego etapu jest własny; nie skopiowano kodu oficjalnej paczki.
