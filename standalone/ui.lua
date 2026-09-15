@@ -59,7 +59,10 @@ function UI:layout()
         local column=i<=3 and i-1 or i-4
         self:place(def[1],math.floor(column*w/columns),y+(i<=3 and 0 or 24),math.floor(w/columns),24)
     end
-    self:place("room",0,y+48,w,24)
+    local button_width=math.min(70,math.floor(w/3))
+    self:place("room",0,y+48,w-2*button_width,24)
+    self:place("colors",w-2*button_width,y+48,button_width,24)
+    self:place("support",w-button_width,y+48,button_width,24)
     for i=1,12 do
         self:place("exit"..i,math.floor((i-1)*w/12),y+72,math.floor(w/12),28)
     end
@@ -74,6 +77,9 @@ function UI:render()
             .."</font> <font color='"..P[def[3]].."'>"..percent(vitals[def[1]]).."</font>")
     end
     local room=C.runtime:room()
+    local features=C.features and C.features.active
+    self:text("colors",features and ("KOL "..(C.combat_colors.enabled and "ON" or "OFF")) or "")
+    self:text("support",features and ("AS "..(C.auto_support.enabled and "ON" or "OFF")) or "")
     self:text("room", room and U.escape_html(room.name or room.id)
         or (C.protocol.active and "Oczekiwanie na dane lokacji" or "Brak polaczenia GMCP"))
     local exits=room and type(room.exits)=="table" and room.exits or {}
@@ -131,6 +137,15 @@ function UI:start()
     self:label("background")
     for _,def in ipairs(metric_defs) do self:label(def[1]) end
     self:label("room")
+    self:label("colors"); self:label("support")
+    setLabelClickCallback(self.labels.colors,scope:guard(function()
+        if C.features and C.features.active then
+            C.settings:set_module_enabled('combat_colors',not C.combat_colors.enabled)
+        end
+    end))
+    setLabelClickCallback(self.labels.support,scope:guard(function()
+        if C.features and C.features.active then C.features:set_support(not C.auto_support.enabled) end
+    end))
     for i=1,12 do self:label("exit"..i) end
     self.active=true
     scope:event("chimeraVipV2StateChanged",function(_,key)
@@ -138,6 +153,9 @@ function UI:start()
     end)
     scope:event("chimeraVipV2SessionReset",function() UI:render() end)
     scope:event("sysWindowResizeEvent",function() UI:schedule() end)
+    for _,event in ipairs({'chimeraVipV2FeaturesReady','chimeraAutoSupportChanged','chimeraVipCombatColorsStateChanged'}) do
+        scope:event(event,function() UI:schedule() end)
+    end
     self:layout()
     self:render()
     return true

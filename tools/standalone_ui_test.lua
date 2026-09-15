@@ -37,9 +37,24 @@ local function label(key) return labels['chimera_vip2.footer.'..key] end
 local function boot() return assert(loadfile('standalone/init.lua'))('.') end
 gmcp={Room={Info={id='stale',exits={polnoc='stale'}}},Char={Vitals={hp=99}}}
 local C=boot()
-assert(C.ui.active and count(labels)==21 and border==100)
+assert(C.ui.active and count(labels)==23 and border==100)
 assert(scripts==nil and ateam==nil and amap==nil)
 assert(label('hp').text:find('—',1,true) and label('exit2').text=='')
+-- Native buttons delegate to the active standalone feature services.
+local features=C.features
+C.combat_colors={enabled=true}; C.auto_support={enabled=true}
+C.settings={set_module_enabled=function(_,name,value)
+    assert(name=='combat_colors'); C.combat_colors.enabled=value
+    raiseEvent('chimeraVipCombatColorsStateChanged')
+end}
+C.features={active=true,set_support=function(_,value)
+    C.auto_support.enabled=value; raiseEvent('chimeraAutoSupportChanged')
+end}
+raiseEvent('chimeraVipV2FeaturesReady'); flush()
+assert(label('colors').text=='KOL ON' and label('support').text=='AS ON')
+label('colors').click(); label('support').click(); flush()
+assert(label('colors').text=='KOL OFF' and label('support').text=='AS OFF')
+C.features=features
 gmcp.Room.Info={id='A',name='<b>Las & pole</b>',exits={polnoc='B',['wejdz do jaskini']='C',['n;quit']='bad'}}
 gmcp.Char.Vitals={hp=73,moves=0,mana=math.huge,hunger=10}
 raiseEvent('gmcp.Room.Info'); raiseEvent('gmcp.Char.Vitals')
@@ -70,7 +85,7 @@ width,height=360,500; raiseEvent('sysWindowResizeEvent'); flush()
 for _,widget in pairs(labels) do assert(widget.x>=0 and widget.x+widget.w<=width) end
 assert(label('background').y==400)
 local handler_count=count(handlers)
-for _=1,10 do C=boot(); assert(count(labels)==21 and count(handlers)==handler_count and border==100) end
+for _=1,10 do C=boot(); assert(count(labels)==23 and count(handlers)==handler_count and border==100) end
 stale(); assert(#sent==2)
 C:stop()
 assert(count(labels)==0 and count(handlers)==0 and count(timers)==0 and count(aliases)==0 and border==18)
