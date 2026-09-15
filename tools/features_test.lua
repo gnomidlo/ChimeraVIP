@@ -42,7 +42,8 @@ local function tick(delay)
     for n,t in pairs(timers) do if t.delay==delay then pending[n]=t.fn end end
     for n,fn in pairs(pending) do if timers[n] then timers[n]=nil; fn() end end
 end
-local root=os.tmpname(); os.remove(root)
+local root=arg[2] or os.tmpname()
+if not arg[2] then os.remove(root) end
 local function quote(s) return "'"..s:gsub("'","'\\''").."'" end
 local function mkdir(path) os.execute('mkdir -p '..quote(path)) end
 mkdir(root..'/ChimeraVIP-data')
@@ -67,9 +68,15 @@ local settings_path=root..'/ChimeraVIP-data/settings.lua'
 table.save(settings_path,{modules={combat_colors=true},ui={states_font_size=12},custom='keep'})
 local function contents(path) local f=assert(io.open(path)); local s=f:read('*a'); f:close(); return s end
 local original=contents(settings_path)
-local function boot() return assert(loadfile('standalone/init.lua'))('.') end
+local checkout=arg[1] or '.'
+local function boot() return assert(loadfile(checkout..'/standalone/init.lua'))(checkout) end
 gmcp={Room={Info={id='stale'}},Char={},Chimera={Group={},Room={},Combat={}}}
-local C=boot()
+local C
+if arg[3] then
+    assert(loadfile(arg[3]))()
+    chimeraVip2PackageEvent('sysInstallPackage','ChimeraVIP2')
+    C=assert(chimera_vip)
+else C=boot() end
 assert(C.features.active and #C.features.loaded==18 and #C.features.errors==0)
 assert(C.settings:get('custom')=='keep' and C.settings:get('ui.states_font_size')==12)
 assert(contents(settings_path)==original and C.settings.data_file:find('/ChimeraVIP-v2/',1,true))
@@ -126,6 +133,16 @@ for _=1,3 do
 end
 old_trigger(); assert(C.weapon_info.capture==nil)
 assert(contents(settings_path)==original)
+if arg[3] then
+    chimeraVip2PackageEvent('sysUninstallPackage','ChimeraVIP2')
+    assert(chimera_vip==nil and chimera_overlay==nil)
+    assert(count(handlers)==0 and count(aliases)==0 and count(triggers)==0 and count(timers)==0)
+    assert(contents(settings_path)==original)
+    assert(loadfile(arg[3]))()
+    chimeraVip2PackageEvent('sysInstallPackage','ChimeraVIP2')
+    C=assert(chimera_vip)
+    assert(C.features.active)
+end
 C:stop()
 assert(count(handlers)==0 and count(aliases)==0 and count(triggers)==0 and count(timers)==0)
 -- Corrupt v2 data is not silently replaced by defaults or old v1 data.

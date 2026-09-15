@@ -1,6 +1,8 @@
 # ChimeraVIP 2.0 — pierwszy etap
 
-Status: **szkielet deweloperski 2.0.0-dev.1, nie paczka do codziennej gry**.
+Status: **paczka deweloperska 2.0.0-dev.2, bez weryfikacji w prawdziwym Mudlecie**.
+
+Instalacja bez checkoutu: [instrukcja paczki ChimeraVIP2](standalone-v2-install.md).
 
 Plan: [standalone-v2-plan.md](standalone-v2-plan.md).
 
@@ -88,7 +90,7 @@ Gałąź `standalone-v2` jest bazą prac 2.0. Pierwszy PR kieruje do niej gałą
 
 - E0: inwentaryzacja prywatnego profilu i potwierdzona procedura wyłączania oficjalnego startu.
 - E1/E2: pełny model stanu i testy sesji/postaci/instancji na nagranych pakietach.
-- E3: okno drużyny i ustawień, dopracowanie mappera oraz osobna paczka instalacyjna 2.0.
+- E3: okno drużyny i ustawień, dopracowanie mappera oraz weryfikacja paczki w prawdziwym Mudlecie.
 
 ## Testy
 
@@ -97,6 +99,8 @@ lua5.1 tools/standalone_test.lua
 lua5.1 tools/standalone_ui_test.lua
 lua5.1 tools/mapper_test.lua
 lua5.1 tools/features_test.lua
+python3 tools/build_standalone.py --check
+python3 tools/package_test.py
 lua5.1 tools/sequences_test.lua
 python3 tools/migration_audit.py check
 python3 tools/migration_audit_test.py

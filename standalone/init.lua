@@ -11,7 +11,7 @@ end
 chimera_vip = chimera_vip or {}
 local C = chimera_vip
 C.mode = "standalone"
-C.version = "2.0.0-dev.1"
+C.version = "2.0.0-dev.2"
 C.root_dir = root
 C.ready = false
 if C.features and C.features.active then C.features:flush() end
