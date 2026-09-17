@@ -168,3 +168,8 @@ powoduja komunikat bez wysylania rozkazu. Numery /z dotycza sekcji WROGOWIE.
 Oficjalne warianty /z i /za (takze bez argumentow i /za z sila) sa wylaczane;
 nalezy podac znacznik. Pozostale aliasy oficjalne pozostaja aktywne.
 Skladnia serwerowa `parozkaz` pochodzi z dotychczasowego modulu; wymaga sprawdzenia w grze.
+
+Zolty `[X]` za nazwa oznacza, ze postac (rowniez JA) ani nie atakuje, ani nie jest
+atakowana, podczas gdy przynajmniej jeden czlonek druzyny uczestniczy w walce.
+Znacznik znika po dolaczeniu do walki lub zakonczeniu walki calej druzyny.
+Walka obcych postaci nie uruchamia tego oznaczenia. Dane pochodza z relacji GMCP.

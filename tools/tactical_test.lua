@@ -102,4 +102,24 @@ gmcp.Chimera.Group.State.members={{id='ob_b',name='Najemnik'}, {id='ob_a',name='
 s=T:build_snapshot(); eq(T:get_group_target('A'),'ob_a')
 gmcp.Chimera.Group.State.members={{id='ob_a',name='Najemnik'}, {id='ob_b',name='Najemnik'}}
 s=T:build_snapshot(); eq(T:get_group_target('A'),'ob_a'); eq(T:get_group_target('B'),'ob_b')
+-- Idle marker requires combat involving our group, in either direction.
+reset({{id='ob_a',name='Lisstana'}, {id='ob_b',name='Zhakrana'}})
+gmcp.Chimera.Combat.State.relations={{attacker='ob_enemy',defender='ob_a'}}
+s=T:build_snapshot()
+assert(T:is_idle_member('ob_b',s)); assert(T:is_idle_member('ob_self',s))
+assert(not T:is_idle_member('ob_a',s)); assert(not T:is_idle_member('ob_enemy',s))
+assert(T:relation_text('ob_b',s,{yellow='#EFD8A6'}):find('[X]',1,true))
+-- Load the view override too: text and width calculation must agree.
+dofile('src/features/tactical_states_view.lua')
+eq(T:relation_plain('ob_b',s),' [X]')
+assert(T:relation_text('ob_b',s,{yellow='#EFD8A6'}):find('[X]',1,true))
+assert(not T:relation_plain('ob_a',s):find('[X]',1,true))
+gmcp.Chimera.Combat.State.relations={{attacker='ob_a',defender='ob_enemy'}}
+s=T:build_snapshot(); assert(not T:is_idle_member('ob_a',s)); assert(T:is_idle_member('ob_b',s))
+gmcp.Chimera.Combat.State.relations[#gmcp.Chimera.Combat.State.relations+1]={attacker='ob_b',defender='ob_enemy'}
+s=T:build_snapshot(); eq(T:relation_plain('ob_b',s),'')
+gmcp.Chimera.Combat.State.relations={{attacker='stranger1',defender='stranger2'}}
+s=T:build_snapshot(); assert(not s.group_in_combat); eq(T:relation_plain('ob_b',s),'')
+gmcp.Chimera.Combat.State.relations={}
+s=T:build_snapshot(); eq(T:relation_plain('ob_self',s),''); eq(T:relation_plain('ob_b',s),'')
 print('Tactical GMCP and alias regressions: PASS')

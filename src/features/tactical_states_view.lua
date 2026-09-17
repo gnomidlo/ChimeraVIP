@@ -79,12 +79,18 @@ end
 -- Outgoing jest celowo ukryte, bo ta sama informacja bylaby duplikowana
 -- po obu stronach panelu.
 function T:relation_plain(id, snapshot)
+    if self:is_idle_member(id, snapshot) then return " [X]" end
     local incoming = marks_for(snapshot and snapshot.incoming and snapshot.incoming[id] or {}, snapshot)
     if #incoming == 0 then return "" end
     return " <-[" .. table.concat(incoming, ",") .. "]"
 end
 
 function T:relation_text(id, snapshot, palette)
+    if self:is_idle_member(id, snapshot) then
+        local P = palette or (U and U.palette and U.palette()) or {}
+        local color = U and U.decho_tag and U.decho_tag(P.yellow or "#EFD8A6") or ""
+        return color .. " [X]<r>"
+    end
     local incoming = marks_for(snapshot and snapshot.incoming and snapshot.incoming[id] or {}, snapshot)
     if #incoming == 0 then return "" end
 
