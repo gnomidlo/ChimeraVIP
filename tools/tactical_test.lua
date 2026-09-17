@@ -55,13 +55,14 @@ assert(not A:command('rza','a')); assert(not A:command('za','Z'))
 eq(#sent,n)
 -- Departed actors and ended combat must not resolve through old mark tables.
 gmcp.Chimera.Group.State.members[1].here=0
-assert(not A:command('za','a')); assert(not A:command('rza','a @'))
+assert(not A:command('za','b')); assert(not A:command('rza','b @'))
+eq(T:get_group_target('A'),'ob_other_ally')
 gmcp.Chimera.Combat.State.relations={}
 assert(not A:command('z','1')); eq(#sent,n)
 -- A failed refresh must not use the previous snapshot.
 local original=T.build_snapshot
 T.build_snapshot=function() error('GMCP unavailable') end
-assert(not A:command('za','b')); eq(#sent,n)
+assert(not A:command('za','a')); eq(#sent,n)
 T.build_snapshot=original
 -- Entity self flag also wins when the group member omits its own self flag.
 reset({{id='ob_self',name='Veesa'}})
@@ -83,4 +84,22 @@ for _,path in ipairs(manifest.files) do if path=='src/features/tactical_aliases.
 assert(found)
 local f=assert(io.open('src/init.lua')); local init=f:read('*a'); f:close()
 assert(init:find('load("src/features/tactical_aliases.lua")',1,true))
+-- Changing teams must never exhaust the alphabet or leave holes.
+reset({{id='ob_a',name='Anna'}, {id='ob_b',name='Beata'}, {id='ob_c',name='Celina'}})
+s=T:build_snapshot(); eq(T:get_group_target('A'),'ob_a'); eq(T:get_group_target('C'),'ob_c')
+gmcp.Chimera.Group.State.members[1].here=0
+s=T:build_snapshot(); eq(T:get_group_target('A'),'ob_b'); eq(T:get_group_target('B'),'ob_c')
+eq(T:get_group_target('C'),nil); eq(T.team_marks.ob_a,nil)
+assert(A:command('za','a')); eq(sent[#sent],'zaslon ob_b')
+for i=1,30 do
+    gmcp.Chimera.Group.State.members={{id='ob_new'..i,name='Nowy'}}
+    s=T:build_snapshot(); eq(s.group[1].mark,'@'); eq(s.group[2].mark,'A')
+end
+gmcp.Chimera.Group.State.members={}
+s=T:build_snapshot(); eq(count(T.team_marks),0)
+-- Equal names still have deterministic marks, regardless of packet order.
+gmcp.Chimera.Group.State.members={{id='ob_b',name='Najemnik'}, {id='ob_a',name='Najemnik'}}
+s=T:build_snapshot(); eq(T:get_group_target('A'),'ob_a')
+gmcp.Chimera.Group.State.members={{id='ob_a',name='Najemnik'}, {id='ob_b',name='Najemnik'}}
+s=T:build_snapshot(); eq(T:get_group_target('A'),'ob_a'); eq(T:get_group_target('B'),'ob_b')
 print('Tactical GMCP and alias regressions: PASS')

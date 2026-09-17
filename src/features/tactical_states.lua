@@ -268,9 +268,14 @@ function T:build_snapshot()
         local al = a.id == snapshot.leader_id
         local bl = b.id == snapshot.leader_id
         if al ~= bl then return al end
+        if tostring(a.name) == tostring(b.name) then return a.id < b.id end
         return tostring(a.name) < tostring(b.name)
     end)
 
+    -- Assign a dense alphabet to the current displayed group, not its history.
+    -- The sorted rows give rendering and maneuver aliases the same ordering.
+    self.team_marks = {}
+    self.team_next = 1
     for _, row in ipairs(snapshot.group) do
         local mark = self:team_mark(row.id, row.self)
         row.mark = mark

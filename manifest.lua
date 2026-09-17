@@ -5,6 +5,7 @@ return {
     tested_upstream = "4.3",
     raw_base = "https://raw.githubusercontent.com/gnomidlo/ChimeraVIP/main/",
     changes = {
+        "Kondycje: aktualna druzyna otrzymuje kolejne litery od A bez luk po dawnych czlonkach",
         "Kondycje: JA pozostaje w DRUZYNA takze przy pustej liscie czlonkow GMCP",
         "Manewry: /za litera, /z numer i /rza litera litera korzystaja ze znacznikow okna",
         "Aliasy: modul taktyczny jest pobierany i ladowany; kolidujace oficjalne /z i /za sa wylaczane",
@@ -68,7 +69,7 @@ return {
         ["src/features/combat_colors.lua"] = {hash="c7fc6702b7bc994c67a7ac1d1ed1108ef8402050", size=10746},
         ["src/features/defense_tracker.lua"] = {hash="6911379fe29c49db64190e581a457eaf522cb079", size=14030},
         ["src/features/auto_support.lua"] = {hash="9e98d679c3bbb95887b5a7d66a9f3830b74c25c1", size=7995},
-        ["src/features/tactical_states.lua"] = {hash="4ae29b380e83269dddcfc62d8b2900aaeec5b3a6", size=18028},
+        ["src/features/tactical_states.lua"] = {hash="326e7ea4b602166f0dc235dd03c9d06e19c7c110", size=18310},
         ["src/features/tactical_states_view.lua"] = {hash="d79f53f0c038f490245aa0c6db7ec036827f0aa7", size=9268},
         ["src/features/xp_tracker.lua"] = {hash="eeffc793efd62e9c9f1ecec37b060c8dd806db95", size=23570},
         ["src/features/xp_kill_card_view.lua"] = {hash="2bf985dba91536ac5f857d921e36e2e4fd4c4041", size=1374},

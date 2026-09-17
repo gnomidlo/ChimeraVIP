@@ -152,7 +152,9 @@ Rdzeń i tekstowe moduły ChimeraVIP mogą się inicjalizować bez oficjalnego U
 ### Manewry po znacznikach okna Kondycje (0.131)
 
 Nakladka korzysta z oficjalnej Chimery. Wlasna postac jest w DRUZYNA pod `@`,
-rowniez podczas gry solo. Litery czlonkow druzyny mozna wpisywac mala lub duza litera.
+rowniez podczas gry solo. Aktualny sklad ma kolejne litery od A, bez luk po dawnych
+czlonkach, w kolejnosci okna (prowadzacy, potem nazwy). Zmiana skladu moze zmienic
+litery: aliasy korzystaja z aktualnego przypisania. Litery czlonkow druzyny mozna wpisywac mala lub duza litera.
 
 | Alias | Komenda wysylana do gry |
 | --- | --- |

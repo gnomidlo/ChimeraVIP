@@ -1,5 +1,7 @@
 ## 0.131
 
+- Litery aktualnej druzyny sa nadawane od A bez luk, w kolejnosci okna; JA pozostaje @.
+
 - Podlaczono tactical_aliases do inicjalizacji i manifestu aktualizatora.
 - /za, /z i /rza rozwiazuja znaczniki okna Kondycje na aktualne ID GMCP.
 - Wylaczono kolidujace oficjalne aliasy /z i /za, takze po ladowaniu skryptow.
