@@ -147,6 +147,7 @@ function T:build_snapshot()
         others = {},
         group_ids = {},
         engaged_ids = {},
+        group_in_combat = false,
         marks = {},
         outgoing = {},
         incoming = {},
@@ -224,6 +225,10 @@ function T:build_snapshot()
                 end
             end
         end
+    end
+
+    for id in pairs(snapshot.group_ids) do
+        if snapshot.engaged_ids[id] then snapshot.group_in_combat = true; break end
     end
 
     local enemy_ids = {}
@@ -347,7 +352,15 @@ function T:bar(value, P)
         .. color_tag(P.separator) .. "]" .. reset_tag()
 end
 
+function T:is_idle_member(id, snapshot)
+    return snapshot.group_in_combat and snapshot.group_ids[id]
+        and not snapshot.engaged_ids[id] or false
+end
+
 function T:relation_text(id, snapshot, P)
+    if self:is_idle_member(id, snapshot) then
+        return color_tag(P.yellow) .. " [X]" .. reset_tag()
+    end
     local parts = {}
     local outgoing = sorted_marks(snapshot.outgoing[id] or {}, snapshot.marks)
     local incoming = sorted_marks(snapshot.incoming[id] or {}, snapshot.marks)

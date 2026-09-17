@@ -1,3 +1,9 @@
+## 0.132
+
+- Zolty [X] za nazwa oznacza osobe nieuczestniczaca w walce walczacej druzyny (takze JA).
+- Atakowanie lub bycie atakowanym usuwa znacznik; walka obcych go nie uruchamia.
+- Dodano testy logiki znacznika i wyswietlania w oknie Kondycje.
+
 ## 0.131
 
 - Litery aktualnej druzyny sa nadawane od A bez luk, w kolejnosci okna; JA pozostaje @.
