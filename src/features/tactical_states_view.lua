@@ -71,13 +71,34 @@ local function marks_for(ids, snapshot)
     return out
 end
 
+-- Relacje pokazujemy tylko raz:
+--   DRUZYNA  <- kto z wrogow ja atakuje
+--   WROGOWIE <- kto z druzyny ich atakuje
+-- Outgoing jest celowo ukryte, bo ta sama informacja bylaby duplikowana
+-- po obu stronach panelu.
 function T:relation_plain(id, snapshot)
-    local parts = {}
-    local outgoing = marks_for(snapshot and snapshot.outgoing and snapshot.outgoing[id] or {}, snapshot)
     local incoming = marks_for(snapshot and snapshot.incoming and snapshot.incoming[id] or {}, snapshot)
-    if #outgoing > 0 then parts[#parts + 1] = " ->[" .. table.concat(outgoing, ",") .. "]" end
-    if #incoming > 0 then parts[#parts + 1] = " <-[" .. table.concat(incoming, ",") .. "]" end
-    return table.concat(parts)
+    if #incoming == 0 then return "" end
+    return " <-[" .. table.concat(incoming, ",") .. "]"
+end
+
+function T:relation_text(id, snapshot, palette)
+    local incoming = marks_for(snapshot and snapshot.incoming and snapshot.incoming[id] or {}, snapshot)
+    if #incoming == 0 then return "" end
+
+    local P = palette or (U and U.palette and U.palette()) or {
+        text_muted="#AEB6C5", rose="#F0A8B8", lavender="#C7B9E8",
+    }
+    local muted = U and U.decho_tag and U.decho_tag(P.text_muted) or ""
+    local marks_color
+    if snapshot and snapshot.group_ids and snapshot.group_ids[id] then
+        -- Czlonka druzyny atakuja przeciwnicy.
+        marks_color = U and U.decho_tag and U.decho_tag(P.rose) or ""
+    else
+        -- Wroga atakuja czlonkowie druzyny.
+        marks_color = U and U.decho_tag and U.decho_tag(P.lavender) or ""
+    end
+    return muted .. " <-[" .. marks_color .. table.concat(incoming, ",") .. muted .. "]<r>"
 end
 
 function T:window_columns()
