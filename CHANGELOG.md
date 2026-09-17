@@ -1,5 +1,7 @@
 ## 0.131
 
+- Zolty [X] przy czlonku druzyny nieuczestniczacym w walce, gdy ktos z druzyny walczy.
+
 - Litery aktualnej druzyny sa nadawane od A bez luk, w kolejnosci okna; JA pozostaje @.
 
 - Podlaczono tactical_aliases do inicjalizacji i manifestu aktualizatora.
