@@ -1,14 +1,14 @@
 return {
     name = "ChimeraVIP",
-    version = "0.129",
+    version = "0.130",
     schema = 2,
     tested_upstream = "4.3",
     raw_base = "https://raw.githubusercontent.com/gnomidlo/ChimeraVIP/main/",
     changes = {
-        "Kondycje: przejeto renderer ateam, aby stare i nowe okno nie migaly naprzemiennie",
-        "Kondycje: rozmiar czcionki korzysta z ustawienia ChimeraVIP 7-14",
-        "Kondycje: dlugie nazwy sa skracane od poczatku z priorytetem dla ostatnich wyrazow",
-        "Kondycje: szerokosc nazwy dopasowuje sie do aktualnej szerokosci minikonsoli i relacji walki",
+        "Kondycje: okno jest inicjalizowane niezawodnie takze po zimnym starcie Mudleta",
+        "Kondycje: inicjalizacja czeka na oficjalny UI i ponawia probe przez maksymalnie okolo 10 sekund",
+        "Kondycje: druzyna pokazuje tylko atakujacych ja wrogow, a wrogowie tylko atakujacych ich czlonkow druzyny",
+        "Kondycje: zabezpieczono brakujace states_windows_loaded przed wywolaniem oficjalnego create_state_window",
     },
     files = {
         "loader.lua",
@@ -51,7 +51,7 @@ return {
     file_meta = {
         ["loader.lua"] = {hash="1381414d89e55d2fad70beb8f42e48098d4b1802", size=4501},
         ["src/init.lua"] = {hash="bdc7d4feb4c81b3136338ba73ff89d4083c32c2e", size=2145},
-        ["src/core/bootstrap.lua"] = {hash="6663bb6ab610c7f39b978447214995c89f4192a7", size=1471},
+        ["src/core/bootstrap.lua"] = {hash="176d57d2344d7777966e219868f885f5b4eea472", size=1471},
         ["src/core/util.lua"] = {hash="7561cd9259be9ff0ce74228e9048eef0b5aba280", size=6686},
         ["src/core/hash.lua"] = {hash="362c18bf131c9939d03b59dd50568d66de8f6a5e", size=2118},
         ["src/integrations/runtime.lua"] = {hash="e8e4a7efac14fcb7ac6f6f0d3cc473f42e556d7a", size=2649},
@@ -68,7 +68,7 @@ return {
         ["src/features/defense_tracker.lua"] = {hash="6911379fe29c49db64190e581a457eaf522cb079", size=14030},
         ["src/features/auto_support.lua"] = {hash="9e98d679c3bbb95887b5a7d66a9f3830b74c25c1", size=7995},
         ["src/features/tactical_states.lua"] = {hash="a730a08db14c977851e604b719970215d79b30da", size=17772},
-        ["src/features/tactical_states_view.lua"] = {hash="cba877c3e32c1b2db57a87ee90e016c53ef0b55e", size=6276},
+        ["src/features/tactical_states_view.lua"] = {hash="d79f53f0c038f490245aa0c6db7ec036827f0aa7", size=9268},
         ["src/features/xp_tracker.lua"] = {hash="eeffc793efd62e9c9f1ecec37b060c8dd806db95", size=23570},
         ["src/features/xp_kill_card_view.lua"] = {hash="2bf985dba91536ac5f857d921e36e2e4fd4c4041", size=1374},
         ["src/features/stats.lua"] = {hash="f6f04abb793f20ad794483b3d41952cd60561f38", size=13741},
