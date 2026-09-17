@@ -1,6 +1,6 @@
 -- ChimeraVIP / tactical states view refinements
--- Owns rendering of the official states window, applies VIP font settings
--- and preserves the most useful tail of long entity names.
+-- Owns rendering of the official states window, applies VIP font settings,
+-- keeps long entity-name tails and makes cold-start initialization reliable.
 
 chimera_vip = chimera_vip or {}
 chimera_overlay = chimera_overlay or chimera_vip
@@ -15,6 +15,8 @@ end
 
 T.view_handlers = T.view_handlers or {}
 T.default_columns = T.default_columns or 72
+T.init_attempts = 0
+T.init_timer = T.init_timer or nil
 
 local base_render = T.render
 local base_row_text = T.row_text
@@ -143,6 +145,27 @@ function T:install_official_renderer_guard()
     return true
 end
 
+-- Oficjalny create_state_window zaklada istnienie states_windows_loaded.
+-- Na zimnym starcie ChimeraVIP moze zostac zaladowany przed pelnym setupem UI,
+-- dlatego przygotowujemy stan i zwracamy false, jesli konstruktor nie jest jeszcze gotowy.
+function T:ensure_window()
+    local name = self:window_name()
+    local ui = scripts and scripts.ui
+    if type(ui) ~= "table" then return name, false end
+
+    if type(ui.states_windows_loaded) ~= "table" then
+        ui.states_windows_loaded = {}
+    end
+
+    if not ui.states_windows_loaded[name] then
+        if type(ui.create_state_window) ~= "function" then return name, false end
+        local ok = pcall(ui.create_state_window, ui, name)
+        if not ok or not ui.states_windows_loaded[name] then return name, false end
+    end
+
+    return name, true
+end
+
 function T:row_text(row, snapshot, category, palette)
     local original_name = row.name
     local columns = self:window_columns()
@@ -163,7 +186,8 @@ end
 
 function T:render(force)
     self:install_official_renderer_guard()
-    self:ensure_window()
+    local _, ready = self:ensure_window()
+    if not ready then return false end
     self:apply_font()
     return base_render(self, force)
 end
@@ -171,6 +195,37 @@ end
 function T:schedule_render(delay, force)
     self:install_official_renderer_guard()
     return base_schedule_render(self, delay, force)
+end
+
+function T:cancel_initialization()
+    if self.init_timer then pcall(killTimer, self.init_timer) end
+    self.init_timer = nil
+end
+
+function T:initialize_window(reset_attempts)
+    if reset_attempts then self.init_attempts = 0 end
+    self:cancel_initialization()
+    self.init_attempts = (self.init_attempts or 0) + 1
+
+    self:install_official_renderer_guard()
+    local _, ready = self:ensure_window()
+    if ready then
+        self.init_attempts = 0
+        self:apply_font()
+        self.last_frame = nil
+        self:schedule_render(0.01, true)
+        return true
+    end
+
+    -- Daj oficjalnemu UI czas na zakonczenie setupu po restarcie profilu.
+    -- Proby trwaja maksymalnie ok. 10 sekund i koncza sie natychmiast po sukcesie.
+    if self.init_attempts < 40 then
+        self.init_timer = tempTimer(0.25, function()
+            T.init_timer = nil
+            T:initialize_window(false)
+        end)
+    end
+    return false
 end
 
 if C.settings and C.settings.setting_defs and C.settings.setting_defs.ui_states_font_size then
@@ -187,25 +242,29 @@ U.replace_handler(T.view_handlers, "settings", "chimeraVipSettingsChanged", func
 end)
 
 U.replace_handler(T.view_handlers, "scripts_loaded", "scriptsLoaded", function()
-    tempTimer(0, function()
-        T:install_official_renderer_guard()
-        T:apply_font()
-        T:schedule_render(0.02, true)
-    end)
+    tempTimer(0, function() T:initialize_window(true) end)
 end)
 
 U.replace_handler(T.view_handlers, "ui_ready", "uiReady", function()
-    tempTimer(0, function()
-        T:install_official_renderer_guard()
-        T:apply_font()
-        T:schedule_render(0.02, true)
-    end)
+    tempTimer(0, function() T:initialize_window(true) end)
 end)
 
-T:install_official_renderer_guard()
-tempTimer(0, function()
-    T:apply_font()
-    T:schedule_render(0.02, true)
+U.replace_handler(T.view_handlers, "theme_ready", "chimeraThemeReady", function()
+    tempTimer(0, function() T:initialize_window(true) end)
 end)
+
+U.replace_handler(T.view_handlers, "vip_ready", "chimeraVipReady", function()
+    tempTimer(0, function() T:initialize_window(true) end)
+end)
+
+U.replace_handler(T.view_handlers, "sys_load", "sysLoadEvent", function()
+    tempTimer(0.10, function() T:initialize_window(true) end)
+end)
+
+U.replace_handler(T.view_handlers, "disconnect", "sysDisconnectionEvent", function()
+    T:cancel_initialization()
+end)
+
+T:initialize_window(true)
 
 return T
