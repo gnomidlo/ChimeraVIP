@@ -148,3 +148,23 @@ GitHub Actions uruchamia `tools/release_check.lua`. Checker pilnuje zgodności `
 ## Zgodność
 
 Rdzeń i tekstowe moduły ChimeraVIP mogą się inicjalizować bez oficjalnego UI. Motyw, stopka i kontrolki oficjalnych funkcji nadal zależą od jego struktur. Adapter runtime udostępnia drużynę, walkę oraz lokację bezpośrednio z GMCP (z fallbackiem lokacji do starszego adaptera). `/cvip diagnostyka` pokazuje obecność zależności oraz błędy ładowania. Aktualnie działanie zostało potwierdzone z upstreamem **4.3**. Integracje z publicznymi strukturami upstreamu powinny być ponownie sprawdzane po większych zmianach oficjalnych skryptów.
+
+### Manewry po znacznikach okna Kondycje (0.131)
+
+Nakladka korzysta z oficjalnej Chimery. Wlasna postac jest w DRUZYNA pod `@`,
+rowniez podczas gry solo. Aktualny sklad ma kolejne litery od A, bez luk po dawnych
+czlonkach, w kolejnosci okna (prowadzacy, potem nazwy). Zmiana skladu moze zmienic
+litery: aliasy korzystaja z aktualnego przypisania. Litery czlonkow druzyny mozna wpisywac mala lub duza litera.
+
+| Alias | Komenda wysylana do gry |
+| --- | --- |
+| `/za a` | `zaslon ID_A` |
+| `/z 1` | `zabij ID_1` |
+| `/rza a b` | `parozkaz ID_A zaslon ID_B` |
+| `/rza a @` | `parozkaz ID_A zaslon ID_GRACZA` |
+
+ID sa odczytywane z aktualnych danych GMCP. Brak znacznika lub bledne argumenty
+powoduja komunikat bez wysylania rozkazu. Numery /z dotycza sekcji WROGOWIE.
+Oficjalne warianty /z i /za (takze bez argumentow i /za z sila) sa wylaczane;
+nalezy podac znacznik. Pozostale aliasy oficjalne pozostaja aktywne.
+Skladnia serwerowa `parozkaz` pochodzi z dotychczasowego modulu; wymaga sprawdzenia w grze.

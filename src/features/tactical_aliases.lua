@@ -42,7 +42,7 @@ end
 local function group_target(mark, allow_self)
     mark = tostring(mark or ""):upper()
     if mark == "" then return nil end
-    refresh_snapshot()
+    if not refresh_snapshot() then return nil end
     if mark == "@" and not allow_self then
         note("Znacznik @ oznacza ciebie i nie jest dozwolony w tej komendzie.", P().yellow)
         return nil
@@ -58,7 +58,7 @@ end
 local function enemy_target(mark)
     mark = tostring(mark or "")
     if mark == "" then return nil end
-    refresh_snapshot()
+    if not refresh_snapshot() then return nil end
     local id = T:get_enemy_target(mark)
     if not id then
         note("Nie ma przeciwnika oznaczonego [" .. mark .. "].", P().rose)
@@ -101,28 +101,53 @@ function A:order_cover(actor_mark, target_mark)
     return true
 end
 
+-- Names from the official Chimera team alias folder. Only /z and /za
+-- are replaced; the rest of the official package stays active.
+A.official_alias_names = {
+    "zabij_id", "zabij_noarg", "zaslon_team", "zaslon_team_def", "zaslon_team_wzm",
+}
+
+function A:disable_official_aliases()
+    if type(disableAlias) ~= "function" then return end
+    for _, name in ipairs(self.official_alias_names) do
+        disableAlias(name)
+    end
+end
+
+function A:command(command, arguments)
+    local args = {}
+    for word in tostring(arguments or ""):gmatch("%S+") do args[#args + 1] = word end
+    if command == "z" and #args == 1 and args[1]:match("^%d+$") then
+        return self:attack(args[1])
+    elseif command == "za" and #args == 1 and args[1]:match("^[A-Za-z@]+$") then
+        return self:cover(args[1])
+    elseif command == "rza" and #args == 2
+        and args[1]:match("^[A-Za-z@]+$") and args[2]:match("^[A-Za-z@]+$") then
+        return self:order_cover(args[1], args[2])
+    end
+    note("Uzycie: /z NUMER | /za LITERA | /rza LITERA LITERA (lub @ jako cel zaslony).", P().yellow)
+    return false
+end
+
 function A:install_aliases()
     U.clear_aliases(self)
-
-    local function add(pattern, callback)
-        local id = tempAlias(pattern, callback)
+    self:disable_official_aliases()
+    -- Catch the entire command, including missing/invalid arguments, so it
+    -- cannot silently fall through to an official alias or to the server.
+    for _, command in ipairs({"z", "za", "rza"}) do
+        local action = command
+        local id = tempAlias("^/" .. action .. "(?:\\s+(.*))?\\s*$", function()
+            A:command(action, matches[2])
+        end)
         if id then self.alias_ids[#self.alias_ids + 1] = id end
     end
+end
 
-    add([[^/z\s+(\d+)\s*$]], function()
-        A:attack(matches[2])
-    end)
-
-    add([[^/za\s+([A-Za-z@]+)\s*$]], function()
-        A:cover(matches[2])
-    end)
-
-    add([[^/q\s+([A-Za-z@]+)\s*$]], function()
-        A:retreat(matches[2])
-    end)
-
-    add([[^/rza\s+([A-Za-z]+)\s+([A-Za-z@]+)\s*$]], function()
-        A:order_cover(matches[2], matches[3])
+for _, event in ipairs({"sysLoadEvent", "scriptsLoaded", "uiReady", "chimeraVipReady", "sysInstallPackage"}) do
+    U.replace_handler(A, event, event, function()
+        A:disable_official_aliases()
+        -- Package loading may finish after the event's other listeners.
+        tempTimer(0, function() A:disable_official_aliases() end)
     end)
 end
 

@@ -177,14 +177,18 @@ function T:build_snapshot()
                 local entity = snapshot.entities[id] or {}
                 snapshot.group[#snapshot.group + 1] = {
                     id = id,
-                    name = truthy(member.self) and "JA" or tostring(member.name or entity.name or id),
+                    name = (truthy(member.self) or id == snapshot.self_id) and "JA" or tostring(member.name or entity.name or id),
                     hp = tonumber(member.hp) or entity.hp,
                     maxhp = tonumber(member.maxhp) or entity.maxhp,
-                    self = truthy(member.self),
+                    self = truthy(member.self) or id == snapshot.self_id,
                 }
             end
         end
-    elseif snapshot.self_id and snapshot.entities[snapshot.self_id] then
+    end
+
+    -- Group.State may contain an empty members table when playing solo.
+    -- Room.Entities still identifies us; keep JA in DRUZYNA in that case too.
+    if snapshot.self_id and not snapshot.group_ids[snapshot.self_id] and snapshot.entities[snapshot.self_id] then
         local entity = snapshot.entities[snapshot.self_id]
         snapshot.group_ids[snapshot.self_id] = true
         snapshot.group[#snapshot.group + 1] = {
@@ -264,9 +268,14 @@ function T:build_snapshot()
         local al = a.id == snapshot.leader_id
         local bl = b.id == snapshot.leader_id
         if al ~= bl then return al end
+        if tostring(a.name) == tostring(b.name) then return a.id < b.id end
         return tostring(a.name) < tostring(b.name)
     end)
 
+    -- Assign a dense alphabet to the current displayed group, not its history.
+    -- The sorted rows give rendering and maneuver aliases the same ordering.
+    self.team_marks = {}
+    self.team_next = 1
     for _, row in ipairs(snapshot.group) do
         local mark = self:team_mark(row.id, row.self)
         row.mark = mark
