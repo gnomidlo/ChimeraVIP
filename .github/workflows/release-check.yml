@@ -29,3 +29,5 @@ jobs:
         run: lua5.1 tools/updater_test.lua
       - name: Test equipment appraisal grammar and durability
         run: lua5.1 tools/equipment_test.lua
+      - name: Test tactical marks and alias ownership
+        run: lua5.1 tools/tactical_test.lua

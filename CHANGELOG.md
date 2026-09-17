@@ -1,3 +1,11 @@
+## 0.131
+
+- Podlaczono tactical_aliases do inicjalizacji i manifestu aktualizatora.
+- /za, /z i /rza rozwiazuja znaczniki okna Kondycje na aktualne ID GMCP.
+- Wylaczono kolidujace oficjalne aliasy /z i /za, takze po ladowaniu skryptow.
+- Wlasna postac pozostaje w DRUZYNA przy pustej liscie czlonkow.
+- Dodano testy regresji solo, znacznikow, nieaktualnych celow i ponownego ladowania.
+
 ## 0.113
 
 Podsumowanie oceny sprzętu uwzględnia linię o zaklętej magii pojawiającą się po parametrach broni lub pancerza. Szczegóły: `releases/0.113.md`.
