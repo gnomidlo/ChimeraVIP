@@ -55,7 +55,8 @@ print('Modern skills and duplicate rows: PASS')
 for _, clickable in ipairs({false, true}) do
     local output, hints = {}, {}
     hecho = function(text) output[#output+1] = text end
-    echoLink = clickable and function(text, _, hint)
+    hechoLink = clickable and function(text, _, hint, use_format)
+        assert(text:match('^#%x%x%x%x%x%x') and use_format == true)
         output[#output+1] = text
         hints[#hints+1] = hint
     end or nil
@@ -89,3 +90,19 @@ assert(S:skill_color({value=-1, theory=40}) == c0)
 local neutral, percent = S:skill_color({value=0, theory=0})
 assert(neutral == chimera_vip.util.palette().text_muted and percent == nil)
 print('Pastel practice/theory scale: PASS')
+local cells = {}
+hechoLink = function(text, _, hint, use_format)
+    assert(use_format == true and hint ~= '')
+    cells[#cells+1] = text
+end
+local function render(value, theory)
+    S:print_skill({name='test', value=value, theory=theory, level='pobieznie',
+        theory_level='dobrze', exercises=0, required=281})
+end
+render(30, 40)
+assert(cells[1] == c75 .. string.format('%8s', '30'))
+render(30, 100)
+assert(cells[3] == c30 .. string.format('%8s', '30'))
+render(40, 40)
+assert(cells[5] == c100 .. string.format('%8s', '40'))
+print('Rendered tooltip links carry their own colors: PASS')

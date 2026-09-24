@@ -174,9 +174,11 @@ function S:print_skill(skill, previous)
     do
         hecho(P.text .. pad(skill.name, self.name_width or NAME_WIDTH))
         local function cell(text, hint, color)
-            hecho(color)
-            if type(echoLink) == "function" then echoLink(text, "", hint, true)
-            else hecho(text) end
+            if type(hechoLink) == "function" then
+                hechoLink(color .. text, "", hint, true)
+            else
+                hecho(color .. text)
+            end
         end
         local value = skill.theory and tostring(skill.value) or format_percent(skill.value)
         local color, percent = self:skill_color(skill)
