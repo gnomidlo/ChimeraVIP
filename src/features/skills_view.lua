@@ -151,23 +151,21 @@ end
 function S:print_skill(skill, previous)
     local P = colors()
     local delta = previous and (skill.value - previous.value) or 0
-    if skill.theory then
+    do
         hecho(P.text .. pad(skill.name, self.name_width or NAME_WIDTH))
         local function cell(text, hint, color)
             hecho(color)
             if type(echoLink) == "function" then echoLink(text, "", hint, true)
             else hecho(text) end
         end
-        cell(string.format("%8d", skill.value), skill.level, value_color(skill.value, P))
-        cell(string.format("%8d", skill.theory), skill.theory_level, P.blue)
-        hecho(P.text_muted .. string.format("%14s", skill.exercises .. "/" .. skill.required)
-            .. "  " .. delta_text(delta, "", P))
+        local value = skill.theory and tostring(skill.value) or format_percent(skill.value)
+        cell(string.format("%8s", value), skill.level, value_color(skill.value, P))
+        cell(string.format("%8s", skill.theory or "--"), skill.theory_level or "Nie dotyczy", P.blue)
+        local exercises = skill.theory and (skill.exercises .. "/" .. skill.required) or "--"
+        hecho(P.text_muted .. string.format("%14s", exercises)
+            .. "  " .. delta_text(delta, skill.theory and "" or "%", P))
         return
     end
-    hecho(P.text .. pad(skill.name, NAME_WIDTH)
-        .. P.text_muted .. pad(skill.level, LEVEL_WIDTH)
-        .. value_color(skill.value, P) .. string.format("%" .. tostring(PERCENT_WIDTH) .. "s", format_percent(skill.value))
-        .. "  " .. delta_text(delta, "%", P))
 end
 
 function S:print_ability(ability, previous)
@@ -202,17 +200,14 @@ function S:finish_skills()
     local P = colors()
     if #capture.order > 0 then
         self.name_width = NAME_WIDTH
-        local modern = false
         for _, key in ipairs(capture.order) do
             local skill = capture.skills[key]
             self.name_width = math.max(self.name_width, U.text_width(skill.name) + 2)
-            modern = modern or skill.theory ~= nil
         end
         hecho("\n\n" .. P.lavender .. "UMIEJETNOSCI"
             .. "\n" .. P.separator .. "-------------------------------------------------------\n")
-        if modern then
-            hecho(P.text_muted .. pad("", self.name_width) .. "praktyka  teoria     cwiczenia\n")
-        end
+        hecho(P.text_muted .. pad("", self.name_width)
+            .. string.format("%8s%8s%14s", "poziom", "teoria", "cwiczenia") .. "\n")
         for _, key in ipairs(capture.order) do
             self:print_skill(capture.skills[key], self.previous_skills[key])
             hecho("\n")

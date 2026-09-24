@@ -50,3 +50,30 @@ assert(not S:parse_skill_line('uniki: pobieznie (teoria: dobrze) [30 z 55; cwicz
 S:finish_skills()
 assert(S.previous_skills['bronie drzewcowe'].value == 30)
 print('Modern skills and duplicate rows: PASS')
+
+-- Mixed reports must use the same name and numeric column boundaries.
+for _, clickable in ipairs({false, true}) do
+    local output, hints = {}, {}
+    hecho = function(text) output[#output+1] = text end
+    echoLink = clickable and function(text, _, hint)
+        output[#output+1] = text
+        hints[#hints+1] = hint
+    end or nil
+    S:start_skills()
+    assert(S:parse_skill_line(line))
+    assert(S:parse_skill_line('opieka nad zwierzetami: doskonale [74]'))
+    assert(S:parse_skill_line('tropienie: doskonale [75]'))
+    S:finish_skills()
+    local rendered = table.concat(output):gsub('#%x%x%x%x%x%x', '')
+    local width = math.max(22, #('opieka nad zwierzetami') + 2)
+    local function row(name, level, theory, exercises)
+        return name .. string.rep(' ', width - #name)
+            .. string.format('%8s%8s%14s', level, theory, exercises)
+    end
+    assert(rendered:find(row('', 'poziom', 'teoria', 'cwiczenia'), 1, true))
+    assert(rendered:find(row('bronie drzewcowe', '30', '65', '154/281'), 1, true))
+    assert(rendered:find(row('opieka nad zwierzetami', '74%', '--', '--'), 1, true))
+    assert(rendered:find(row('tropienie', '75%', '--', '--'), 1, true))
+    if clickable then assert(table.concat(hints):find('doskonale', 1, true)) end
+end
+print('Mixed skill column alignment and tooltips: PASS')
