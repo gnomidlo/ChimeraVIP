@@ -77,3 +77,15 @@ for _, clickable in ipairs({false, true}) do
     if clickable then assert(table.concat(hints):find('doskonale', 1, true)) end
 end
 print('Mixed skill column alignment and tooltips: PASS')
+local c0 = S:skill_color({value=0, theory=40})
+local c100 = S:skill_color({value=40, theory=40})
+assert(c0 == '#F0A8B8' and c100 == '#A8DCC2')
+local c75, p75 = S:skill_color({value=30, theory=40})
+local c30, p30 = S:skill_color({value=30, theory=100})
+assert(p75 == 75 and p30 == 30 and c75 ~= c30)
+assert(S:skill_color({value=75}) == c75)
+assert(S:skill_color({value=50, theory=40}) == c100)
+assert(S:skill_color({value=-1, theory=40}) == c0)
+local neutral, percent = S:skill_color({value=0, theory=0})
+assert(neutral == chimera_vip.util.palette().text_muted and percent == nil)
+print('Pastel practice/theory scale: PASS')

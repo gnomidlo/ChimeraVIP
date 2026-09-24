@@ -45,6 +45,26 @@ local function value_color(value, P)
     return P.lavender
 end
 
+-- Only the skill level uses this scale; theory remains a neutral reference.
+-- Interpolate softly from rose through peach/yellow to mint.
+function S:skill_color(skill)
+    local maximum = tonumber(skill.theory)
+    if maximum and maximum <= 0 then return colors().text_muted, nil end
+    maximum = maximum or 100
+    local percent = math.max(0, math.min(100, (tonumber(skill.value) or 0) / maximum * 100))
+    local stops = {"F0A8B8", "F2C4A0", "EFD8A6", "A8DCC2"}
+    local position = percent / 100 * (#stops - 1)
+    local index = math.min(math.floor(position) + 1, #stops - 1)
+    local fraction = position - (index - 1)
+    local rgb = {}
+    for offset = 1, 5, 2 do
+        local a = tonumber(stops[index]:sub(offset, offset + 1), 16)
+        local b = tonumber(stops[index + 1]:sub(offset, offset + 1), 16)
+        rgb[#rgb + 1] = math.floor(a + (b - a) * fraction + 0.5)
+    end
+    return string.format("#%02X%02X%02X", unpack(rgb)), percent
+end
+
 local function delta_text(delta, suffix, P)
     delta = tonumber(delta) or 0
     suffix = suffix or ""
@@ -159,7 +179,13 @@ function S:print_skill(skill, previous)
             else hecho(text) end
         end
         local value = skill.theory and tostring(skill.value) or format_percent(skill.value)
-        cell(string.format("%8s", value), skill.level, value_color(skill.value, P))
+        local color, percent = self:skill_color(skill)
+        local hint = skill.level
+        if skill.theory then
+            hint = hint .. (percent and ("; praktyka / teoria: " .. format_percent(percent))
+                or "; brak dodatniej wartosci teorii")
+        end
+        cell(string.format("%8s", value), hint, color)
         cell(string.format("%8s", skill.theory or "--"), skill.theory_level or "Nie dotyczy", P.blue)
         local exercises = skill.theory and (skill.exercises .. "/" .. skill.required) or "--"
         hecho(P.text_muted .. string.format("%14s", exercises)

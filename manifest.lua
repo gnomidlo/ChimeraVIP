@@ -1,12 +1,12 @@
 return {
     name = "ChimeraVIP",
-    version = "0.134",
+    version = "0.135",
     schema = 2,
     tested_upstream = "4.3",
     raw_base = "https://raw.githubusercontent.com/gnomidlo/ChimeraVIP/main/",
     changes = {
-        "Umiejetnosci: wspolne kolumny dla umiejetnosci bojowych i pozostalych",
-        "Umiejetnosci: dynamiczna szerokosc nazw i wyrownane naglowki",
+        "Umiejetnosci: plynna pastelowa skala praktyki wzgledem teorii",
+        "Rozowy, brzoskwiniowy, zolty, zielony; stosunek praktyki do teorii w tooltipie",
     },
     files = {
         "loader.lua",
@@ -52,7 +52,7 @@ return {
         ["src/features/tactical_aliases.lua"] = {hash="9d104ccc8c5e29503cede71bd338be8576bca0c3", size=4997},
         ["loader.lua"] = {hash="1381414d89e55d2fad70beb8f42e48098d4b1802", size=4501},
         ["src/init.lua"] = {hash="bf9705ab9c259be16e18a8da2e6e68cfdaaf5175", size=2228},
-        ["src/core/bootstrap.lua"] = {hash="0f8f3be439ad031d3a449b0a5e49920f0163385d", size=1471},
+        ["src/core/bootstrap.lua"] = {hash="02b97e8460f02ea7bb188645526c7eaaed8b650e", size=1471},
         ["src/core/util.lua"] = {hash="7561cd9259be9ff0ce74228e9048eef0b5aba280", size=6686},
         ["src/core/hash.lua"] = {hash="362c18bf131c9939d03b59dd50568d66de8f6a5e", size=2118},
         ["src/integrations/runtime.lua"] = {hash="e8e4a7efac14fcb7ac6f6f0d3cc473f42e556d7a", size=2649},
@@ -80,7 +80,7 @@ return {
         ["src/features/characters_delete_ui.lua"] = {hash="dd70e429d43a1f57e8785689063547063d2bf9bf", size=2077},
         ["src/ui/characters_help_panel.lua"] = {hash="634fbd308f81451b545bc9c6dabbb2f8c068e54b", size=8887},
         ["src/features/containers.lua"] = {hash="d33681551be253a91b3ab7786f02f97f27725553", size=5363},
-        ["src/features/skills_view.lua"] = {hash="f203eec0e84cfb6d2fa2620dcb95afc959e298ee", size=13617},
+        ["src/features/skills_view.lua"] = {hash="ea73e619c8c8c76b30977419dd09fad51474efcf", size=14821},
         ["src/features/character_sheet.lua"] = {hash="8138c16473f1d3dfb2c1b72af07b0625a9cb460c", size=5804},
         ["src/features/retainer_progress.lua"] = {hash="4a45a38e4375237d539756fce1bc1024b4e23d0e", size=8817},
         ["src/features/equipment_view.lua"] = {hash="14d6f882f2b48d1b937603949a7d21b81027e49b", size=1721},
