@@ -36,3 +36,17 @@ assert(multi and multi.level == 'zadziwiajaco dobrze')
 assert(math.abs(multi.percent - 75) < 0.000001)
 
 print('Skills tests: PASS')
+S:start_skills()
+local line = 'bronie drzewcowe:  pobieznie (teoria: znakomicie) [30 z 65; cwiczenia 154/281]'
+assert(S:parse_skill_line(line))
+assert(S:parse_skill_line(line))
+assert(#S.skill_capture.order == 1)
+local modern = S.skill_capture.skills['bronie drzewcowe']
+assert(modern.value == 30 and modern.theory == 65)
+assert(modern.exercises == 154 and modern.required == 281)
+assert(modern.level == 'pobieznie' and modern.theory_level == 'znakomicie')
+assert(S:parse_skill_line('precyzyjny cios: pobieznie (teoria: mistrzowsko) [30 z 100; cwiczenia 0/281]'))
+assert(not S:parse_skill_line('uniki: pobieznie (teoria: dobrze) [30 z 55; cwiczenia 0/0]'))
+S:finish_skills()
+assert(S.previous_skills['bronie drzewcowe'].value == 30)
+print('Modern skills and duplicate rows: PASS')

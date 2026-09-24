@@ -119,6 +119,18 @@ function S:parse_skill_line(line)
     if not self.skill_capture then return false end
     line = trim(line)
 
+    local name, practice, theory, value, limit, exercises, required = line:match(
+        "^(.-):%s+(.+)%s+%(teoria:%s*(.-)%)%s+%[(%d+)%s+z%s+(%d+);%s*cwiczenia%s+(%d+)/(%d+)%]%s*$"
+    )
+    if name then
+        if tonumber(required) <= 0 then return false end
+        self:add_skill(name, practice, value)
+        local skill = self.skill_capture.skills[normalize(name)]
+        skill.theory, skill.theory_level = tonumber(limit), theory
+        skill.exercises, skill.required = tonumber(exercises), tonumber(required)
+        return true
+    end
+
     local name1, level1, value1, name2, level2, value2 = line:match(
         "^(.-):%s+(%S+)%s+%[(%d+)%]%s+(.-):%s+(%S+)%s+%[(%d+)%]%s*$"
     )
@@ -139,6 +151,19 @@ end
 function S:print_skill(skill, previous)
     local P = colors()
     local delta = previous and (skill.value - previous.value) or 0
+    if skill.theory then
+        hecho(P.text .. pad(skill.name, self.name_width or NAME_WIDTH))
+        local function cell(text, hint, color)
+            hecho(color)
+            if type(echoLink) == "function" then echoLink(text, "", hint, true)
+            else hecho(text) end
+        end
+        cell(string.format("%8d", skill.value), skill.level, value_color(skill.value, P))
+        cell(string.format("%8d", skill.theory), skill.theory_level, P.blue)
+        hecho(P.text_muted .. string.format("%14s", skill.exercises .. "/" .. skill.required)
+            .. "  " .. delta_text(delta, "", P))
+        return
+    end
     hecho(P.text .. pad(skill.name, NAME_WIDTH)
         .. P.text_muted .. pad(skill.level, LEVEL_WIDTH)
         .. value_color(skill.value, P) .. string.format("%" .. tostring(PERCENT_WIDTH) .. "s", format_percent(skill.value))
@@ -176,8 +201,18 @@ function S:finish_skills()
 
     local P = colors()
     if #capture.order > 0 then
+        self.name_width = NAME_WIDTH
+        local modern = false
+        for _, key in ipairs(capture.order) do
+            local skill = capture.skills[key]
+            self.name_width = math.max(self.name_width, U.text_width(skill.name) + 2)
+            modern = modern or skill.theory ~= nil
+        end
         hecho("\n\n" .. P.lavender .. "UMIEJETNOSCI"
             .. "\n" .. P.separator .. "-------------------------------------------------------\n")
+        if modern then
+            hecho(P.text_muted .. pad("", self.name_width) .. "praktyka  teoria     cwiczenia\n")
+        end
         for _, key in ipairs(capture.order) do
             self:print_skill(capture.skills[key], self.previous_skills[key])
             hecho("\n")
@@ -294,6 +329,17 @@ function S:install()
         S:start_jobs()
         send("staz", false)
     end)
+
+    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
+        [[^\s*.+?:\s+.+\(teoria:.*\)\s+\[\d+\s+z\s+\d+;\s*cwiczenia\s+\d+/\d+\]\s*$]],
+        function()
+            if not S.skill_capture then return end
+            if S:parse_skill_line(getCurrentLine()) then
+                gag_line()
+                S:touch_skill_timer()
+            end
+        end
+    )
 
     self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
         [[^\s*Zdolnosci:\s*$]],
