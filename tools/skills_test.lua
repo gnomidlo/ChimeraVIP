@@ -106,3 +106,39 @@ assert(cells[3] == c30 .. string.format('%8s', '30'))
 render(40, 40)
 assert(cells[5] == c100 .. string.format('%8s', '40'))
 print('Rendered tooltip links carry their own colors: PASS')
+S:start_skills()
+local rows = {
+    'bronie drzewcowe: 31 (teoria 65; cwiczenia 63/293)',
+    'uniki: 30 (teoria 55; cwiczenia 12/288)',
+    'tropienie: 75                    spostrzegawczosc: 75',
+    'parowanie: 30 (teoria 40; cwiczenia 7/288)',
+    'atak z doskoku: 30 (teoria 100; cwiczenia 6/288)',
+    'ukrywanie sie: 100 (premia +20)      skradanie sie: 80',
+    'lowiectwo: 77    ',
+    'precyzyjny cios: 30 (teoria 100; cwiczenia 7/288)',
+    'plywanie: 55                    wspinaczka: 60',
+    'wykrywanie pulapek: 55          wyczucie kierunku: 60',
+    'opieka nad zwierzetami: 74    ',
+}
+for repeat_index = 1, 2 do
+    for _, row in ipairs(rows) do assert(S:parse_skill_line(row), row) end
+end
+assert(#S.skill_capture.order == 15)
+local skills = S.skill_capture.skills
+assert(skills['bronie drzewcowe'].value == 31 and skills['bronie drzewcowe'].required == 293)
+assert(skills['ukrywanie sie'].value == 100 and skills['ukrywanie sie'].bonus == 20)
+assert(skills['skradanie sie'].value == 80)
+assert(skills['opieka nad zwierzetami'].value == 74)
+assert(not S:parse_skill_line('test: 10 (teoria 20; cwiczenia 0/0)'))
+assert(not S:parse_skill_line('nowa: 15    uszkodzona: ?'))
+assert(not S.skill_capture.skills.nowa)
+local numeric_output = {}
+hecho = function(text) numeric_output[#numeric_output+1] = text end
+hechoLink = function(text, _, hint)
+    assert(text:match('^#%x%x%x%x%x%x'))
+    numeric_output[#numeric_output+1] = text
+end
+S:finish_skills()
+assert(table.concat(numeric_output):find('(premia +20)', 1, true))
+assert(S.previous_skills['ukrywanie sie'].value == 100)
+print('Numeric skills, two columns, bonus and repeated report: PASS')

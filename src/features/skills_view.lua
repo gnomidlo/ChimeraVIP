@@ -139,6 +139,43 @@ function S:parse_skill_line(line)
     if not self.skill_capture then return false end
     line = trim(line)
 
+    -- Parse complete numeric rows before committing either column.
+    if line:match("^[^:]+:%s*%d+") then
+        local pending, rest = {}, line
+        while rest ~= "" do
+            local name, value, tail = rest:match("^([^:]+):%s*(%d+)(.*)$")
+            if not name or trim(name) == "" then return false end
+            local skill = {name=trim(name), value=tonumber(value), numeric=true}
+            tail = trim(tail)
+            if tail:sub(1, 1) == "(" then
+                local detail, remaining = tail:match("^%(([^()]*)%)%s*(.*)$")
+                if not detail then return false end
+                local theory, exercises, required = detail:match(
+                    "^teoria%s+(%d+);%s*cwiczenia%s+(%d+)/(%d+)$")
+                if theory then
+                    if tonumber(required) <= 0 then return false end
+                    skill.theory, skill.exercises, skill.required =
+                        tonumber(theory), tonumber(exercises), tonumber(required)
+                    skill.theory_level = "Teoria: " .. theory
+                else
+                    local bonus = detail:match("^premia%s+([+-]%d+)$")
+                    if not bonus then return false end
+                    skill.bonus = tonumber(bonus)
+                end
+                tail = remaining
+            end
+            pending[#pending+1] = skill
+            if #pending > 2 then return false end
+            rest = trim(tail)
+        end
+        for _, skill in ipairs(pending) do
+            self:add_skill(skill.name, "Poziom: " .. skill.value, skill.value)
+            local saved = self.skill_capture.skills[normalize(skill.name)]
+            for key, value in pairs(skill) do saved[key] = value end
+        end
+        return true
+    end
+
     local name, practice, theory, value, limit, exercises, required = line:match(
         "^(.-):%s+(.+)%s+%(teoria:%s*(.-)%)%s+%[(%d+)%s+z%s+(%d+);%s*cwiczenia%s+(%d+)/(%d+)%]%s*$"
     )
@@ -180,9 +217,10 @@ function S:print_skill(skill, previous)
                 hecho(color .. text)
             end
         end
-        local value = skill.theory and tostring(skill.value) or format_percent(skill.value)
+        local value = (skill.theory or skill.numeric) and tostring(skill.value) or format_percent(skill.value)
         local color, percent = self:skill_color(skill)
         local hint = skill.level
+        if skill.bonus then hint = hint .. string.format("; premia %+d (wedlug gry)", skill.bonus) end
         if skill.theory then
             hint = hint .. (percent and ("; praktyka / teoria: " .. format_percent(percent))
                 or "; brak dodatniej wartosci teorii")
@@ -191,7 +229,8 @@ function S:print_skill(skill, previous)
         cell(string.format("%8s", skill.theory or "--"), skill.theory_level or "Nie dotyczy", P.blue)
         local exercises = skill.theory and (skill.exercises .. "/" .. skill.required) or "--"
         hecho(P.text_muted .. string.format("%14s", exercises)
-            .. "  " .. delta_text(delta, skill.theory and "" or "%", P))
+            .. (skill.bonus and (P.lavender .. string.format("  (premia %+d)", skill.bonus)) or "")
+            .. "  " .. delta_text(delta, (skill.theory or skill.numeric) and "" or "%", P))
         return
     end
 end
@@ -355,6 +394,17 @@ function S:install()
 
     self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
         [[^\s*.+?:\s+.+\(teoria:.*\)\s+\[\d+\s+z\s+\d+;\s*cwiczenia\s+\d+/\d+\]\s*$]],
+        function()
+            if not S.skill_capture then return end
+            if S:parse_skill_line(getCurrentLine()) then
+                gag_line()
+                S:touch_skill_timer()
+            end
+        end
+    )
+
+    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
+        [[^\s*[^:]+:\s*\d+.*$]],
         function()
             if not S.skill_capture then return end
             if S:parse_skill_line(getCurrentLine()) then
