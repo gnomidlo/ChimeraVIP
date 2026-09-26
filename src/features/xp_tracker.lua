@@ -15,9 +15,11 @@ XP.rolling_window = 600
 XP.min_rate_seconds = 10
 XP.max_recent_events = 100
 XP.reward_window = 5
+XP.death_window = 3
 XP.trigger_ids = XP.trigger_ids or {}
 XP.alias_ids = XP.alias_ids or {}
 XP.pending_rewards = {}
+XP.pending_death = nil
 
 XP.rules = {
     { name = "krasnolud chaosu", match = "krasnoluda chaosu" },
@@ -287,19 +289,35 @@ function XP:remember_reward(name, amount)
     self.pending_rewards[#self.pending_rewards+1] = {name=name, xp=amount, time=now}
 end
 
+function XP:remember_death(name)
+    name = trim(name)
+    if name == "" then return end
+    self.pending_death = {name=name, time=os.time()}
+end
+
+function XP:take_recent_death(now)
+    local death = self.pending_death
+    self.pending_death = nil
+    if type(death) ~= "table" or trim(death.name) == "" then return nil end
+    if (now or os.time()) - (tonumber(death.time) or 0) > self.death_window then return nil end
+    return trim(death.name)
+end
+
 function XP:get_kill_card_context(raw_mob, killer, own)
-    local mob_name = trim(raw_mob)
+    -- Linia "<mob> polegl" niesie aktualna nazwe w mianowniku. GMCP Kill potrafi
+    -- dotrzec dopiero po tekstowym komunikacie XP, wiec jego victim bywa jeszcze
+    -- ofiara z poprzedniego zabojstwa i nie moze nadpisywac biezacego moba.
+    local mob_name = self:take_recent_death(os.time()) or trim(raw_mob)
     local killer_name = own and "TY" or trim(killer)
     local kill = gmcp and gmcp.Chimera and gmcp.Chimera.Combat and gmcp.Chimera.Combat.Kill
 
-    if type(kill) == "table" and type(kill.victim) == "table" and trim(kill.victim.name) ~= "" then
-        if own and tonumber(kill.by_self) == 1 then
-            mob_name = trim(kill.victim.name)
-        elseif not own and type(kill.killer) == "table"
-            and normalize(kill.killer.name) == normalize(killer) then
-            mob_name = trim(kill.victim.name)
-            if trim(kill.killer.name) ~= "" then killer_name = trim(kill.killer.name) end
-        end
+    if mob_name == "" and type(kill) == "table" and type(kill.victim) == "table" then
+        mob_name = trim(kill.victim.name)
+    end
+    if not own and type(kill) == "table" and type(kill.killer) == "table"
+        and normalize(kill.killer.name) == normalize(killer)
+        and trim(kill.killer.name) ~= "" then
+        killer_name = trim(kill.killer.name)
     end
 
     return mob_name, killer_name
@@ -514,6 +532,7 @@ function XP:show_help()
     finish_output()
 end
 
+table.insert(XP.trigger_ids,tempRegexTrigger([[^(.+?) polegl(?:a|o)?\.$]],function() XP:remember_death(matches[2]) end))
 table.insert(XP.trigger_ids,tempRegexTrigger([[^(.+?) otrzymal(?:a|o)? (\d+) expa\.$]],function() XP:remember_reward(matches[2],matches[3]) end))
 table.insert(XP.trigger_ids,tempRegexTrigger([[^(Zabilas|Zabiles) (.+)\. \[(\d+)xp\]$]],function() XP:add_event(matches[3],matches[4],"TY",true) end))
 table.insert(XP.trigger_ids,tempRegexTrigger([[^(.+?) (zabil|zabila) (.+)\. \[(\d+)xp\]$]],function() XP:add_event(matches[4],matches[5],matches[2],false) end))

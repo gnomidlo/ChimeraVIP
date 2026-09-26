@@ -27,6 +27,8 @@ jobs:
         run: lua5.1 tools/character_sheet_test.lua
       - name: Test runtime regressions
         run: lua5.1 tools/runtime_test.lua
+      - name: Test XP kill cards
+        run: lua5.1 tools/xp_test.lua
       - name: Test updater integrity and rollback
         run: lua5.1 tools/updater_test.lua
       - name: Test equipment appraisal grammar and durability

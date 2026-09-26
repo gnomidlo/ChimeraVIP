@@ -1,11 +1,11 @@
 return {
     name = "ChimeraVIP",
-    version = "0.138",
+    version = "0.139",
     schema = 2,
     tested_upstream = "4.3",
     raw_base = "https://raw.githubusercontent.com/gnomidlo/ChimeraVIP/main/",
     changes = {
-        "Umiejetnosci: teoria bez sekcji cwiczen dla nowych postaci",
+        "XP: karta zabicia korzysta z biezacej nazwy przeciwnika zamiast opoznionego GMCP",
     },
     files = {
         "loader.lua",
@@ -51,7 +51,7 @@ return {
         ["src/features/tactical_aliases.lua"] = {hash="9d104ccc8c5e29503cede71bd338be8576bca0c3", size=4997},
         ["loader.lua"] = {hash="1381414d89e55d2fad70beb8f42e48098d4b1802", size=4501},
         ["src/init.lua"] = {hash="bf9705ab9c259be16e18a8da2e6e68cfdaaf5175", size=2228},
-        ["src/core/bootstrap.lua"] = {hash="a299cbb06c1f6872ce005de7c4a4e54da8b15641", size=1471},
+        ["src/core/bootstrap.lua"] = {hash="3dc6e7cda0b5b0ea7e23301058be1b20c8af4e21", size=1471},
         ["src/core/util.lua"] = {hash="7561cd9259be9ff0ce74228e9048eef0b5aba280", size=6686},
         ["src/core/hash.lua"] = {hash="362c18bf131c9939d03b59dd50568d66de8f6a5e", size=2118},
         ["src/integrations/runtime.lua"] = {hash="e8e4a7efac14fcb7ac6f6f0d3cc473f42e556d7a", size=2649},
@@ -69,7 +69,7 @@ return {
         ["src/features/auto_support.lua"] = {hash="9e98d679c3bbb95887b5a7d66a9f3830b74c25c1", size=7995},
         ["src/features/tactical_states.lua"] = {hash="52397deaaea6b7f5c0a0d9fd265966888c598441", size=18751},
         ["src/features/tactical_states_view.lua"] = {hash="f9e959d8e32d2ef9826227e715afc2fe8f155fbb", size=9574},
-        ["src/features/xp_tracker.lua"] = {hash="eeffc793efd62e9c9f1ecec37b060c8dd806db95", size=23570},
+        ["src/features/xp_tracker.lua"] = {hash="697e8f74535c5aa003e8b2f63db58953f0b16692", size=24356},
         ["src/features/xp_kill_card_view.lua"] = {hash="2bf985dba91536ac5f857d921e36e2e4fd4c4041", size=1374},
         ["src/features/stats.lua"] = {hash="f6f04abb793f20ad794483b3d41952cd60561f38", size=13741},
         ["src/features/stats_compact_view.lua"] = {hash="9b0405f3783465a42df38a24e8a4fa2c81f1ec51", size=4274},
