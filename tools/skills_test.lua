@@ -142,3 +142,26 @@ S:finish_skills()
 assert(table.concat(numeric_output):find('(premia +20)', 1, true))
 assert(S.previous_skills['ukrywanie sie'].value == 100)
 print('Numeric skills, two columns, bonus and repeated report: PASS')
+S:start_skills()
+local beginner = {
+    'walka bez broni: 17 (teoria 17)',
+    'uniki: 18 (teoria 18)',
+    'tarczownictwo: 20 (teoria 20)',
+}
+for pass = 1, 2 do
+    for _, row in ipairs(beginner) do assert(S:parse_skill_line(row), row) end
+end
+assert(#S.skill_capture.order == 3)
+assert(S.skill_capture.skills['walka bez broni'].theory == 17)
+assert(S.skill_capture.skills.uniki.theory == 18)
+assert(S.skill_capture.skills.tarczownictwo.theory == 20)
+local beginner_output = {}
+hecho = function(text) beginner_output[#beginner_output+1] = text end
+hechoLink = function(text) beginner_output[#beginner_output+1] = text end
+S:finish_skills()
+local beginner_rendered = table.concat(beginner_output):gsub('#%x%x%x%x%x%x', '')
+assert(beginner_rendered:find('walka bez broni', 1, true))
+assert(beginner_rendered:find(string.format('%8s%8s%14s', '17', '17', '--'), 1, true))
+assert(beginner_rendered:find(string.format('%8s%8s%14s', '18', '18', '--'), 1, true))
+assert(beginner_rendered:find(string.format('%8s%8s%14s', '20', '20', '--'), 1, true))
+print('Theory-only beginner skills and duplicate block: PASS')

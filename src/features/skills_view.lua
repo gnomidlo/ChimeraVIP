@@ -158,9 +158,15 @@ function S:parse_skill_line(line)
                         tonumber(theory), tonumber(exercises), tonumber(required)
                     skill.theory_level = "Teoria: " .. theory
                 else
-                    local bonus = detail:match("^premia%s+([+-]%d+)$")
-                    if not bonus then return false end
-                    skill.bonus = tonumber(bonus)
+                    theory = detail:match("^teoria%s+(%d+)$")
+                    if theory then
+                        skill.theory = tonumber(theory)
+                        skill.theory_level = "Teoria: " .. theory
+                    else
+                        local bonus = detail:match("^premia%s+([+-]%d+)$")
+                        if not bonus then return false end
+                        skill.bonus = tonumber(bonus)
+                    end
                 end
                 tail = remaining
             end
@@ -227,7 +233,7 @@ function S:print_skill(skill, previous)
         end
         cell(string.format("%8s", value), hint, color)
         cell(string.format("%8s", skill.theory or "--"), skill.theory_level or "Nie dotyczy", P.blue)
-        local exercises = skill.theory and (skill.exercises .. "/" .. skill.required) or "--"
+        local exercises = skill.exercises and (skill.exercises .. "/" .. skill.required) or "--"
         hecho(P.text_muted .. string.format("%14s", exercises)
             .. (skill.bonus and (P.lavender .. string.format("  (premia %+d)", skill.bonus)) or "")
             .. "  " .. delta_text(delta, (skill.theory or skill.numeric) and "" or "%", P))
