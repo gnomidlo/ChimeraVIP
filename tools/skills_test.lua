@@ -165,3 +165,29 @@ assert(beginner_rendered:find(string.format('%8s%8s%14s', '17', '17', '--'), 1, 
 assert(beginner_rendered:find(string.format('%8s%8s%14s', '18', '18', '--'), 1, true))
 assert(beginner_rendered:find(string.format('%8s%8s%14s', '20', '20', '--'), 1, true))
 print('Theory-only beginner skills and duplicate block: PASS')
+
+-- Growth messages are visual only; session totals come from complete snapshots.
+S.previous_skills = {}
+S.previous_abilities = {}
+S.session_gains = {}
+S:start_skills()
+assert(S:parse_skill_line('walka mieczem: 17 (teoria 20)'))
+assert(S:parse_ability_line('Technika lowcy: poczatkujaco [10/100]'))
+S:finish_skills()
+assert(next(S.session_gains) == nil)
+S:start_skills()
+assert(S:parse_skill_line('walka mieczem: 19 (teoria 20)'))
+assert(S:parse_ability_line('Technika lowcy: poczatkujaco [13/100]'))
+S:finish_skills()
+assert(S.session_gains['walka mieczem'] == 2)
+assert(S.session_gains['Technika lowcy'] == 3)
+
+local selected, bold, underlined, colored = nil, false, false, false
+selectString = function(text) selected = text; return 0 end
+setFgColor = function(r, g, b) colored = r ~= nil and g ~= nil and b ~= nil end
+setBold = function(value) bold = value end
+setUnderline = function(value) underlined = value end
+resetFormat = function() end
+assert(S:highlight_growth('walce mieczem'))
+assert(selected == 'walce mieczem' and bold and underlined and colored)
+print('Snapshot growth totals and inline emphasis: PASS')

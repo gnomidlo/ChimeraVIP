@@ -22,10 +22,6 @@ S.previous_jobs = S.previous_jobs or {}
 S.session_gains = S.session_gains or {}
 S.capture_delay = 0.30
 
-S.gain_aliases = {
-    ["walce toporem"] = "topory",
-}
-
 local trim = U.trim
 local normalize = U.normalize
 local pad = U.pad_right
@@ -264,6 +260,23 @@ function S:show_session_gains()
     end
 end
 
+function S:record_snapshot_gains(capture)
+    for key, skill in pairs(capture.skills or {}) do
+        local previous = self.previous_skills[key]
+        local delta = previous and (tonumber(skill.value) or 0) - (tonumber(previous.value) or 0) or 0
+        if delta > 0 then
+            self.session_gains[skill.name] = (self.session_gains[skill.name] or 0) + delta
+        end
+    end
+    for key, ability in pairs(capture.abilities or {}) do
+        local previous = self.previous_abilities[key]
+        local delta = previous and (tonumber(ability.value) or 0) - (tonumber(previous.value) or 0) or 0
+        if delta > 0 then
+            self.session_gains[ability.name] = (self.session_gains[ability.name] or 0) + delta
+        end
+    end
+end
+
 function S:finish_skills()
     local capture = self.skill_capture
     if not capture then return end
@@ -296,6 +309,7 @@ function S:finish_skills()
         end
     end
 
+    self:record_snapshot_gains(capture)
     self:show_session_gains()
     hecho("\n")
 
@@ -375,13 +389,17 @@ function S:finish_jobs()
     end
 end
 
-function S:add_gain(raw_name)
-    raw_name = normalize(raw_name)
-    local display = self.gain_aliases[raw_name] or raw_name
-    self.session_gains[display] = (self.session_gains[display] or 0) + 1
-    local P = colors()
-    hecho("\n" .. P.mint .. "[UM] Wzrost: " .. P.text .. display
-        .. P.text_muted .. "  [sesja: " .. tostring(self.session_gains[display]) .. "]\n")
+function S:highlight_growth(phrase)
+    phrase = trim(phrase)
+    if phrase == "" or type(selectString) ~= "function" then return false end
+    local found = selectString(phrase, 1)
+    if not found or found < 0 then return false end
+    local r, g, b = U.hex_to_rgb(colors().mint)
+    if r and type(setFgColor) == "function" then pcall(setFgColor, r, g, b) end
+    if type(setBold) == "function" then pcall(setBold, true) end
+    if type(setUnderline) == "function" then pcall(setUnderline, true) end
+    if type(resetFormat) == "function" then pcall(resetFormat) end
+    return true
 end
 
 function S:install()
@@ -472,7 +490,12 @@ function S:install()
 
     self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
         [[^Czujesz, ze twoja bieglosc w (.+?) wzrosla\.\s*$]],
-        function() S:add_gain(matches[2]) end
+        function() S:highlight_growth(matches[2]) end
+    )
+
+    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
+        [[^Czujesz, ze twoja technika sie poprawila\.\s*$]],
+        function() S:highlight_growth("technika") end
     )
 end
 
