@@ -137,29 +137,35 @@ end
 
 function R:money_phrases(line)
     local phrases = {}
-    local function add_matches(pattern)
+    local function add_matches(pattern, standalone)
         local cursor = 1
         while true do
             local first, last = line:find(pattern, cursor)
             if not first then break end
             local phrase = line:sub(first, last)
+            local suffix = line:sub(last + 1):match("^(%s+monet[%w]*)")
+            if suffix then
+                phrase = phrase .. suffix
+                last = last + #suffix
+            end
             local prefix = line:sub(1, first - 1)
             local amount = prefix:match("(%S+)%s+$")
             local normalized_amount = amount and normalize(amount) or ""
-            if amount and (tonumber(amount) or self.word_amounts[normalized_amount]
-                or normalized_amount == "wiele") then
+            local has_amount = amount and (tonumber(amount) or self.word_amounts[normalized_amount]
+                or normalized_amount == "wiele")
+            if has_amount then
                 phrase = amount .. " " .. phrase
             end
-            phrases[#phrases + 1] = phrase
+            if has_amount or suffix or standalone then phrases[#phrases + 1] = phrase end
             cursor = last + 1
         end
     end
 
-    add_matches("[Mm]iedz[%w]*%s+monet[%w]*")
-    add_matches("[Ss]rebr[%w]*%s+monet[%w]*")
-    add_matches("[Zz]lot[%w]*%s+monet[%w]*")
-    add_matches("[Mm]ithryl[%w]*%s+monet[%w]*")
-    add_matches("[Mm]iedziak[%w]*")
+    add_matches("[Mm]iedz[%w]*")
+    add_matches("[Ss]rebr[%w]*")
+    add_matches("[Zz]lot[%w]*")
+    add_matches("[Mm]ithryl[%w]*")
+    add_matches("[Mm]iedziak[%w]*", true)
     return phrases
 end
 

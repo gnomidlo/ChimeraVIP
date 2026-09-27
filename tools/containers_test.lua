@@ -51,6 +51,18 @@ assert(R:highlight_world_money('Na stole lezy mithrylowa moneta.'))
 assert(selected[#selected].text == 'mithrylowa moneta')
 assert(R:highlight_world_money('17 miedzianych monet i 17 miedzianych monet.'))
 assert(selected[#selected - 1].occurrence == 1 and selected[#selected].occurrence == 2)
+
+local function phrase_set(line)
+    local result = {}
+    for _, phrase in ipairs(R:money_phrases(line)) do result[phrase] = true end
+    return result
+end
+local shop = phrase_set('Zolty filcowy beret  1  4 zlote, 1 srebrna i 10 miedzianych monet')
+assert(shop['4 zlote'] and shop['1 srebrna'] and shop['10 miedzianych monet'])
+local offer = phrase_set('[*] dlugi stalowy noz - 3 zlote, 6 srebrnych i 8 miedzianych monet.')
+assert(offer['3 zlote'] and offer['6 srebrnych'] and offer['8 miedzianych monet'])
+local no_false_product = phrase_set('Zloty pierscien kosztuje 5 srebrnych monet.')
+assert(not no_false_product['Zloty'] and no_false_product['5 srebrnych monet'])
 print('World money highlighting: PASS')
 check('miecz', '1', 'miecz')
 print('Containers tests: PASS')
