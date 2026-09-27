@@ -146,24 +146,26 @@ function S:parse_skill_line(line)
             if tail:sub(1, 1) == "(" then
                 local detail, remaining = tail:match("^%(([^()]*)%)%s*(.*)$")
                 if not detail then return false end
-                local theory, exercises, required = detail:match(
-                    "^teoria%s+(%d+);%s*cwiczenia%s+(%d+)/(%d+)$")
-                if theory then
-                    if tonumber(required) <= 0 then return false end
-                    skill.theory, skill.exercises, skill.required =
-                        tonumber(theory), tonumber(exercises), tonumber(required)
-                    skill.theory_level = "Teoria: " .. theory
-                else
-                    theory = detail:match("^teoria%s+(%d+)$")
+                local recognized = 0
+                for part in detail:gmatch("[^;]+") do
+                    part = trim(part)
+                    local theory = part:match("^teoria%s+(%d+)$")
+                    local bonus = part:match("^premia%s+([+-]%d+)$")
+                    local exercises, required = part:match("^cwiczenia%s+(%d+)/(%d+)$")
                     if theory then
                         skill.theory = tonumber(theory)
                         skill.theory_level = "Teoria: " .. theory
-                    else
-                        local bonus = detail:match("^premia%s+([+-]%d+)$")
-                        if not bonus then return false end
+                    elseif bonus then
                         skill.bonus = tonumber(bonus)
+                    elseif exercises then
+                        if tonumber(required) <= 0 then return false end
+                        skill.exercises, skill.required = tonumber(exercises), tonumber(required)
+                    else
+                        return false
                     end
+                    recognized = recognized + 1
                 end
+                if recognized == 0 then return false end
                 tail = remaining
             end
             pending[#pending+1] = skill
