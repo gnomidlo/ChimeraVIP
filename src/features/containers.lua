@@ -124,6 +124,65 @@ function R:money_color(item, P)
     return P.text
 end
 
+function R:is_world_money_item(item)
+    local _, name = self:parse_amount(trim(item):gsub("%.$", ""))
+    local lowered = normalize(name)
+    if lowered:find("^miedziak") then return true end
+    if not lowered:find("monet", 1, true) then return false end
+    return lowered:find("^miedz") ~= nil
+        or lowered:find("^srebr") ~= nil
+        or lowered:find("^zlot") ~= nil
+        or lowered:find("^mithryl") ~= nil
+end
+
+function R:money_phrases(line)
+    local phrases = {}
+    local function add_matches(pattern)
+        local cursor = 1
+        while true do
+            local first, last = line:find(pattern, cursor)
+            if not first then break end
+            local phrase = line:sub(first, last)
+            local prefix = line:sub(1, first - 1)
+            local amount = prefix:match("(%S+)%s+$")
+            local normalized_amount = amount and normalize(amount) or ""
+            if amount and (tonumber(amount) or self.word_amounts[normalized_amount]
+                or normalized_amount == "wiele") then
+                phrase = amount .. " " .. phrase
+            end
+            phrases[#phrases + 1] = phrase
+            cursor = last + 1
+        end
+    end
+
+    add_matches("[Mm]iedz[%w]*%s+monet[%w]*")
+    add_matches("[Ss]rebr[%w]*%s+monet[%w]*")
+    add_matches("[Zz]lot[%w]*%s+monet[%w]*")
+    add_matches("[Mm]ithryl[%w]*%s+monet[%w]*")
+    add_matches("[Mm]iedziak[%w]*")
+    return phrases
+end
+
+function R:highlight_world_money(line)
+    line = trim(line)
+    local money = self:money_phrases(line)
+    if #money == 0 then return false end
+    if type(selectString) ~= "function" then return false end
+
+    local P = colors()
+    local occurrences = {}
+    for _, item in ipairs(money) do
+        occurrences[item] = (occurrences[item] or 0) + 1
+        local found = selectString(item, occurrences[item])
+        if found and found >= 0 then
+            local r, g, b = U.hex_to_rgb(self:money_color(item, P))
+            if r and type(setFgColor) == "function" then pcall(setFgColor, r, g, b) end
+            if type(resetFormat) == "function" then pcall(resetFormat) end
+        end
+    end
+    return true
+end
+
 function R:print_item(item, money)
     local P = colors()
     local amount, name = self:parse_amount(item)
@@ -187,6 +246,11 @@ function R:install()
     self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
         [[^\s*(Otwarty|Zamkniety) (.+?) jest pusty\.\s*$]],
         function() R:show_empty(matches[2], matches[3]) end
+    )
+
+    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
+        [[^.*(?:monet|miedziak).*$]],
+        function() R:highlight_world_money(getCurrentLine()) end
     )
 end
 

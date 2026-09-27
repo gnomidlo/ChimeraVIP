@@ -24,5 +24,33 @@ check('dwadziescia srebrnych monet', '20', 'srebrnych monet')
 check('wiele zlotych monet', '~', 'zlotych monet')
 check('ogromny stos monet', '1k+', 'monet')
 check('100 monet', '100', 'monet')
+
+local selected, colored = {}, {}
+selectString = function(text, occurrence)
+    selected[#selected + 1] = {text=text, occurrence=occurrence}
+    return 0
+end
+setFgColor = function(r, g, b)
+    colored[#colored + 1] = {r, g, b}
+end
+resetFormat = function() end
+
+assert(R:highlight_world_money('18 miedzianych monet i dwie mithrylowe monety.'))
+assert(selected[1].text == '18 miedzianych monet')
+assert(selected[2].text == 'dwie mithrylowe monety')
+assert(#colored == 2)
+assert(R:highlight_world_money('17 miedzianych monet.'))
+assert(R:highlight_world_money('Mithrylowa moneta.'))
+local before_mixed = #selected
+assert(R:highlight_world_money('Ostry dlugi noz i 17 miedzianych monet.'))
+assert(#selected == before_mixed + 1)
+assert(selected[#selected].text == '17 miedzianych monet')
+assert(R:highlight_world_money('Kupiec chce 17 miedzianych monet.'))
+assert(selected[#selected].text == '17 miedzianych monet')
+assert(R:highlight_world_money('Na stole lezy mithrylowa moneta.'))
+assert(selected[#selected].text == 'mithrylowa moneta')
+assert(R:highlight_world_money('17 miedzianych monet i 17 miedzianych monet.'))
+assert(selected[#selected - 1].occurrence == 1 and selected[#selected].occurrence == 2)
+print('World money highlighting: PASS')
 check('miecz', '1', 'miecz')
 print('Containers tests: PASS')
