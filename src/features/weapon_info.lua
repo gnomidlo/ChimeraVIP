@@ -309,10 +309,13 @@ function W:show_summary()
             hecho(armor_damage_line(c.armor, "blunt", "OBUCHOWE", P.peach, P))
         end
         if c.shield_parry or c.shield_parry_text then
-            local parry = {}
-            if c.shield_parry then parry[#parry + 1] = P.text_muted .. "wklad: " .. P.blue .. tostring(c.shield_parry) end
-            if c.shield_parry_text then parry[#parry + 1] = P.text_muted .. "opis: " .. P.text .. c.shield_parry_text end
-            hecho("\n  " .. P.lavender .. "PAROWANIE" .. P.text_muted .. "  |  " .. table.concat(parry, P.text_muted .. "  |  "))
+            hecho("\n  " .. P.text_muted .. "PAROWANIE:")
+            if c.shield_parry then
+                hecho("\n    " .. P.blue .. string.format("%-10s", "WKLAD:") .. P.text .. tostring(c.shield_parry))
+            end
+            if c.shield_parry_text then
+                hecho("\n    " .. P.mint .. string.format("%-10s", "OCENA:") .. P.text .. c.shield_parry_text)
+            end
         end
     end
 

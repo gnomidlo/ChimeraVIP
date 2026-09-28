@@ -73,8 +73,8 @@ assert(shield:find("15s", 1, true) and shield:find("10m", 1, true))
 assert(shield:find("3.7 kg", 1, true) and shield:find("1500 ml", 1, true))
 assert(shield:find("24-48h", 1, true))
 assert(shield:find("PAROWANIE", 1, true))
-assert(shield:find("wklad: ", 1, true) and shield:find("36", 1, true))
-assert(shield:find("opis: ", 1, true) and shield:find("zle", 1, true))
+assert(shield:find("WKLAD:", 1, true) and shield:find("36", 1, true))
+assert(shield:find("OCENA:", 1, true) and shield:find("zle", 1, true))
 
 output = {}
 W:start("masywny wyszczerbiony tasak")
