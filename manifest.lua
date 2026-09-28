@@ -1,11 +1,11 @@
 return {
     name = "ChimeraVIP",
-    version = "0.143",
+    version = "0.144",
     schema = 2,
     tested_upstream = "4.3",
     raw_base = "https://raw.githubusercontent.com/gnomidlo/ChimeraVIP/main/",
     changes = {
-        "Umiejetnosci: laczne parsowanie teorii, premii i cwiczen",
+        "Tarcze: opis i efektywny wklad do parowania w karcie oceny",
     },
     files = {
         "loader.lua",
@@ -51,7 +51,7 @@ return {
         ["src/features/tactical_aliases.lua"] = {hash="9d104ccc8c5e29503cede71bd338be8576bca0c3", size=4997},
         ["loader.lua"] = {hash="1381414d89e55d2fad70beb8f42e48098d4b1802", size=4501},
         ["src/init.lua"] = {hash="bf9705ab9c259be16e18a8da2e6e68cfdaaf5175", size=2228},
-        ["src/core/bootstrap.lua"] = {hash="ba588bb6d0cf6ae1c1dc0eb1c16e846347784401", size=1471},
+        ["src/core/bootstrap.lua"] = {hash="4b380a251e48d1ece60fefde48488697b6d95887", size=1471},
         ["src/core/util.lua"] = {hash="7561cd9259be9ff0ce74228e9048eef0b5aba280", size=6686},
         ["src/core/hash.lua"] = {hash="362c18bf131c9939d03b59dd50568d66de8f6a5e", size=2118},
         ["src/integrations/runtime.lua"] = {hash="e8e4a7efac14fcb7ac6f6f0d3cc473f42e556d7a", size=2649},
@@ -83,7 +83,7 @@ return {
         ["src/features/character_sheet.lua"] = {hash="8138c16473f1d3dfb2c1b72af07b0625a9cb460c", size=5804},
         ["src/features/retainer_progress.lua"] = {hash="4a45a38e4375237d539756fce1bc1024b4e23d0e", size=8817},
         ["src/features/equipment_view.lua"] = {hash="14d6f882f2b48d1b937603949a7d21b81027e49b", size=1721},
-        ["src/features/weapon_info.lua"] = {hash="52eb2d36cc98e34e10c1609f898c760a40848385", size=15302},
+        ["src/features/weapon_info.lua"] = {hash="752a18540cc514150ef97c5f475259b5f1b9661c", size=16526},
         ["src/ui/footer_controls.lua"] = {hash="7c5cc9bd01de155992a81f520475ba72b2096061", size=12941},
         ["src/ui/module_controls.lua"] = {hash="d678888ba23e8955db0d108b6de6ad75265837cb", size=3660}
     },

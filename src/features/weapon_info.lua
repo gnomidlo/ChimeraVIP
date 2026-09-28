@@ -241,6 +241,19 @@ function W:on_armor(text)
     self:schedule_summary()
 end
 
+function W:on_shield_parry_text(text)
+    local c = self:ensure_capture()
+    c.kind = "armor"
+    c.shield_parry_text = trim(text)
+end
+
+function W:on_shield_parry(value)
+    local c = self:ensure_capture()
+    c.kind = "armor"
+    c.shield_parry = tonumber(value)
+    self:schedule_summary()
+end
+
 function W:show_summary()
     local c = self.capture
     if type(c) ~= "table" then return end
@@ -295,6 +308,12 @@ function W:show_summary()
             hecho(armor_damage_line(c.armor, "slash", "CIETE", P.mint, P))
             hecho(armor_damage_line(c.armor, "blunt", "OBUCHOWE", P.peach, P))
         end
+        if c.shield_parry or c.shield_parry_text then
+            local parry = {}
+            if c.shield_parry then parry[#parry + 1] = P.text_muted .. "wklad: " .. P.blue .. tostring(c.shield_parry) end
+            if c.shield_parry_text then parry[#parry + 1] = P.text_muted .. "opis: " .. P.text .. c.shield_parry_text end
+            hecho("\n  " .. P.lavender .. "PAROWANIE" .. P.text_muted .. "  |  " .. table.concat(parry, P.text_muted .. "  |  "))
+        end
     end
 
     hecho("\n" .. P.separator .. "-------------------------------------------------------\n")
@@ -308,6 +327,7 @@ function W:show_help()
         .. "\n" .. P.text_muted .. "Stan opisowy: skala 1-5 dla tarcz i pozostalego sprzetu, 1-7 dla broni."
         .. "\n" .. P.text_muted .. "Czas sluzenia jest mapowany na przyblizony zakres godzin."
         .. "\n" .. P.text_muted .. "KP jest rozbite na klute, ciete i obuchowe, aby latwo porownac ochrone lokacji."
+        .. "\n" .. P.text_muted .. "Dla tarcz karta pokazuje opis oraz efektywny wklad do parowania dla aktualnej postaci."
         .. "\n" .. P.text_muted .. "Dla broni SUMA = WYW + SKUT; nie zakladamy obecnie zadnej maksymalnej skali."
         .. "\n\n" .. P.mint .. "/bron pomoc" .. P.text_muted .. "  ta pomoc\n")
 end
@@ -330,6 +350,8 @@ function W:install()
     self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger([[^Obrazenia:\s*(.+?)\s*$]], function() W:on_damage(matches[2]) end)
     self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger([[^Wywazenie:\s*(.*?)\s*\[(\d+)\]\s+Skutecznosc:\s*(.*?)\s*\[(\d+)\]\s*$]], function() W:on_weapon_scores(matches[2], matches[3], matches[4], matches[5]) end)
     self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger([[^Klasa pancerza \(klute/ciete/obuchowe\):\s*(.+?)\.\s*$]], function() W:on_armor(matches[2]) end)
+    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger([[^.*Ponadto paruje ciosy (.+?)\.\s*$]], function() W:on_shield_parry_text(matches[2]) end)
+    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger([[^Efektywny wklad tarczy do parowania dla ciebie:\s*(\d+)\.\s*$]], function() W:on_shield_parry(matches[2]) end)
 
     self.alias_ids[#self.alias_ids + 1] = tempAlias([[^/bron (?:pomoc|help)$]], function() W:show_help() end)
 end
