@@ -67,14 +67,14 @@ for _, clickable in ipairs({false, true}) do
     S:finish_skills()
     local rendered = table.concat(output):gsub('#%x%x%x%x%x%x', '')
     local width = math.max(22, #('opieka nad zwierzetami') + 2)
-    local function row(name, level, theory, exercises)
+    local function row(name, level, theory, bonus, exercises)
         return name .. string.rep(' ', width - #name)
-            .. string.format('%8s%8s%14s', level, theory, exercises)
+            .. string.format('%10s%8s%8s%12s', level, theory, bonus, exercises)
     end
-    assert(rendered:find(row('', 'poziom', 'teoria', 'cwiczenia'), 1, true))
-    assert(rendered:find(row('bronie drzewcowe', '30', '65', '154/281'), 1, true))
-    assert(rendered:find(row('opieka nad zwierzetami', '74%', '--', '--'), 1, true))
-    assert(rendered:find(row('tropienie', '75%', '--', '--'), 1, true))
+    assert(rendered:find(row('', 'praktyka', 'teoria', 'premia', 'cwiczenia'), 1, true))
+    assert(rendered:find(row('bronie drzewcowe', '30', '65', '--', '154/281'), 1, true))
+    assert(rendered:find(row('opieka nad zwierzetami', '74%', '--', '--', '--'), 1, true))
+    assert(rendered:find(row('tropienie', '75%', '--', '--', '--'), 1, true))
     if clickable then assert(table.concat(hints):find('doskonale', 1, true)) end
 end
 print('Mixed skill column alignment and tooltips: PASS')
@@ -100,11 +100,11 @@ local function render(value, theory)
         theory_level='dobrze', exercises=0, required=281})
 end
 render(30, 40)
-assert(cells[1] == c75 .. string.format('%8s', '30'))
+assert(cells[1] == c75 .. string.format('%10s', '30'))
 render(30, 100)
-assert(cells[3] == c30 .. string.format('%8s', '30'))
+assert(cells[3] == c30 .. string.format('%10s', '30'))
 render(40, 40)
-assert(cells[5] == c100 .. string.format('%8s', '40'))
+assert(cells[5] == c100 .. string.format('%10s', '40'))
 print('Rendered tooltip links carry their own colors: PASS')
 S:start_skills()
 local rows = {
@@ -147,8 +147,8 @@ hechoLink = function(text, _, hint)
     numeric_output[#numeric_output+1] = text
 end
 S:finish_skills()
-assert(table.concat(numeric_output):find('(premia +20)', 1, true))
-assert(table.concat(numeric_output):find('(premia +7)', 1, true))
+assert(table.concat(numeric_output):find('+20', 1, true))
+assert(table.concat(numeric_output):find('+7', 1, true))
 assert(S.previous_skills['ukrywanie sie'].value == 100)
 print('Numeric skills, two columns, bonus and repeated report: PASS')
 S:start_skills()
@@ -170,10 +170,33 @@ hechoLink = function(text) beginner_output[#beginner_output+1] = text end
 S:finish_skills()
 local beginner_rendered = table.concat(beginner_output):gsub('#%x%x%x%x%x%x', '')
 assert(beginner_rendered:find('walka bez broni', 1, true))
-assert(beginner_rendered:find(string.format('%8s%8s%14s', '17', '17', '--'), 1, true))
-assert(beginner_rendered:find(string.format('%8s%8s%14s', '18', '18', '--'), 1, true))
-assert(beginner_rendered:find(string.format('%8s%8s%14s', '20', '20', '--'), 1, true))
+assert(beginner_rendered:find(string.format('%10s%8s%8s%12s', '17', '17', '--', '--'), 1, true))
+assert(beginner_rendered:find(string.format('%10s%8s%8s%12s', '18', '18', '--', '--'), 1, true))
+assert(beginner_rendered:find(string.format('%10s%8s%8s%12s', '20', '20', '--', '--'), 1, true))
 print('Theory-only beginner skills and duplicate block: PASS')
+
+S:start_skills()
+local table_rows = {
+    'topory                       10      10',
+    'mloty                        26      26',
+    'wprawne uderzenie            31      70          141/265',
+    'parowanie                    72      75      +7    0/439',
+}
+for _, row in ipairs(table_rows) do assert(S:parse_practice_table_line(row), row) end
+assert(S:parse_remaining_skill_line('Kowalstwo: 1/500'))
+assert(S.skill_capture.skills.topory.value == 10 and S.skill_capture.skills.topory.theory == 10)
+assert(S.skill_capture.skills['wprawne uderzenie'].exercises == 141)
+assert(S.skill_capture.skills.parowanie.bonus == 7 and S.skill_capture.skills.parowanie.required == 439)
+assert(S.skill_capture.abilities.kowalstwo.kind == 'remaining')
+local new_output = {}
+hecho = function(text) new_output[#new_output+1] = text end
+hechoLink = nil
+S:finish_skills()
+local new_rendered = table.concat(new_output):gsub('#%x%x%x%x%x%x', '')
+assert(new_rendered:find('praktyka', 1, true) and new_rendered:find('premia', 1, true))
+assert(new_rendered:find('POZOSTALE UMIEJETNOSCI', 1, true))
+assert(new_rendered:find('1/500', 1, true) and new_rendered:find('0.20%', 1, true))
+print('Table skills and remaining progress: PASS')
 
 -- Growth messages are visual only; session totals come from complete snapshots.
 S.previous_skills = {}

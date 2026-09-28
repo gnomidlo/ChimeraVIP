@@ -109,7 +109,7 @@ function S:add_skill(name, level, value)
     self.skill_capture.skills[key] = {name=name, level=level, value=value}
 end
 
-function S:add_ability(name, level, value, maximum)
+function S:add_ability(name, level, value, maximum, kind)
     if not self.skill_capture then return end
     name, level = trim(name), trim(level)
     value, maximum = tonumber(value), tonumber(maximum)
@@ -118,8 +118,40 @@ function S:add_ability(name, level, value, maximum)
     if not self.skill_capture.abilities[key] then self.skill_capture.ability_order[#self.skill_capture.ability_order + 1] = key end
     self.skill_capture.abilities[key] = {
         name=name, level=level, value=value, maximum=maximum,
-        percent=(value / maximum) * 100,
+        percent=(value / maximum) * 100, kind=kind,
     }
+end
+
+function S:parse_remaining_skill_line(line)
+    if not self.skill_capture then return false end
+    local name, value, maximum = trim(line):match("^(.-):%s*(%d+)/(%d+)%s*$")
+    if not name or tonumber(maximum) <= 0 then return false end
+    self:add_ability(name, "Postep", value, maximum, "remaining")
+    return true
+end
+
+function S:parse_practice_table_line(line)
+    if not self.skill_capture then return false end
+    local name, practice, theory, rest = trim(line):match("^(.-)%s+(%d+)%s+(%d+)%s*(.*)$")
+    if not name or trim(name) == "" then return false end
+    local bonus, exercises, required
+    rest = trim(rest)
+    if rest ~= "" then
+        bonus, exercises, required = rest:match("^([+-]%d+)%s+(%d+)/(%d+)$")
+        if not bonus then exercises, required = rest:match("^(%d+)/(%d+)$") end
+        if not exercises and not bonus then bonus = rest:match("^([+-]%d+)$") or rest:match("^(%d+)$") end
+        if not bonus and not exercises then return false end
+        if required and tonumber(required) <= 0 then return false end
+    end
+    self:add_skill(name, "Poziom: " .. practice, practice)
+    local skill = self.skill_capture.skills[normalize(name)]
+    skill.numeric = true
+    skill.theory = tonumber(theory)
+    skill.theory_level = "Teoria: " .. theory
+    skill.bonus = tonumber(bonus)
+    skill.exercises = tonumber(exercises)
+    skill.required = tonumber(required)
+    return true
 end
 
 function S:parse_ability_line(line)
@@ -229,11 +261,12 @@ function S:print_skill(skill, previous)
             hint = hint .. (percent and ("; praktyka / teoria: " .. format_percent(percent))
                 or "; brak dodatniej wartosci teorii")
         end
-        cell(string.format("%8s", value), hint, color)
+        cell(string.format("%10s", value), hint, color)
         cell(string.format("%8s", skill.theory or "--"), skill.theory_level or "Nie dotyczy", P.blue)
         local exercises = skill.exercises and (skill.exercises .. "/" .. skill.required) or "--"
-        hecho(P.text_muted .. string.format("%14s", exercises)
-            .. (skill.bonus and (P.lavender .. string.format("  (premia %+d)", skill.bonus)) or "")
+        local bonus = skill.bonus and string.format("%+d", skill.bonus) or "--"
+        hecho(P.lavender .. string.format("%8s", bonus)
+            .. P.text_muted .. string.format("%12s", exercises)
             .. "  " .. delta_text(delta, (skill.theory or skill.numeric) and "" or "%", P))
         return
     end
@@ -245,6 +278,15 @@ function S:print_ability(ability, previous)
     hecho(P.text .. pad(ability.name, NAME_WIDTH)
         .. P.text_muted .. pad(ability.level, LEVEL_WIDTH)
         .. value_color(ability.percent, P) .. string.format("%" .. tostring(PERCENT_WIDTH) .. "s", format_percent(ability.percent))
+        .. "  " .. delta_percent(delta, P))
+end
+
+function S:print_remaining_skill(ability, previous)
+    local P = colors()
+    local delta = previous and (ability.percent - previous.percent) or 0
+    hecho(P.text .. pad(ability.name, NAME_WIDTH)
+        .. P.blue .. string.format("%12s", tostring(ability.value) .. "/" .. tostring(ability.maximum))
+        .. value_color(ability.percent, P) .. string.format("%10s", format_percent(ability.percent))
         .. "  " .. delta_percent(delta, P))
 end
 
@@ -293,20 +335,34 @@ function S:finish_skills()
             self.name_width = math.max(self.name_width, U.text_width(skill.name) + 2)
         end
         hecho("\n\n" .. P.lavender .. "UMIEJETNOSCI"
-            .. "\n" .. P.separator .. "-------------------------------------------------------\n")
+            .. "\n" .. P.separator .. string.rep("-", self.name_width + 38) .. "\n")
         hecho(P.text_muted .. pad("", self.name_width)
-            .. string.format("%8s%8s%14s", "poziom", "teoria", "cwiczenia") .. "\n")
+            .. string.format("%10s%8s%8s%12s", "praktyka", "teoria", "premia", "cwiczenia") .. "\n")
         for _, key in ipairs(capture.order) do
             self:print_skill(capture.skills[key], self.previous_skills[key])
             hecho("\n")
         end
     end
 
-    if #capture.ability_order > 0 then
+    local abilities, remaining = {}, {}
+    for _, key in ipairs(capture.ability_order) do
+        if capture.abilities[key].kind == "remaining" then remaining[#remaining + 1] = key
+        else abilities[#abilities + 1] = key end
+    end
+    if #abilities > 0 then
         hecho("\n" .. P.lavender .. "ZDOLNOSCI"
             .. "\n" .. P.separator .. "-------------------------------------------------------\n")
-        for _, key in ipairs(capture.ability_order) do
+        for _, key in ipairs(abilities) do
             self:print_ability(capture.abilities[key], self.previous_abilities[key])
+            hecho("\n")
+        end
+    end
+    if #remaining > 0 then
+        hecho("\n" .. P.lavender .. "POZOSTALE UMIEJETNOSCI"
+            .. "\n" .. P.separator .. "-------------------------------------------------------\n")
+        hecho(P.text_muted .. pad("", NAME_WIDTH) .. string.format("%12s%10s", "postep", "procent") .. "\n")
+        for _, key in ipairs(remaining) do
+            self:print_remaining_skill(capture.abilities[key], self.previous_abilities[key])
             hecho("\n")
         end
     end
@@ -437,6 +493,29 @@ function S:install()
                 gag_line()
                 S:touch_skill_timer()
             end
+        end
+    )
+
+    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
+        [[^\s*(?:Umiejetnosci z teoria i praktyka:|Pozostale umiejetnosci:|Umiejetnosc\s+Praktyka\s+Teoria\s+Premia\s+Cwiczenia)\s*$]],
+        function()
+            if S.skill_capture then gag_line(); S:touch_skill_timer() end
+        end
+    )
+
+    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
+        [[^\s*.+?\s+\d+\s+\d+(?:\s+[+-]?\d+)?(?:\s+\d+/\d+)?\s*$]],
+        function()
+            if not S.skill_capture then return end
+            if S:parse_practice_table_line(getCurrentLine()) then gag_line(); S:touch_skill_timer() end
+        end
+    )
+
+    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
+        [[^\s*.+?:\s*\d+/\d+\s*$]],
+        function()
+            if not S.skill_capture then return end
+            if S:parse_remaining_skill_line(getCurrentLine()) then gag_line(); S:touch_skill_timer() end
         end
     )
 
