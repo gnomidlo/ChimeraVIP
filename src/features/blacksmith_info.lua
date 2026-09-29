@@ -152,7 +152,7 @@ function B:install()
         {"Krytyczna rozbiorka!", "mint"}, {"Zaoszczedzony material:", "yellow"},
     }) do
         local label, color_key = event[1], event[2]
-        self.trigger_ids[#self.trigger_ids+1] = tempSubstringTrigger(label, function()
+        self.trigger_ids[#self.trigger_ids+1] = tempRegexTrigger(U.pcre_escape(label), function()
             B:highlight_event(label, color_key)
         end)
     end

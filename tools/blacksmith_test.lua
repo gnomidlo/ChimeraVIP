@@ -1,7 +1,6 @@
 local output = {}
 function hecho(text) output[#output+1] = tostring(text or "") end
 function tempRegexTrigger() return 1 end
-function tempSubstringTrigger() return 1 end
 function killTrigger() end
 function tempTimer() return 1 end
 function killTimer() end
