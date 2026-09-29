@@ -1,11 +1,11 @@
 return {
     name = "ChimeraVIP",
-    version = "0.148",
+    version = "0.149",
     schema = 2,
     tested_upstream = "4.3",
     raw_base = "https://raw.githubusercontent.com/gnomidlo/ChimeraVIP/main/",
     changes = {
-        "Zdolnosci: opis, dokladny postep i informacja o potrzebnej lekcji",
+        "Kowal: karta stanu, wzmocnien, kosztow i rozbiorki przedmiotu",
     },
     files = {
         "loader.lua",
@@ -44,14 +44,15 @@ return {
         "src/features/retainer_progress.lua",
         "src/features/equipment_view.lua",
         "src/features/weapon_info.lua",
+        "src/features/blacksmith_info.lua",
         "src/ui/footer_controls.lua",
         "src/ui/module_controls.lua"
     },
     file_meta = {
         ["src/features/tactical_aliases.lua"] = {hash="9d104ccc8c5e29503cede71bd338be8576bca0c3", size=4997},
         ["loader.lua"] = {hash="1381414d89e55d2fad70beb8f42e48098d4b1802", size=4501},
-        ["src/init.lua"] = {hash="bf9705ab9c259be16e18a8da2e6e68cfdaaf5175", size=2228},
-        ["src/core/bootstrap.lua"] = {hash="9f7b99c66dd53abe720b64801271cfccf8480e26", size=1471},
+        ["src/init.lua"] = {hash="1a95da33f3abbe79a261ac17c3f8619d07e133c9", size=2269},
+        ["src/core/bootstrap.lua"] = {hash="96a7f0951ed0c0c65e65800539639858fa1d0984", size=1471},
         ["src/core/util.lua"] = {hash="7561cd9259be9ff0ce74228e9048eef0b5aba280", size=6686},
         ["src/core/hash.lua"] = {hash="362c18bf131c9939d03b59dd50568d66de8f6a5e", size=2118},
         ["src/integrations/runtime.lua"] = {hash="e8e4a7efac14fcb7ac6f6f0d3cc473f42e556d7a", size=2649},
@@ -84,6 +85,7 @@ return {
         ["src/features/retainer_progress.lua"] = {hash="4a45a38e4375237d539756fce1bc1024b4e23d0e", size=8817},
         ["src/features/equipment_view.lua"] = {hash="14d6f882f2b48d1b937603949a7d21b81027e49b", size=1721},
         ["src/features/weapon_info.lua"] = {hash="a243cd891af622974582e0e2c5d35c940cee4026", size=16514},
+        ["src/features/blacksmith_info.lua"] = {hash="77c2ea4302acfa220215c886170d6de10abbacf2", size=7068},
         ["src/ui/footer_controls.lua"] = {hash="7c5cc9bd01de155992a81f520475ba72b2096061", size=12941},
         ["src/ui/module_controls.lua"] = {hash="d678888ba23e8955db0d108b6de6ad75265837cb", size=3660}
     },
