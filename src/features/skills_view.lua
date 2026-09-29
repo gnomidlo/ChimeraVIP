@@ -275,18 +275,23 @@ end
 function S:print_ability(ability, previous)
     local P = colors()
     local delta = previous and (ability.percent - previous.percent) or 0
+    local status = ability.value >= ability.maximum and "LEKCJA" or ""
     hecho(P.text .. pad(ability.name, NAME_WIDTH)
         .. P.text_muted .. pad(ability.level, LEVEL_WIDTH)
-        .. value_color(ability.percent, P) .. string.format("%" .. tostring(PERCENT_WIDTH) .. "s", format_percent(ability.percent))
+        .. P.blue .. string.format("%12s", tostring(ability.value) .. "/" .. tostring(ability.maximum))
+        .. value_color(ability.percent, P) .. string.format("%10s", format_percent(ability.percent))
+        .. P.yellow .. string.format("%10s", status)
         .. "  " .. delta_percent(delta, P))
 end
 
 function S:print_remaining_skill(ability, previous)
     local P = colors()
     local delta = previous and (ability.percent - previous.percent) or 0
+    local status = ability.value >= ability.maximum and "LEKCJA" or ""
     hecho(P.text .. pad(ability.name, NAME_WIDTH)
         .. P.blue .. string.format("%12s", tostring(ability.value) .. "/" .. tostring(ability.maximum))
         .. value_color(ability.percent, P) .. string.format("%10s", format_percent(ability.percent))
+        .. P.yellow .. string.format("%10s", status)
         .. "  " .. delta_percent(delta, P))
 end
 
@@ -351,7 +356,9 @@ function S:finish_skills()
     end
     if #abilities > 0 then
         hecho("\n" .. P.lavender .. "ZDOLNOSCI"
-            .. "\n" .. P.separator .. "-------------------------------------------------------\n")
+            .. "\n" .. P.separator .. "--------------------------------------------------------------------------\n")
+        hecho(P.text_muted .. pad("", NAME_WIDTH) .. pad("opis", LEVEL_WIDTH)
+            .. string.format("%12s%10s%10s", "postep", "procent", "status") .. "\n")
         for _, key in ipairs(abilities) do
             self:print_ability(capture.abilities[key], self.previous_abilities[key])
             hecho("\n")
@@ -360,7 +367,7 @@ function S:finish_skills()
     if #remaining > 0 then
         hecho("\n" .. P.lavender .. "POZOSTALE UMIEJETNOSCI"
             .. "\n" .. P.separator .. "-------------------------------------------------------\n")
-        hecho(P.text_muted .. pad("", NAME_WIDTH) .. string.format("%12s%10s", "postep", "procent") .. "\n")
+        hecho(P.text_muted .. pad("", NAME_WIDTH) .. string.format("%12s%10s%10s", "postep", "procent", "status") .. "\n")
         for _, key in ipairs(remaining) do
             self:print_remaining_skill(capture.abilities[key], self.previous_abilities[key])
             hecho("\n")
@@ -520,7 +527,7 @@ function S:install()
     )
 
     self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
-        [[^\s*Zdolnosci:\s*$]],
+        [[^\s*(?:Zdolnosci:|Znasz nastepujace zdolnosci:)\s*$]],
         function()
             if S.skill_capture then
                 gag_line()

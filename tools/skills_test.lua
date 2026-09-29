@@ -35,6 +35,15 @@ local multi = S.skill_capture.abilities['magiczna intuicja']
 assert(multi and multi.level == 'zadziwiajaco dobrze')
 assert(math.abs(multi.percent - 75) < 0.000001)
 
+local ability_output = {}
+hecho = function(text) ability_output[#ability_output+1] = text end
+S:print_ability({name='kowalstwo', level='kiepsko', value=2000, maximum=2000, percent=100})
+local ability_rendered = table.concat(ability_output):gsub('#%x%x%x%x%x%x', '')
+assert(ability_rendered:find('kiepsko', 1, true))
+assert(ability_rendered:find('2000/2000', 1, true))
+assert(ability_rendered:find('100%', 1, true))
+assert(ability_rendered:find('LEKCJA', 1, true))
+
 print('Skills tests: PASS')
 S:start_skills()
 local line = 'bronie drzewcowe:  pobieznie (teoria: znakomicie) [30 z 65; cwiczenia 154/281]'
