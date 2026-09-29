@@ -95,11 +95,7 @@ ST.trigger_ids[#ST.trigger_ids + 1] = tempRegexTrigger(
 
         local snapshot = ST:build_snapshot()
         local line_sep = "\n  " .. P.separator .. "--------------------------------------------------\n"
-        local line_avg = string.format(
-            "  %sSrednia: %sFiz %s%.1f %s| %sMent %s%.1f",
-            P.text, P.blue, P.mint, snapshot.physical_average, P.text_muted,
-            P.lavender, P.mint, snapshot.mental_average
-        )
+        local line_avg = ST:average_line(snapshot, P)
 
         hecho(line_sep .. line_avg)
         local record, event_kind, diff, spent = ST:update_progress(snapshot)

@@ -1,11 +1,11 @@
 return {
     name = "ChimeraVIP",
-    version = "0.146",
+    version = "0.147",
     schema = 2,
     tested_upstream = "4.3",
     raw_base = "https://raw.githubusercontent.com/gnomidlo/ChimeraVIP/main/",
     changes = {
-        "Umiejetnosci: nowy raport tabelaryczny i pozostaly postep",
+        "Cechy: laczna srednia z fizycznymi i mentalnymi skladowymi",
     },
     files = {
         "loader.lua",
@@ -51,7 +51,7 @@ return {
         ["src/features/tactical_aliases.lua"] = {hash="9d104ccc8c5e29503cede71bd338be8576bca0c3", size=4997},
         ["loader.lua"] = {hash="1381414d89e55d2fad70beb8f42e48098d4b1802", size=4501},
         ["src/init.lua"] = {hash="bf9705ab9c259be16e18a8da2e6e68cfdaaf5175", size=2228},
-        ["src/core/bootstrap.lua"] = {hash="fdb649c64bb8ae48d190452045bd2a2dde3ce55b", size=1471},
+        ["src/core/bootstrap.lua"] = {hash="350a52ab9ed0f7e2f61cb0195cb63eca2bbc6d00", size=1471},
         ["src/core/util.lua"] = {hash="7561cd9259be9ff0ce74228e9048eef0b5aba280", size=6686},
         ["src/core/hash.lua"] = {hash="362c18bf131c9939d03b59dd50568d66de8f6a5e", size=2118},
         ["src/integrations/runtime.lua"] = {hash="e8e4a7efac14fcb7ac6f6f0d3cc473f42e556d7a", size=2649},
@@ -71,8 +71,8 @@ return {
         ["src/features/tactical_states_view.lua"] = {hash="f9e959d8e32d2ef9826227e715afc2fe8f155fbb", size=9574},
         ["src/features/xp_tracker.lua"] = {hash="697e8f74535c5aa003e8b2f63db58953f0b16692", size=24356},
         ["src/features/xp_kill_card_view.lua"] = {hash="2bf985dba91536ac5f857d921e36e2e4fd4c4041", size=1374},
-        ["src/features/stats.lua"] = {hash="f6f04abb793f20ad794483b3d41952cd60561f38", size=13741},
-        ["src/features/stats_compact_view.lua"] = {hash="9b0405f3783465a42df38a24e8a4fa2c81f1ec51", size=4274},
+        ["src/features/stats.lua"] = {hash="143e47bd6ea51b4e20d9fce00e5cf6078eb9b0e8", size=14002},
+        ["src/features/stats_compact_view.lua"] = {hash="0e0e663bd3663b9c92358a821d9f316fda29dc2c", size=4086},
         ["src/features/report_actions.lua"] = {hash="fd94ede283c639df08b8316e286f3bc3d694555b", size=552},
         ["src/features/characters.lua"] = {hash="fc3f0f5a113eb83f54f148106cc099492f1d38ff", size=20914},
         ["src/features/settings_bindings.lua"] = {hash="3015d9994667fc4959029f8faf76c69f67ab7d3f", size=2959},

@@ -215,12 +215,23 @@ function ST:build_snapshot()
     local fiz = (self.current.Sil or 0) + (self.current.Zr or 0) + (self.current.Wt or 0)
     local ment = (self.current.Int or 0) + (self.current.Md or 0)
     local odw = self.current.Odw or 0
+    local total = fiz + ment + odw
     self.last = {
         header=self.header, stats=copy_table(self.current), physical=fiz, mental=ment,
         physical_average=fiz / 3, mental_average=ment / 2,
-        courage=odw, total=fiz + ment + odw, captured_at=os.time(),
+        average=total / 6, courage=odw, total=total, captured_at=os.time(),
     }
     return self.last
+end
+
+function ST:average_line(snapshot, palette)
+    local P = palette or colors()
+    return string.format(
+        "  %sSREDNIA: %s%.1f %s(fizyczne: %s%.1f %s| mentalne: %s%.1f%s)",
+        P.lavender, P.mint, snapshot.average or ((snapshot.total or 0) / 6), P.text_muted,
+        P.blue, snapshot.physical_average or 0, P.text_muted,
+        P.lavender, snapshot.mental_average or 0, P.text_muted
+    )
 end
 
 function ST:show_progress_footer(record, event_kind, diff, spent)
@@ -365,11 +376,7 @@ ST.trigger_ids[#ST.trigger_ids + 1] = tempRegexTrigger(
         local snapshot = ST:build_snapshot()
         local P = colors()
         local line_sep = "\n  " .. P.separator .. "--------------------------------------------------\n"
-        local line_avg = string.format(
-            "  %sSrednia: %sFiz %s%.1f %s| %sMent %s%.1f",
-            P.text, P.blue, P.mint, snapshot.physical_average, P.text_muted,
-            P.lavender, P.mint, snapshot.mental_average
-        )
+        local line_avg = ST:average_line(snapshot, P)
 
         hecho(stat_line .. line_sep .. line_avg)
         local record, event_kind, diff, spent = ST:update_progress(snapshot)
