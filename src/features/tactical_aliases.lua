@@ -61,7 +61,7 @@ local function enemy_target(mark)
     if not refresh_snapshot() then return nil end
     local id = T:get_enemy_target(mark)
     if not id then
-        note("Nie ma przeciwnika oznaczonego [" .. mark .. "].", P().rose)
+        note("Nie ma postaci spoza druzyny oznaczonej [" .. mark .. "].", P().rose)
         return nil
     end
     return tostring(id)

@@ -118,13 +118,7 @@ function T:enemy_mark(id)
 end
 
 function T:other_mark(id)
-    id = tostring_id(id)
-    if not id then return "?" end
-    if not self.room_other_marks[id] then
-        self.room_other_marks[id] = alpha_mark(self.other_next, false)
-        self.other_next = self.other_next + 1
-    end
-    return self.room_other_marks[id]
+    return self:enemy_mark(id)
 end
 
 function T:build_snapshot()
@@ -144,13 +138,17 @@ function T:build_snapshot()
         entities = {},
         group = {},
         enemies = {},
+        other_fighters = {},
         others = {},
         group_ids = {},
         engaged_ids = {},
+        team_combat_ids = {},
+        external_combat_ids = {},
         group_in_combat = false,
         marks = {},
         outgoing = {},
         incoming = {},
+        combat_edges = {},
     }
 
     for _, entity in pairs(entities_source) do
@@ -213,6 +211,7 @@ function T:build_snapshot()
                         relation_seen[key] = true
                         snapshot.engaged_ids[attacker] = true
                         snapshot.engaged_ids[defender] = true
+                        snapshot.combat_edges[#snapshot.combat_edges + 1] = {attacker, defender}
                         snapshot.outgoing[attacker] = snapshot.outgoing[attacker] or {}
                         snapshot.incoming[defender] = snapshot.incoming[defender] or {}
                         local out_seen = snapshot.outgoing[attacker]._seen or {}
@@ -228,14 +227,43 @@ function T:build_snapshot()
     end
 
     for id in pairs(snapshot.group_ids) do
-        if snapshot.engaged_ids[id] then snapshot.group_in_combat = true; break end
+        snapshot.team_combat_ids[id] = true
+        if snapshot.engaged_ids[id] then snapshot.group_in_combat = true end
     end
 
-    local enemy_ids = {}
+    -- Traktuj relacje walki jako graf nieskierowany. Tylko komponent polaczony
+    -- z nasza druzyna jest nasza walka; pozostale potyczki sa obce.
+    local changed = true
+    while changed do
+        changed = false
+        for _, edge in ipairs(snapshot.combat_edges) do
+            local attacker, defender = edge[1], edge[2]
+            if snapshot.team_combat_ids[attacker] or snapshot.team_combat_ids[defender] then
+                if not snapshot.team_combat_ids[attacker] then
+                    snapshot.team_combat_ids[attacker] = true
+                    changed = true
+                end
+                if not snapshot.team_combat_ids[defender] then
+                    snapshot.team_combat_ids[defender] = true
+                    changed = true
+                end
+            end
+        end
+    end
+
+    local enemy_ids, other_fighter_ids = {}, {}
     for id in pairs(snapshot.engaged_ids) do
-        if not snapshot.group_ids[id] then enemy_ids[#enemy_ids + 1] = id end
+        if not snapshot.group_ids[id] then
+            if snapshot.team_combat_ids[id] then
+                enemy_ids[#enemy_ids + 1] = id
+            else
+                other_fighter_ids[#other_fighter_ids + 1] = id
+                snapshot.external_combat_ids[id] = true
+            end
+        end
     end
     table.sort(enemy_ids)
+    table.sort(other_fighter_ids)
 
     for _, id in ipairs(enemy_ids) do
         local entity = snapshot.entities[id] or {}
@@ -245,6 +273,18 @@ function T:build_snapshot()
             hp = entity.hp,
             maxhp = entity.maxhp,
             relation = entity.relation,
+        }
+    end
+
+    for _, id in ipairs(other_fighter_ids) do
+        local entity = snapshot.entities[id] or {}
+        snapshot.other_fighters[#snapshot.other_fighters + 1] = {
+            id = id,
+            name = tostring(entity.name or id),
+            hp = entity.hp,
+            maxhp = entity.maxhp,
+            relation = entity.relation,
+            kind = entity.kind,
         }
     end
 
@@ -289,30 +329,19 @@ function T:build_snapshot()
         snapshot.marks[row.id] = mark
     end
 
-    table.sort(snapshot.enemies, function(a, b)
-        local am = tonumber(self:enemy_mark(a.id)) or math.huge
-        local bm = tonumber(self:enemy_mark(b.id)) or math.huge
-        if am == bm then return tostring(a.name) < tostring(b.name) end
-        return am < bm
-    end)
-    for _, row in ipairs(snapshot.enemies) do
-        local mark = self:enemy_mark(row.id)
-        row.mark = mark
-        row.hp_percent = percent(row.hp, row.maxhp)
-        snapshot.marks[row.id] = mark
-    end
-
-    table.sort(snapshot.others, function(a, b)
-        local am = self:other_mark(a.id)
-        local bm = self:other_mark(b.id)
-        if am == bm then return tostring(a.name) < tostring(b.name) end
-        return am < bm
-    end)
-    for _, row in ipairs(snapshot.others) do
-        local mark = self:other_mark(row.id)
-        row.mark = mark
-        row.hp_percent = percent(row.hp, row.maxhp)
-        snapshot.marks[row.id] = mark
+    -- Jedna, gesta numeracja wszystkich postaci spoza druzyny. Najpierw nasi
+    -- przeciwnicy, potem uczestnicy obcej walki, na koncu pozostali na lokacji.
+    self.room_enemy_marks = {}
+    self.room_other_marks = {}
+    self.enemy_next = 1
+    self.other_next = 1
+    for _, rows in ipairs({snapshot.enemies, snapshot.other_fighters, snapshot.others}) do
+        for _, row in ipairs(rows) do
+            local mark = self:enemy_mark(row.id)
+            row.mark = mark
+            row.hp_percent = percent(row.hp, row.maxhp)
+            snapshot.marks[row.id] = mark
+        end
     end
 
     for _, links in pairs(snapshot.outgoing) do links._seen = nil end
@@ -364,13 +393,15 @@ function T:relation_text(id, snapshot, P)
     local parts = {}
     local outgoing = sorted_marks(snapshot.outgoing[id] or {}, snapshot.marks)
     local incoming = sorted_marks(snapshot.incoming[id] or {}, snapshot.marks)
+    local relation_color = snapshot.external_combat_ids[id] and P.text_muted or P.lavender
+    local incoming_color = snapshot.external_combat_ids[id] and P.text_muted or P.rose
 
     if #outgoing > 0 then
-        parts[#parts + 1] = color_tag(P.text_muted) .. " ->[" .. color_tag(P.lavender)
+        parts[#parts + 1] = color_tag(P.text_muted) .. " ->[" .. color_tag(relation_color)
             .. table.concat(outgoing, ",") .. color_tag(P.text_muted) .. "]"
     end
     if #incoming > 0 then
-        parts[#parts + 1] = color_tag(P.text_muted) .. " <-[" .. color_tag(P.rose)
+        parts[#parts + 1] = color_tag(P.text_muted) .. " <-[" .. color_tag(incoming_color)
             .. table.concat(incoming, ",") .. color_tag(P.text_muted) .. "]"
     end
     if #parts == 0 then return "" end
@@ -380,11 +411,18 @@ end
 function T:row_text(row, snapshot, category, P)
     local flag = row.leader and "★" or ""
     local flag_text = (U and U.pad_right and U.pad_right(flag, 2)) or (flag .. (flag == "" and "  " or " "))
+    local row_palette = P
+    if category == "other_fighting" then
+        row_palette = {
+            text_muted=P.text_muted, separator=P.separator, inactive=P.inactive,
+            rose=P.text_muted, peach=P.text_muted, yellow=P.text_muted, mint=P.text_muted,
+        }
+    end
     local hp_text
     if row.hp_percent == nil then
         hp_text = color_tag(P.text_muted) .. " --%"
     else
-        hp_text = color_tag(health_color(P, row.hp_percent)) .. string.format("%3d%%", row.hp_percent)
+        hp_text = color_tag(health_color(row_palette, row.hp_percent)) .. string.format("%3d%%", row.hp_percent)
     end
 
     local mark_color = P.text_muted
@@ -395,13 +433,16 @@ function T:row_text(row, snapshot, category, P)
     elseif category == "enemy" then
         mark_color = P.rose
         name_color = P.rose
+    elseif category == "other_fighting" then
+        mark_color = P.text_muted
+        name_color = P.text_muted
     elseif category == "other" then
         mark_color = P.blue
         if row.relation == "hostile" then name_color = P.peach else name_color = P.text end
     end
 
     return color_tag(row.leader and P.lavender or P.text_muted) .. flag_text
-        .. self:bar(row.hp_percent, P) .. " "
+        .. self:bar(row.hp_percent, row_palette) .. " "
         .. hp_text .. " "
         .. color_tag(mark_color) .. "[" .. tostring(row.mark or "?") .. "] "
         .. color_tag(name_color) .. tostring(row.name or row.id)
@@ -428,6 +469,7 @@ function T:build_frame(snapshot)
 
     section("DRUZYNA", snapshot.group, "group")
     section("WROGOWIE", snapshot.enemies, "enemy")
+    section("INNI WALCZACY", snapshot.other_fighters, "other_fighting")
     section("INNI", snapshot.others, "other")
 
     if #lines == 0 then
@@ -493,18 +535,20 @@ end
 
 function T:get_enemy_target(mark)
     mark = tostring(mark or "")
-    for _, row in ipairs(self.snapshot and self.snapshot.enemies or {}) do
-        if tostring(row.mark or "") == mark then return row.id end
+    for _, rows in ipairs({
+        self.snapshot and self.snapshot.enemies or {},
+        self.snapshot and self.snapshot.other_fighters or {},
+        self.snapshot and self.snapshot.others or {},
+    }) do
+        for _, row in ipairs(rows) do
+            if tostring(row.mark or "") == mark then return row.id end
+        end
     end
     return nil
 end
 
 function T:get_other_target(mark)
-    mark = tostring(mark or ""):lower()
-    for _, row in ipairs(self.snapshot and self.snapshot.others or {}) do
-        if tostring(row.mark or ""):lower() == mark then return row.id end
-    end
-    return nil
+    return self:get_enemy_target(mark)
 end
 
 U.replace_handler(T, "group_state", "gmcp.Chimera.Group.State", function() T:schedule_render() end)

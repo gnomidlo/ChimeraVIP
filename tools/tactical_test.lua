@@ -53,12 +53,17 @@ assert(not A:command('rza','@ a')); assert(not A:command('za','1'))
 assert(not A:command('z','')); assert(not A:command('z','1 extra'))
 assert(not A:command('rza','a')); assert(not A:command('za','Z'))
 eq(#sent,n)
--- Departed actors and ended combat must not resolve through old mark tables.
+-- Departed team members must not resolve through old mark tables.
 gmcp.Chimera.Group.State.members[1].here=0
 assert(not A:command('za','b')); assert(not A:command('rza','b @'))
 eq(T:get_group_target('A'),'ob_other_ally')
+-- All non-team room entities keep numeric, actionable marks outside combat too.
 gmcp.Chimera.Combat.State.relations={}
-assert(not A:command('z','1')); eq(#sent,n)
+assert(A:command('z','1')); eq(sent[#sent],'zabij ob_enemy')
+n=#sent
+-- Once the entity leaves the room, its old mark must stop resolving.
+gmcp.Chimera.Room.Entities.entities[2]=nil
+assert(not A:command('z','1'))
 -- A failed refresh must not use the previous snapshot.
 local original=T.build_snapshot
 T.build_snapshot=function() error('GMCP unavailable') end
@@ -122,4 +127,28 @@ gmcp.Chimera.Combat.State.relations={{attacker='stranger1',defender='stranger2'}
 s=T:build_snapshot(); assert(not s.group_in_combat); eq(T:relation_plain('ob_b',s),'')
 gmcp.Chimera.Combat.State.relations={}
 s=T:build_snapshot(); eq(T:relation_plain('ob_self',s),''); eq(T:relation_plain('ob_b',s),'')
+
+-- Our enemies, unrelated fighters and bystanders share one dense numeric range.
+reset({{id='ob_ally',name='Najemnik',here=1}})
+gmcp.Chimera.Room.Entities.entities[2]={id='enemy_a',name='Ork',hp=80,maxhp=100}
+gmcp.Chimera.Room.Entities.entities[3]={id='enemy_b',name='Goblin',hp=60,maxhp=100}
+gmcp.Chimera.Room.Entities.entities[4]={id='fighter_a',name='Kupiec',hp=90,maxhp=100}
+gmcp.Chimera.Room.Entities.entities[5]={id='fighter_b',name='Zlodziej',hp=70,maxhp=100}
+gmcp.Chimera.Room.Entities.entities[6]={id='bystander_a',name='Straznik',hp=100,maxhp=100}
+gmcp.Chimera.Room.Entities.entities[7]={id='bystander_b',name='Pies',hp=100,maxhp=100}
+gmcp.Chimera.Combat.State.relations={
+    {attacker='enemy_a',defender='ob_self'},
+    {attacker='ob_ally',defender='enemy_b'},
+    {attacker='fighter_a',defender='fighter_b'},
+}
+s=T:build_snapshot()
+eq(#s.enemies,2); eq(#s.other_fighters,2); eq(#s.others,2)
+eq(s.enemies[1].mark,'1'); eq(s.enemies[2].mark,'2')
+eq(s.other_fighters[1].mark,'3'); eq(s.other_fighters[2].mark,'4')
+eq(s.others[1].mark,'5'); eq(s.others[2].mark,'6')
+assert(s.external_combat_ids.fighter_a); assert(s.external_combat_ids.fighter_b)
+assert(not s.external_combat_ids.enemy_a)
+assert(T:build_frame(s):find('INNI WALCZACY',1,true))
+assert(A:command('z','3')); eq(sent[#sent],'zabij fighter_a')
+assert(A:command('z','5')); eq(sent[#sent],'zabij bystander_a')
 print('Tactical GMCP and alias regressions: PASS')

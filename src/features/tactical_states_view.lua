@@ -99,7 +99,10 @@ function T:relation_text(id, snapshot, palette)
     }
     local muted = U and U.decho_tag and U.decho_tag(P.text_muted) or ""
     local marks_color
-    if snapshot and snapshot.group_ids and snapshot.group_ids[id] then
+    if snapshot and snapshot.external_combat_ids and snapshot.external_combat_ids[id] then
+        -- Obca walka ma pozostac czytelna, ale nie konkurowac wizualnie z nasza.
+        marks_color = muted
+    elseif snapshot and snapshot.group_ids and snapshot.group_ids[id] then
         -- Czlonka druzyny atakuja przeciwnicy.
         marks_color = U and U.decho_tag and U.decho_tag(P.rose) or ""
     else
