@@ -220,7 +220,7 @@ hechoLink = nil
 S.previous_skills = {['silne pchniecie']={value=20}, plywanie={value=52}, spostrzegawczosc={value=62}}
 S:finish_skills()
 local changed_rendered = table.concat(changed_output):gsub('#%x%x%x%x%x%x', '')
-assert(changed_rendered:find('DO WYTRAINOWANIA', 1, true))
+assert(changed_rendered:find('do wytrenowania', 1, true))
 assert(changed_rendered:find('+12', 1, true))
 assert(not changed_rendered:find('-7', 1, true))
 print('Trainable skills, short bonuses and safe deltas: PASS')

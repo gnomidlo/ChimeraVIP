@@ -282,7 +282,7 @@ function S:print_skill(skill, previous)
         local bonus = skill.bonus and string.format("%+d", skill.bonus) or "--"
         hecho(P.lavender .. string.format("%8s", bonus)
             .. P.text_muted .. string.format("%12s", exercises)
-            .. (skill.untrained and (P.yellow .. "  DO WYTRAINOWANIA") or "")
+            .. (skill.untrained and (P.yellow .. "  do wytrenowania") or "")
             .. "  " .. delta_text(delta, (skill.theory or skill.numeric) and "" or "%", P))
         return
     end
