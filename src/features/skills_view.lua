@@ -154,6 +154,19 @@ function S:parse_practice_table_line(line)
     return true
 end
 
+function S:parse_trainable_skill_line(line)
+    if not self.skill_capture then return false end
+    local name = trim(line):match("^(.-)%s+%-%-%s+%-%-%s+%(do wytrenowania%)%s*$")
+    name = trim(name)
+    if name == "" then return false end
+    local key = normalize(name)
+    if not self.skill_capture.skills[key] then self.skill_capture.order[#self.skill_capture.order + 1] = key end
+    self.skill_capture.skills[key] = {
+        name=name, level="Do wytrenowania", value=0, numeric=true, untrained=true,
+    }
+    return true
+end
+
 function S:parse_ability_line(line)
     if not self.skill_capture then return false end
     line = trim(line)
@@ -182,7 +195,7 @@ function S:parse_skill_line(line)
                 for part in detail:gmatch("[^;]+") do
                     part = trim(part)
                     local theory = part:match("^teoria%s+(%d+)$")
-                    local bonus = part:match("^premia%s+([+-]%d+)$")
+                    local bonus = part:match("^premia%s+([+-]%d+)$") or part:match("^([+-]%d+)$")
                     local exercises, required = part:match("^cwiczenia%s+(%d+)/(%d+)$")
                     if theory then
                         skill.theory = tonumber(theory)
@@ -243,7 +256,8 @@ end
 
 function S:print_skill(skill, previous)
     local P = colors()
-    local delta = previous and (skill.value - previous.value) or 0
+    local delta = previous and not skill.untrained and not previous.untrained
+        and math.max(0, skill.value - previous.value) or 0
     do
         hecho(P.text .. pad(skill.name, self.name_width or NAME_WIDTH))
         local function cell(text, hint, color)
@@ -253,8 +267,9 @@ function S:print_skill(skill, previous)
                 hecho(color .. text)
             end
         end
-        local value = (skill.theory or skill.numeric) and tostring(skill.value) or format_percent(skill.value)
-        local color, percent = self:skill_color(skill)
+        local value = skill.untrained and "--"
+            or ((skill.theory or skill.numeric) and tostring(skill.value) or format_percent(skill.value))
+        local color, percent = skill.untrained and P.text_muted or self:skill_color(skill)
         local hint = skill.level
         if skill.bonus then hint = hint .. string.format("; premia %+d (wedlug gry)", skill.bonus) end
         if skill.theory then
@@ -267,6 +282,7 @@ function S:print_skill(skill, previous)
         local bonus = skill.bonus and string.format("%+d", skill.bonus) or "--"
         hecho(P.lavender .. string.format("%8s", bonus)
             .. P.text_muted .. string.format("%12s", exercises)
+            .. (skill.untrained and (P.yellow .. "  DO WYTRAINOWANIA") or "")
             .. "  " .. delta_text(delta, (skill.theory or skill.numeric) and "" or "%", P))
         return
     end
@@ -312,7 +328,8 @@ end
 function S:record_snapshot_gains(capture)
     for key, skill in pairs(capture.skills or {}) do
         local previous = self.previous_skills[key]
-        local delta = previous and (tonumber(skill.value) or 0) - (tonumber(previous.value) or 0) or 0
+        local delta = previous and not skill.untrained and not previous.untrained
+            and (tonumber(skill.value) or 0) - (tonumber(previous.value) or 0) or 0
         if delta > 0 then
             self.session_gains[skill.name] = (self.session_gains[skill.name] or 0) + delta
         end
@@ -380,7 +397,7 @@ function S:finish_skills()
 
     self.previous_skills = {}
     for key, skill in pairs(capture.skills) do
-        self.previous_skills[key] = {name=skill.name, level=skill.level, value=skill.value}
+        self.previous_skills[key] = {name=skill.name, level=skill.level, value=skill.value, untrained=skill.untrained}
     end
 
     self.previous_abilities = {}
@@ -515,6 +532,14 @@ function S:install()
         function()
             if not S.skill_capture then return end
             if S:parse_practice_table_line(getCurrentLine()) then gag_line(); S:touch_skill_timer() end
+        end
+    )
+
+    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
+        [[^\s*.+?\s+--\s+--\s+\(do wytrenowania\)\s*$]],
+        function()
+            if not S.skill_capture then return end
+            if S:parse_trainable_skill_line(getCurrentLine()) then gag_line(); S:touch_skill_timer() end
         end
     )
 

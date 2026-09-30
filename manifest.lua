@@ -1,11 +1,11 @@
 return {
     name = "ChimeraVIP",
-    version = "0.150",
+    version = "0.151",
     schema = 2,
     tested_upstream = "4.3",
     raw_base = "https://raw.githubusercontent.com/gnomidlo/ChimeraVIP/main/",
     changes = {
-        "Kowal: zgodne z Mudletem triggery komunikatow sukcesu",
+        "Umiejetnosci: wpisy do treningu, skrocone premie i bezpieczne delty",
     },
     files = {
         "loader.lua",
@@ -52,7 +52,7 @@ return {
         ["src/features/tactical_aliases.lua"] = {hash="9d104ccc8c5e29503cede71bd338be8576bca0c3", size=4997},
         ["loader.lua"] = {hash="1381414d89e55d2fad70beb8f42e48098d4b1802", size=4501},
         ["src/init.lua"] = {hash="1a95da33f3abbe79a261ac17c3f8619d07e133c9", size=2269},
-        ["src/core/bootstrap.lua"] = {hash="4bb4c0e6abd931060673c7406f3044acde46e4c5", size=1471},
+        ["src/core/bootstrap.lua"] = {hash="ee97c4b4b2ce4f30120f72eb4d969be5686ad810", size=1471},
         ["src/core/util.lua"] = {hash="7561cd9259be9ff0ce74228e9048eef0b5aba280", size=6686},
         ["src/core/hash.lua"] = {hash="362c18bf131c9939d03b59dd50568d66de8f6a5e", size=2118},
         ["src/integrations/runtime.lua"] = {hash="e8e4a7efac14fcb7ac6f6f0d3cc473f42e556d7a", size=2649},
@@ -80,7 +80,7 @@ return {
         ["src/features/characters_delete_ui.lua"] = {hash="dd70e429d43a1f57e8785689063547063d2bf9bf", size=2077},
         ["src/ui/characters_help_panel.lua"] = {hash="634fbd308f81451b545bc9c6dabbb2f8c068e54b", size=8887},
         ["src/features/containers.lua"] = {hash="8b7ac23518a81c077c759733817ca6cfd3606242", size=7941},
-        ["src/features/skills_view.lua"] = {hash="3b84d551db18bde88e4ac610555f86a18719d669", size=22774},
+        ["src/features/skills_view.lua"] = {hash="ade7ac84a013f6d5a473f529bdbd9308fa528fce", size=23969},
         ["src/features/character_sheet.lua"] = {hash="8138c16473f1d3dfb2c1b72af07b0625a9cb460c", size=5804},
         ["src/features/retainer_progress.lua"] = {hash="4a45a38e4375237d539756fce1bc1024b4e23d0e", size=8817},
         ["src/features/equipment_view.lua"] = {hash="14d6f882f2b48d1b937603949a7d21b81027e49b", size=1721},

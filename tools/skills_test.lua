@@ -207,6 +207,24 @@ assert(new_rendered:find('POZOSTALE UMIEJETNOSCI', 1, true))
 assert(new_rendered:find('1/500', 1, true) and new_rendered:find('0.20%', 1, true))
 print('Table skills and remaining progress: PASS')
 
+S:start_skills()
+local trainable = 'silne pchniecie              --      --          (do wytrenowania)'
+assert(S:parse_trainable_skill_line(trainable))
+assert(S:parse_trainable_skill_line(trainable))
+assert(#S.skill_capture.order == 1 and S.skill_capture.skills['silne pchniecie'].untrained)
+assert(S:parse_skill_line('plywanie: 45                   spostrzegawczosc: 74 (+12)'))
+assert(S.skill_capture.skills.spostrzegawczosc.bonus == 12)
+local changed_output = {}
+hecho = function(text) changed_output[#changed_output+1] = text end
+hechoLink = nil
+S.previous_skills = {['silne pchniecie']={value=20}, plywanie={value=52}, spostrzegawczosc={value=62}}
+S:finish_skills()
+local changed_rendered = table.concat(changed_output):gsub('#%x%x%x%x%x%x', '')
+assert(changed_rendered:find('DO WYTRAINOWANIA', 1, true))
+assert(changed_rendered:find('+12', 1, true))
+assert(not changed_rendered:find('-7', 1, true))
+print('Trainable skills, short bonuses and safe deltas: PASS')
+
 -- Growth messages are visual only; session totals come from complete snapshots.
 S.previous_skills = {}
 S.previous_abilities = {}
