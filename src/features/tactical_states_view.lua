@@ -179,7 +179,7 @@ function T:row_text(row, snapshot, category, palette)
     local original_name = row.name
     local columns = self:window_columns()
     local relation = self:relation_plain(row.id, snapshot)
-    local mark_width = text_width(tostring(row.mark or "?"))
+    local mark_width = self:mark_column_width(snapshot)
 
     -- Visible fixed prefix:
     -- flag(2) + hp bar(10) + space + percent(4) + space + [mark] + space.

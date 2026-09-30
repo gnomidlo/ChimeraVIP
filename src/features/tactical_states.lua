@@ -408,6 +408,21 @@ function T:relation_text(id, snapshot, P)
     return table.concat(parts) .. reset_tag()
 end
 
+function T:mark_column_width(snapshot)
+    local width = 1
+    for _, rows in ipairs({
+        snapshot and snapshot.group or {},
+        snapshot and snapshot.enemies or {},
+        snapshot and snapshot.other_fighters or {},
+        snapshot and snapshot.others or {},
+    }) do
+        for _, row in ipairs(rows) do
+            width = math.max(width, #tostring(row.mark or "?"))
+        end
+    end
+    return width
+end
+
 function T:row_text(row, snapshot, category, P)
     local flag = row.leader and "★" or ""
     local flag_text = (U and U.pad_right and U.pad_right(flag, 2)) or (flag .. (flag == "" and "  " or " "))
@@ -427,6 +442,9 @@ function T:row_text(row, snapshot, category, P)
 
     local mark_color = P.text_muted
     local name_color = P.text
+    local mark = tostring(row.mark or "?")
+    local mark_width = self:mark_column_width(snapshot)
+    local display_mark = string.rep(" ", math.max(0, mark_width - #mark)) .. mark
     if category == "group" then
         mark_color = row.self and P.mint or P.lavender
         name_color = row.self and P.mint or P.blue
@@ -444,7 +462,7 @@ function T:row_text(row, snapshot, category, P)
     return color_tag(row.leader and P.lavender or P.text_muted) .. flag_text
         .. self:bar(row.hp_percent, row_palette) .. " "
         .. hp_text .. " "
-        .. color_tag(mark_color) .. "[" .. tostring(row.mark or "?") .. "] "
+        .. color_tag(mark_color) .. "[" .. display_mark .. "] "
         .. color_tag(name_color) .. tostring(row.name or row.id)
         .. self:relation_text(row.id, snapshot, P)
         .. reset_tag()

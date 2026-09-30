@@ -151,4 +151,16 @@ assert(not s.external_combat_ids.enemy_a)
 assert(T:build_frame(s):find('INNI WALCZACY',1,true))
 assert(A:command('z','3')); eq(sent[#sent],'zabij fighter_a')
 assert(A:command('z','5')); eq(sent[#sent],'zabij bystander_a')
+
+-- Multi-digit marks reserve one shared column, so every name starts evenly.
+reset({})
+for i=1,10 do
+    gmcp.Chimera.Room.Entities.entities[#gmcp.Chimera.Room.Entities.entities+1]={
+        id=string.format('npc_%02d',i),name='Postac '..i,hp=100,maxhp=100,
+    }
+end
+s=T:build_snapshot(); eq(T:mark_column_width(s),2)
+local P=chimera_vip.util.palette()
+assert(T:row_text(s.others[1],s,'other',P):find('[ 1]',1,true))
+assert(T:row_text(s.others[10],s,'other',P):find('[10]',1,true))
 print('Tactical GMCP and alias regressions: PASS')
