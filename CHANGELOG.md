@@ -1,3 +1,9 @@
+## 0.155
+
+- Cechy przechwytuja serwerowy postep do Przelomu i pokazuja go w jednej zwartej linii.
+- Po potwierdzeniu gotowosci przez komunikat gry pojawia sie [GOTOWY] oraz klikalne [SIEGNIJ PO BOSKOSC].
+- Rozpoznawane sa obie formy komunikatu: "moglabys" i "moglbys"; komenda nigdy nie wykonuje sie automatycznie.
+
 ## 0.132
 
 - Zolty [X] za nazwa oznacza osobe nieuczestniczaca w walce walczacej druzyny (takze JA).
