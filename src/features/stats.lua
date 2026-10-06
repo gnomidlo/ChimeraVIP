@@ -234,6 +234,76 @@ function ST:average_line(snapshot, palette)
     )
 end
 
+function ST:get_breakthrough(record, create)
+    record = record or self:get_record(create)
+    if not record then return nil end
+    if not record.breakthrough and create then
+        record.breakthrough = {current=nil, required=nil, ready=false}
+    end
+    return record.breakthrough
+end
+
+function ST:show_breakthrough_line(record)
+    local P = colors()
+    local breakthrough = self:get_breakthrough(record, false)
+    if not breakthrough then return end
+
+    local current = tonumber(breakthrough.current)
+    local required = tonumber(breakthrough.required)
+    if not current or not required or required <= 0 then return end
+
+    selectCurrentLine()
+    replace("")
+
+    hecho(string.format(
+        "  %sPRZELOM: %s%d %s/ %s%d  ",
+        P.lavender, P.text, current, P.text_muted, P.text, required
+    ))
+
+    if breakthrough.ready then
+        hecho(P.mint .. "[GOTOWY] " .. P.lavender)
+        echoLink(
+            "[SIEGNIJ PO BOSKOSC]",
+            [[send("siegnij po boskosc", false)]],
+            "Wykonaj: siegnij po boskosc",
+            true
+        )
+    else
+        local percent = math.max(0, math.min(100, (current / required) * 100))
+        hecho(P.text_muted .. string.format("[%.1f%%]", percent))
+    end
+end
+
+function ST:update_breakthrough(current, required)
+    current = tonumber(current)
+    required = tonumber(required)
+    if not current or not required or required <= 0 then return nil end
+
+    local record = self:get_record(true)
+    if not record then return nil end
+
+    local breakthrough = self:get_breakthrough(record, true)
+    breakthrough.current = current
+    breakthrough.required = required
+
+    if current < required then
+        breakthrough.ready = false
+    end
+
+    self:schedule_save()
+    return record
+end
+
+function ST:set_breakthrough_ready()
+    local record = self:get_record(true)
+    if not record then return nil end
+
+    local breakthrough = self:get_breakthrough(record, true)
+    breakthrough.ready = true
+    self:schedule_save()
+    return record
+end
+
 function ST:show_progress_footer(record, event_kind, diff, spent)
     local P = colors()
     if not record then
@@ -387,6 +457,29 @@ ST.trigger_ids[#ST.trigger_ids + 1] = tempRegexTrigger(
         ST.current = {}
         ST.previous_snapshot = nil
         ST.active_record = nil
+    end
+)
+
+ST.trigger_ids[#ST.trigger_ids + 1] = tempRegexTrigger(
+    [[^Do Przelomu liczy sie srednia twoich wycwiczonych cech, bez premii: ([0-9]+) z ([0-9]+)\.$]],
+    function()
+        local current = matches and matches[2]
+        local required = matches and matches[3]
+        local record = ST:update_breakthrough(current, required)
+        if record then ST:show_breakthrough_line(record) end
+    end
+)
+
+ST.trigger_ids[#ST.trigger_ids + 1] = tempRegexTrigger(
+    [[^Czujesz, ze w dowolnej chwili mog(?:labys|lbys) siegnac po boskosc\.$]],
+    function()
+        local record = ST:set_breakthrough_ready()
+        if record then
+            local breakthrough = ST:get_breakthrough(record, false)
+            if breakthrough and breakthrough.current and breakthrough.required then
+                ST:show_breakthrough_line(record)
+            end
+        end
     end
 )
 
