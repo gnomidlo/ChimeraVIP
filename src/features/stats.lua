@@ -31,6 +31,7 @@ local colors = U.palette
 local trim = U.trim
 local fmt_int = U.format_int
 local copy_table = U.deep_copy
+local STAT_KEYS = {"Sil", "Zr", "Wt", "Int", "Md", "Odw"}
 
 local function safe_key(name)
     return tostring(name or ""):lower()
@@ -82,6 +83,111 @@ function ST:get_record(create)
     end
     if record and display and display ~= "" then record.display_name = display end
     return record, key
+end
+
+
+function ST:is_complete_snapshot(snapshot)
+    local stats = snapshot and snapshot.stats
+    if type(stats) ~= "table" then return false end
+    for _, key in ipairs(STAT_KEYS) do
+        if type(tonumber(stats[key])) ~= "number" then return false end
+    end
+    return true
+end
+
+function ST:snapshot_from_stats(stats, template)
+    stats = copy_table(stats or {})
+    template = template or {}
+    local fiz = (tonumber(stats.Sil) or 0) + (tonumber(stats.Zr) or 0) + (tonumber(stats.Wt) or 0)
+    local ment = (tonumber(stats.Int) or 0) + (tonumber(stats.Md) or 0)
+    local odw = tonumber(stats.Odw) or 0
+    local total = fiz + ment + odw
+    return {
+        header=copy_table(template.header), stats=stats, physical=fiz, mental=ment,
+        physical_average=fiz / 3, mental_average=ment / 2,
+        average=total / 6, courage=odw, total=total,
+        captured_at=template.captured_at or os.time(),
+        character=template.character,
+    }
+end
+
+function ST:is_0155_broken_entry(entry)
+    if type(entry) ~= "table" or entry.kind ~= "change" then return false end
+    local stats = entry.snapshot and entry.snapshot.stats
+    local diff = entry.diff
+    if type(stats) ~= "table" or type(diff) ~= "table" then return false end
+
+    local count = 0
+    for _, key in ipairs(STAT_KEYS) do
+        if tonumber(stats[key]) ~= nil then count = count + 1 end
+    end
+    if count ~= 1 or tonumber(stats.Odw) == nil then return false end
+
+    for _, key in ipairs({"Sil", "Zr", "Wt", "Int", "Md"}) do
+        if not tonumber(diff[key]) or tonumber(diff[key]) >= 0 then return false end
+    end
+    return (tonumber(diff.Odw) or 0) == 0
+end
+
+function ST:is_0155_mirror_entry(entry)
+    if type(entry) ~= "table" or entry.kind ~= "change" or not self:is_complete_snapshot(entry.snapshot) then
+        return false
+    end
+    local stats = entry.snapshot.stats
+    local diff = entry.diff or {}
+    for _, key in ipairs({"Sil", "Zr", "Wt", "Int", "Md"}) do
+        if tonumber(diff[key]) ~= tonumber(stats[key]) then return false end
+    end
+    return (tonumber(diff.Odw) or 0) == 0
+end
+
+function ST:recover_0155_snapshot(entry)
+    if not self:is_0155_broken_entry(entry) then return nil end
+    local broken = entry.snapshot.stats or {}
+    local diff = entry.diff or {}
+    local recovered = {}
+    for _, key in ipairs(STAT_KEYS) do
+        recovered[key] = (tonumber(broken[key]) or 0) - (tonumber(diff[key]) or 0)
+    end
+    return self:snapshot_from_stats(recovered, entry.snapshot)
+end
+
+function ST:repair_0155_record(record)
+    if type(record) ~= "table" or self:is_complete_snapshot(record.last_observed) then return false end
+    local history = record.history or {}
+    if #history == 0 or not self:is_0155_broken_entry(history[#history]) then return false end
+
+    local recovered = self:recover_0155_snapshot(history[#history])
+    if not recovered then return false end
+
+    local first_bad = #history
+    local restored_xp = 0
+    local i = #history
+    while i >= 1 do
+        local entry = history[i]
+        if self:is_0155_broken_entry(entry) or self:is_0155_mirror_entry(entry) then
+            first_bad = i
+            restored_xp = restored_xp + (tonumber(entry.xp_since_previous) or 0)
+            i = i - 1
+        else
+            break
+        end
+    end
+
+    while #history >= first_bad do table.remove(history) end
+    record.history = history
+    record.last_observed = copy_table(recovered)
+    record.baseline = copy_table(recovered)
+    record.xp_since_change = (tonumber(record.xp_since_change) or 0) + restored_xp
+    return true
+end
+
+function ST:repair_0155_data()
+    local repaired = 0
+    for _, record in pairs(self.data.characters or {}) do
+        if self:repair_0155_record(record) then repaired = repaired + 1 end
+    end
+    return repaired
 end
 
 function ST:load_data()
@@ -171,6 +277,10 @@ function ST:update_progress(snapshot)
     if not record then return nil, "no_character" end
     self:flush_pending_xp()
 
+    if not self:is_complete_snapshot(snapshot) then
+        return record, "incomplete", {}, 0
+    end
+
     local current = copy_table(snapshot)
     current.character = record.display_name
 
@@ -212,15 +322,10 @@ function ST:reset_current()
 end
 
 function ST:build_snapshot()
-    local fiz = (self.current.Sil or 0) + (self.current.Zr or 0) + (self.current.Wt or 0)
-    local ment = (self.current.Int or 0) + (self.current.Md or 0)
-    local odw = self.current.Odw or 0
-    local total = fiz + ment + odw
-    self.last = {
-        header=self.header, stats=copy_table(self.current), physical=fiz, mental=ment,
-        physical_average=fiz / 3, mental_average=ment / 2,
-        average=total / 6, courage=odw, total=total, captured_at=os.time(),
-    }
+    self.last = self:snapshot_from_stats(self.current, {
+        header=self.header,
+        captured_at=os.time(),
+    })
     return self.last
 end
 
@@ -250,15 +355,20 @@ function ST:show_breakthrough_line(record)
 
     local current = tonumber(breakthrough.current)
     local required = tonumber(breakthrough.required)
-    if not current or not required or required <= 0 then return end
+    local has_numbers = current and required and required > 0
+    if not breakthrough.ready and not has_numbers then return end
 
     selectCurrentLine()
     replace("")
 
-    hecho(string.format(
-        "  %sPRZELOM: %s%d %s/ %s%d  ",
-        P.lavender, P.text, current, P.text_muted, P.text, required
-    ))
+    if has_numbers then
+        hecho(string.format(
+            "  %sPRZELOM: %s%d %s/ %s%d  ",
+            P.lavender, P.text, current, P.text_muted, P.text, required
+        ))
+    else
+        hecho("  " .. P.lavender .. "PRZELOM: ")
+    end
 
     if breakthrough.ready then
         hecho(P.mint .. "[GOTOWY] " .. P.lavender)
@@ -364,6 +474,7 @@ function ST:show_history(count)
 end
 
 U.clear_triggers(ST)
+ST.stat_trigger_id = nil
 U.clear_aliases(ST)
 
 -- Zostawiamy tylko cleanup obiektow runtime po bardzo starym hot-reloadzie.
@@ -376,6 +487,12 @@ C.progression = nil
 chimera_overlay.progression = nil
 
 ST:load_data()
+local repaired_0155 = ST:repair_0155_data()
+if repaired_0155 > 0 then
+    ST:save_data()
+    hecho("\n" .. colors().mint .. "[CECHY] Naprawiono historie po bledzie wersji 0.155 dla "
+        .. tostring(repaired_0155) .. " postaci.\n")
+end
 ST:flush_pending_xp()
 
 U.replace_handler(ST, "xp", "chimeraVipXpGained", function(_, amount) ST:on_xp(amount) end)
@@ -412,7 +529,7 @@ ST.trigger_ids[#ST.trigger_ids + 1] = tempRegexTrigger(
     end
 )
 
-ST.trigger_ids[#ST.trigger_ids + 1] = tempRegexTrigger(
+ST.stat_trigger_id = tempRegexTrigger(
     [[^[ \t]*([Ss]il|[Zz]r|[Ww]t|[Ii]nt|[Mm]d|[Oo]dw):]],
     function()
         local current_line = line or (matches and matches[1]) or ""
@@ -459,6 +576,7 @@ ST.trigger_ids[#ST.trigger_ids + 1] = tempRegexTrigger(
         ST.active_record = nil
     end
 )
+ST.trigger_ids[#ST.trigger_ids + 1] = ST.stat_trigger_id
 
 ST.trigger_ids[#ST.trigger_ids + 1] = tempRegexTrigger(
     [[^Do Przelomu liczy sie srednia twoich wycwiczonych cech, bez premii: ([0-9]+) z ([0-9]+)\.$]],
@@ -474,12 +592,7 @@ ST.trigger_ids[#ST.trigger_ids + 1] = tempRegexTrigger(
     [[^Czujesz, ze w dowolnej chwili mog(?:labys|lbys) siegnac po boskosc\.$]],
     function()
         local record = ST:set_breakthrough_ready()
-        if record then
-            local breakthrough = ST:get_breakthrough(record, false)
-            if breakthrough and breakthrough.current and breakthrough.required then
-                ST:show_breakthrough_line(record)
-            end
-        end
+        if record then ST:show_breakthrough_line(record) end
     end
 )
 

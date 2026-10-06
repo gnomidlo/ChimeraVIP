@@ -39,15 +39,20 @@ local function echo_xp(value)
     end
 end
 
--- stats.lua instaluje trigger linii cech jako ostatni trigger modulu.
--- Zastepujemy tylko renderer; historia, snapshoty i pozostale triggery zostaja bez zmian.
-local old_id = ST.trigger_ids and ST.trigger_ids[#ST.trigger_ids]
+-- Zastepujemy dokladnie nazwany trigger linii cech.
+-- Nie opieramy sie na pozycji w trigger_ids, bo stats.lua moze dodawac kolejne triggery.
+local old_id = ST.stat_trigger_id
 if old_id then
     pcall(killTrigger, old_id)
-    table.remove(ST.trigger_ids, #ST.trigger_ids)
+    for i = #(ST.trigger_ids or {}), 1, -1 do
+        if ST.trigger_ids[i] == old_id then
+            table.remove(ST.trigger_ids, i)
+            break
+        end
+    end
 end
 
-ST.trigger_ids[#ST.trigger_ids + 1] = tempRegexTrigger(
+ST.stat_trigger_id = tempRegexTrigger(
     [[^[ \t]*([Ss]il|[Zz]r|[Ww]t|[Ii]nt|[Mm]d|[Oo]dw):]],
     function()
         local current_line = line or (matches and matches[1]) or ""
@@ -108,5 +113,6 @@ ST.trigger_ids[#ST.trigger_ids + 1] = tempRegexTrigger(
         ST.active_record = nil
     end
 )
+ST.trigger_ids[#ST.trigger_ids + 1] = ST.stat_trigger_id
 
 return true
