@@ -1,3 +1,11 @@
+## 0.156
+
+- Naprawiono podwojne przetwarzanie cech po dodaniu triggerow Przelomu w 0.155.
+- Compact view zastepuje teraz konkretny nazwany trigger cech zamiast ostatniego triggera modulu.
+- Niepelny snapshot cech nie moze juz zostac zapisany jako prawdziwa zmiana.
+- Dane uszkodzone przez 0.155 sa automatycznie rozpoznawane, odtwarzane i czyszczone z falszywych wpisow historii.
+- Komunikat gotowosci do boskosci jest przechwytywany takze wtedy, gdy serwer nie podaje juz liczbowego postepu.
+
 ## 0.155
 
 - Cechy przechwytuja serwerowy postep do Przelomu i pokazuja go w jednej zwartej linii.
