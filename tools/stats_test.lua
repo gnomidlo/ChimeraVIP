@@ -82,4 +82,21 @@ local _, kind = ST:update_progress(incomplete)
 assert(kind == "incomplete")
 assert(ST:is_complete_snapshot(record.last_observed))
 
+local p1, r1, m1 = ST:parse_breakthrough_progress(
+    "Do Przelomu liczy sie srednia twoich wycwiczonych cech, bez premii: 146 z 150."
+)
+assert(p1 == 146 and r1 == 150 and m1 == "trained")
+
+local p2, r2, m2 = ST:parse_breakthrough_progress(
+    "Do kolejnego Przelomu liczy sie tylko to, co wywalczylas: srednia cech z walki, bez premii i bez zadan, to 13 z 150."
+)
+assert(p2 == 13 and r2 == 150 and m2 == "combat")
+
+local p3, r3, m3 = ST:parse_breakthrough_progress(
+    "Do kolejnego Przelomu liczy sie tylko to, co wywalczyles: srednia cech z walki, bez premii i bez zadan, to 14 z 150."
+)
+assert(p3 == 14 and r3 == 150 and m3 == "combat")
+
+print("Breakthrough progress variants: PASS")
+
 print("Stats average and regression tests: PASS")
