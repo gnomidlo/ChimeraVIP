@@ -471,6 +471,15 @@ function S:finish_jobs()
     end
 end
 
+function S:parse_magic_growth(line)
+    line = trim(line)
+    local school, value = line:match("^Czujesz, ze twoja bieglosc (.-) wzrasta do (%d+)%.%s*$")
+    if not school then return nil end
+    school = trim(school)
+    if school == "" then return nil end
+    return school, tonumber(value)
+end
+
 function S:highlight_growth(phrase)
     phrase = trim(phrase)
     if phrase == "" or type(selectString) ~= "function" then return false end
@@ -605,6 +614,15 @@ function S:install()
         [[^Czujesz, ze twoja bieglosc w (.+?) wzrosla\.\s*$]],
         function() S:highlight_growth(matches[2]) end
     )
+
+    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
+        [[^Czujesz, ze twoja bieglosc (.+?) wzrasta do (\d+)\.\s*$]],
+        function()
+            local school = S:parse_magic_growth(getCurrentLine())
+            if school then S:highlight_growth(school) end
+        end
+    )
+
 
     self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
         [[^Czujesz, ze twoja technika sie poprawila\.\s*$]],
