@@ -1,11 +1,12 @@
 return {
     name = "ChimeraVIP",
-    version = "0.157",
+    version = "0.158",
     schema = 2,
     tested_upstream = "4.3",
     raw_base = "https://raw.githubusercontent.com/gnomidlo/ChimeraVIP/main/",
     changes = {
-        "Magia: kolorowanie wzrostu bieglosci Wiatru jak innych umiejetnosci",
+        "Przelom: postep do kolejnego etapu liczony ze sredniej cech wywalczonych w walce",
+        "Przelom: znacznik [WALKA] odroznia bojowy postep od zwyklej sredniej cech",
     },
     files = {
         "loader.lua",
@@ -52,7 +53,7 @@ return {
         ["src/features/tactical_aliases.lua"] = {hash="8ce7ee3b20fc756d4d321adf84dba58e7aa7bca1", size=5006},
         ["loader.lua"] = {hash="1381414d89e55d2fad70beb8f42e48098d4b1802", size=4501},
         ["src/init.lua"] = {hash="1a95da33f3abbe79a261ac17c3f8619d07e133c9", size=2269},
-        ["src/core/bootstrap.lua"] = {hash="3e38a30efa4c03f5cb374fc502af575589cde70f", size=1471},
+        ["src/core/bootstrap.lua"] = {hash="bfe4b3aad165fb3036ec16efbf2c445fcfada900", size=1471},
         ["src/core/util.lua"] = {hash="7561cd9259be9ff0ce74228e9048eef0b5aba280", size=6686},
         ["src/core/hash.lua"] = {hash="362c18bf131c9939d03b59dd50568d66de8f6a5e", size=2118},
         ["src/integrations/runtime.lua"] = {hash="e8e4a7efac14fcb7ac6f6f0d3cc473f42e556d7a", size=2649},
@@ -72,7 +73,7 @@ return {
         ["src/features/tactical_states_view.lua"] = {hash="92ed35156d864698fe81c7b35efca1fdac1f9d3c", size=9774},
         ["src/features/xp_tracker.lua"] = {hash="697e8f74535c5aa003e8b2f63db58953f0b16692", size=24356},
         ["src/features/xp_kill_card_view.lua"] = {hash="2bf985dba91536ac5f857d921e36e2e4fd4c4041", size=1374},
-        ["src/features/stats.lua"] = {hash="7038457bb7b07f6f83c2d54abaddf1d0921c7ca7", size=20782},
+        ["src/features/stats.lua"] = {hash="a86b01c86f7d1f6ea8d28bc26347e374f1691709", size=21996},
         ["src/features/stats_compact_view.lua"] = {hash="ea0006525dc4e5f884401716de9b227da4908c4e", size=4197},
         ["src/features/report_actions.lua"] = {hash="fd94ede283c639df08b8316e286f3bc3d694555b", size=552},
         ["src/features/characters.lua"] = {hash="fc3f0f5a113eb83f54f148106cc099492f1d38ff", size=20914},
