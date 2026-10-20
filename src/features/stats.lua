@@ -339,11 +339,27 @@ function ST:average_line(snapshot, palette)
     )
 end
 
+function ST:parse_breakthrough_progress(line)
+    line = trim(line)
+
+    local current, required = line:match(
+        "^Do Przelomu liczy sie srednia twoich wycwiczonych cech, bez premii: (%d+) z (%d+)%.%s*$"
+    )
+    if current then return tonumber(current), tonumber(required), "trained" end
+
+    current, required = line:match(
+        "^Do kolejnego Przelomu liczy sie tylko to, co wywalczyl[ae]s: srednia cech z walki, bez premii i bez zadan, to (%d+) z (%d+)%.%s*$"
+    )
+    if current then return tonumber(current), tonumber(required), "combat" end
+
+    return nil
+end
+
 function ST:get_breakthrough(record, create)
     record = record or self:get_record(create)
     if not record then return nil end
     if not record.breakthrough and create then
-        record.breakthrough = {current=nil, required=nil, ready=false}
+        record.breakthrough = {current=nil, required=nil, ready=false, mode=nil}
     end
     return record.breakthrough
 end
@@ -381,10 +397,13 @@ function ST:show_breakthrough_line(record)
     else
         local percent = math.max(0, math.min(100, (current / required) * 100))
         hecho(P.text_muted .. string.format("[%.1f%%]", percent))
+        if breakthrough.mode == "combat" then
+            hecho(P.text_muted .. " " .. P.yellow .. "[WALKA]")
+        end
     end
 end
 
-function ST:update_breakthrough(current, required)
+function ST:update_breakthrough(current, required, mode)
     current = tonumber(current)
     required = tonumber(required)
     if not current or not required or required <= 0 then return nil end
@@ -395,6 +414,7 @@ function ST:update_breakthrough(current, required)
     local breakthrough = self:get_breakthrough(record, true)
     breakthrough.current = current
     breakthrough.required = required
+    breakthrough.mode = mode or breakthrough.mode
 
     if current < required then
         breakthrough.ready = false
@@ -581,9 +601,17 @@ ST.trigger_ids[#ST.trigger_ids + 1] = ST.stat_trigger_id
 ST.trigger_ids[#ST.trigger_ids + 1] = tempRegexTrigger(
     [[^Do Przelomu liczy sie srednia twoich wycwiczonych cech, bez premii: ([0-9]+) z ([0-9]+)\.$]],
     function()
-        local current = matches and matches[2]
-        local required = matches and matches[3]
-        local record = ST:update_breakthrough(current, required)
+        local current, required, mode = ST:parse_breakthrough_progress(getCurrentLine())
+        local record = ST:update_breakthrough(current, required, mode)
+        if record then ST:show_breakthrough_line(record) end
+    end
+)
+
+ST.trigger_ids[#ST.trigger_ids + 1] = tempRegexTrigger(
+    [[^Do kolejnego Przelomu liczy sie tylko to, co wywalczyl[ae]s: srednia cech z walki, bez premii i bez zadan, to ([0-9]+) z ([0-9]+)\.$]],
+    function()
+        local current, required, mode = ST:parse_breakthrough_progress(getCurrentLine())
+        local record = ST:update_breakthrough(current, required, mode)
         if record then ST:show_breakthrough_line(record) end
     end
 )

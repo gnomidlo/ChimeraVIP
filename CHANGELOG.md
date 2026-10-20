@@ -1,3 +1,10 @@
+## 0.158
+
+- Dodano obsluge postepu do kolejnego Przelomu liczonego ze sredniej cech wywalczonych w walce.
+- Jednoliniowy wskaznik Przelomu pokazuje dla tego etapu dodatkowy znacznik [WALKA].
+- Rozpoznawane sa formy "wywalczylas" i "wywalczyles".
+- Dodano testy obu wariantow postepu Przelomu.
+
 ## 0.157
 
 - Dodano obsluge komunikatu wzrostu bieglosci magii, np. "Czujesz, ze twoja bieglosc Wiatru wzrasta do 8.".
