@@ -1,3 +1,9 @@
+## 0.157
+
+- Dodano obsluge komunikatu wzrostu bieglosci magii, np. "Czujesz, ze twoja bieglosc Wiatru wzrasta do 8.".
+- Nazwa Wiatru jest podkreslana i kolorowana tak samo jak przy innych komunikatach wzrostu umiejetnosci.
+- Dodano test parsera nowego komunikatu.
+
 ## 0.156
 
 - Naprawiono podwojne przetwarzanie cech po dodaniu triggerow Przelomu w 0.155.

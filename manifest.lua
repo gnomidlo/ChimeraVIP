@@ -1,13 +1,11 @@
 return {
     name = "ChimeraVIP",
-    version = "0.156",
+    version = "0.157",
     schema = 2,
     tested_upstream = "4.3",
     raw_base = "https://raw.githubusercontent.com/gnomidlo/ChimeraVIP/main/",
     changes = {
-        "Cechy: naprawione podwojne przetwarzanie i bledna srednia z wersji 0.155",
-        "Historia cech: automatyczna naprawa falszywych snapshotow zapisanych przez 0.155",
-        "Przelom: gotowosc do boskosci pozostaje aktywna bez liczbowej linii postepu",
+        "Magia: kolorowanie wzrostu bieglosci Wiatru jak innych umiejetnosci",
     },
     files = {
         "loader.lua",
@@ -54,7 +52,7 @@ return {
         ["src/features/tactical_aliases.lua"] = {hash="8ce7ee3b20fc756d4d321adf84dba58e7aa7bca1", size=5006},
         ["loader.lua"] = {hash="1381414d89e55d2fad70beb8f42e48098d4b1802", size=4501},
         ["src/init.lua"] = {hash="1a95da33f3abbe79a261ac17c3f8619d07e133c9", size=2269},
-        ["src/core/bootstrap.lua"] = {hash="0ed1f5baa5478e007a2f6c56ac42cb094d06bc88", size=1471},
+        ["src/core/bootstrap.lua"] = {hash="3e38a30efa4c03f5cb374fc502af575589cde70f", size=1471},
         ["src/core/util.lua"] = {hash="7561cd9259be9ff0ce74228e9048eef0b5aba280", size=6686},
         ["src/core/hash.lua"] = {hash="362c18bf131c9939d03b59dd50568d66de8f6a5e", size=2118},
         ["src/integrations/runtime.lua"] = {hash="e8e4a7efac14fcb7ac6f6f0d3cc473f42e556d7a", size=2649},
@@ -82,7 +80,7 @@ return {
         ["src/features/characters_delete_ui.lua"] = {hash="dd70e429d43a1f57e8785689063547063d2bf9bf", size=2077},
         ["src/ui/characters_help_panel.lua"] = {hash="634fbd308f81451b545bc9c6dabbb2f8c068e54b", size=8887},
         ["src/features/containers.lua"] = {hash="8b7ac23518a81c077c759733817ca6cfd3606242", size=7941},
-        ["src/features/skills_view.lua"] = {hash="1439865124584be7f54ecaa30db55bc69c144db0", size=23968},
+        ["src/features/skills_view.lua"] = {hash="b8257b4a14d6751ae49a0b17eb2ffe100c152edc", size=24563},
         ["src/features/character_sheet.lua"] = {hash="8138c16473f1d3dfb2c1b72af07b0625a9cb460c", size=5804},
         ["src/features/retainer_progress.lua"] = {hash="4a45a38e4375237d539756fce1bc1024b4e23d0e", size=8817},
         ["src/features/equipment_view.lua"] = {hash="14d6f882f2b48d1b937603949a7d21b81027e49b", size=1721},

@@ -241,6 +241,11 @@ S:finish_skills()
 assert(S.session_gains['walka mieczem'] == 2)
 assert(S.session_gains['Technika lowcy'] == 3)
 
+local magic_school, magic_value = S:parse_magic_growth('Czujesz, ze twoja bieglosc Wiatru wzrasta do 8.')
+assert(magic_school == 'Wiatru' and magic_value == 8)
+assert(S:parse_magic_growth('Czujesz, ze twoja bieglosc Wiatru wzrosla.') == nil)
+print('Magic growth message parsing: PASS')
+
 local selected, bold, underlined, colored = nil, false, false, false
 selectString = function(text) selected = text; return 0 end
 setFgColor = function(r, g, b) colored = r ~= nil and g ~= nil and b ~= nil end
