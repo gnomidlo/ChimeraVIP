@@ -199,7 +199,7 @@ function M:render_overview(data)
 
     for _, key in ipairs(data.order or {}) do
         local attr = data.attributes[key]
-        hecho("\n\n  ")
+        hecho("\n  ")
         command_link(string.format("%-4s", ({
             sila="Sil", zrecznosc="Zr", wytrzymalosc="Wt",
             inteligencja="Int", madrosc="Md", odwaga="Odw",

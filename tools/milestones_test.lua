@@ -110,3 +110,15 @@ assert(detail.effect[1] == "Regeneracja many +5/10/15%.")
 assert(detail.abandon_cost == 50)
 assert(detail.abandon_command == "kamien porzuc glebokie zrodlo")
 print("Milestones detail parsing: PASS")
+
+
+local overview_output = {}
+hecho = function(text) overview_output[#overview_output+1] = text end
+hechoLink = function(text) overview_output[#overview_output+1] = text end
+M:render_overview(overview)
+local overview_rendered = table.concat(overview_output):gsub('#%x%x%x%x%x%x', '')
+assert(not overview_rendered:find("\n\n  Zr", 1, true))
+assert(not overview_rendered:find("\n\n  Wt", 1, true))
+assert(overview_rendered:find("\n  Zr", 1, true))
+assert(overview_rendered:find("\n  Wt", 1, true))
+print("Milestones overview compact spacing: PASS")
