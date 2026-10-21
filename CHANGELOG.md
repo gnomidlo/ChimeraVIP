@@ -1,3 +1,8 @@
+## 0.160
+
+- Widok `kamienie` jest bardziej zwarty: usunieto puste linie miedzy kolejnymi cechami.
+- Aktywne Kamienie nadal pozostaja w osobnych, wcietych liniach pod odpowiednia cecha.
+
 ## 0.159
 
 - Dodano wstepny modul Kamieni Milowych z trzema widokami: przeglad, cecha i karta Kamienia.
