@@ -158,3 +158,31 @@ assert(M:is_capture_line("attribute", "      udzwig +5/10/15%."))
 assert(not M:is_capture_line("attribute", "Czujny krepy mezczyzna mowi: cos tam."))
 M.capture = nil
 print("Milestone capture ignores unrelated text: PASS")
+
+
+local aligned = M:parse_overview_lines({
+    "Kamienie Milowe -- aktywne 3 z 3.",
+    "Sila (szczyt 173), wybrane 1 z 3 (odblokowane szczytem cechy):",
+    "* Sila Tytana I (do nastepnego: 2%, 656000/25300000 exp)",
+    "Madrosc (szczyt 158), wybrane 1 z 3 (odblokowane szczytem cechy):",
+    "* Niezlomny Umysl I (do nastepnego: 2%, 656000/25300000 exp)",
+    "Odwaga (szczyt 83), wybrane 1 z 1 (odblokowane szczytem cechy):",
+    "* Charyzmatyczny Przywodca I (do nastepnego: 2%, 656000/25300000 exp)",
+})
+local aligned_output = {}
+hecho = function(text) aligned_output[#aligned_output+1] = text end
+hechoLink = function(text) aligned_output[#aligned_output+1] = text end
+M:render_overview(aligned)
+local aligned_rendered = table.concat(aligned_output):gsub('#%x%x%x%x%x%x', '')
+local p1 = assert(aligned_rendered:find("Sila Tytana", 1, true))
+local p2 = assert(aligned_rendered:find("Niezlomny Umysl", 1, true))
+local p3 = assert(aligned_rendered:find("Charyzmatyczny Przywodca", 1, true))
+local function column_at(pos)
+    local before = aligned_rendered:sub(1, pos - 1)
+    local last_newline = before:match(".*()\n") or 0
+    return pos - last_newline
+end
+assert(column_at(p1) == column_at(p2))
+assert(column_at(p2) == column_at(p3))
+assert(aligned_rendered:find("  2%   656k / 25.3m", 1, true))
+print("Milestones overview progress columns: PASS")

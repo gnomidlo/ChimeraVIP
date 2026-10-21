@@ -1,3 +1,9 @@
+## 0.162
+
+- Widok `kamienie`: aktywne Kamienie sa teraz wyrównane w kolumnach procent -> XP -> nazwa -> poziom.
+- Nazwy Kamieni zaczynaja sie w tej samej kolumnie niezaleznie od dlugosci nazwy.
+- Dodano test wyrównania kolumn.
+
 ## 0.161
 
 - Kamienie Milowe: komendy akcyjne `kamien wybierz`, `kamien potwierdz` i `kamien porzuc` omijaja renderer raportow.
