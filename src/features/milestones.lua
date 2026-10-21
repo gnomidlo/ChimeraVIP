@@ -341,7 +341,7 @@ function M:is_capture_line(kind, raw)
             or line == "Szczegoly:"
             or line:match("^kamien wybierz ")
             or line:match("^kamien <nazwa>")
-            or (self.capture and self.capture.last_was_stone and not line:match("^%S+:%s*$"))
+            or (self.capture and self.capture.last_was_stone and raw:match("^%s+") ~= nil)
     elseif kind == "detail" then
         return line:match("^[A-Z0-9 ]+$")
             or line:match("^Cecha:")
@@ -350,7 +350,7 @@ function M:is_capture_line(kind, raw)
             or line == "Dzialanie:"
             or line:match("^Porzucenie kosztuje ")
             or line:match("^kamien porzuc ")
-            or (self.capture and self.capture.in_effect == true)
+            or (self.capture and self.capture.in_effect == true and raw:match("^%s+") ~= nil)
     end
     return false
 end
