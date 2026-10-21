@@ -1,3 +1,11 @@
+## 0.159
+
+- Dodano wstepny modul Kamieni Milowych z trzema widokami: przeglad, cecha i karta Kamienia.
+- Nazwy cech i Kamieni sa klikalne i otwieraja odpowiednio `kamienie <cecha>` oraz `kamien <nazwa>`.
+- Postep Kamieni pokazuje skrocone XP z pelna wartoscia w tooltipie.
+- Karta Kamienia pokazuje status, poziom, postep, dzialanie i akcje porzucenia.
+- Dodano testy parserow na aktualnych komunikatach serwera.
+
 ## 0.158
 
 - Dodano obsluge postepu do kolejnego Przelomu liczonego ze sredniej cech wywalczonych w walce.
