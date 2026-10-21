@@ -73,6 +73,12 @@ function H:register_defaults()
         commands={{"cechy", "pełny odczyt cech i bieżącego progresu"},{"/cechy historia [N]", "ostatnie zmiany cech i XP między nimi"},{"/cechy pomoc", "ta pomoc"}},
     })
 
+    self:register("milestones", {
+        title="KAMIENIE MILOWE",
+        description={"Kompaktowe widoki Kamieni Milowych: przeglad buildu, lista Kamieni danej cechy i karta konkretnego Kamienia.","Nazwy cech i Kamieni sa klikalne; klik przechodzi do odpowiedniego widoku."},
+        commands={{"kamienie", "przeglad aktywnych Kamieni"},{"kamienie <cecha>", "Kamienie wybranej cechy"},{"kamien <nazwa>", "szczegoly Kamienia"},{"/kamienie pomoc", "ta pomoc"}},
+    })
+
     self:register("postacie", {
         title="POSTACIE I RELACJE",
         description={"Rejestruje sześć odmian imienia, relację z postacią i koloruje wszystkie znane formy w tekście gry.","Nowe postacie są nieprzypisane do czasu wybrania relacji."},
@@ -100,6 +106,7 @@ H.catalog = {
     {"/xp pomoc",         "Doświadczenie", "XP/h, zabójstwa i typy mobów"},
     {"/bron pomoc",       "Bron",          "skrocone parametry wywazenia i skutecznosci"},
     {"/cechy pomoc",      "Cechy",         "cechy, delty, historia rozwoju i XP między wzrostami"},
+    {"/kamienie pomoc",   "Kamienie",       "Kamienie Milowe, poziomy i postep"},
     {"/postacie pomoc",   "Postacie",      "odmiany, relacje i kolorowanie imion"},
     {"/ustawienia pomoc", "Ustawienia",    "konfiguracja interfejsu i modułów"},
 }
@@ -159,7 +166,7 @@ function H:resolve(section_id)
     local aliases = {
         cechy="stats", exp="xp", ui="interface", walka="combat", kolory="combat", combat="combat",
         wsparcie="automation", auto="automation", automation="automation", obrona="defense", def="defense", defense="defense",
-        bron="weapon", weapon="weapon", postacie="postacie", characters="postacie",
+        bron="weapon", weapon="weapon", kamienie="milestones", milestone="milestones", milestones="milestones", postacie="postacie", characters="postacie",
         ustawienia="settings", settings="settings", moduly="settings", modules="settings", system="system",
     }
     return aliases[id] or id
@@ -191,6 +198,7 @@ function H:install_aliases()
     add([[^/walka (?:pomoc|help)$]], "combat")
     add([[^/wsparcie (?:pomoc|help)$]], "automation")
     add([[^/cechy (?:pomoc|help)$]], "stats")
+    add([[^/kamienie (?:pomoc|help)$]], "milestones")
     add([[^/ustawienia (?:pomoc|help)$]], "settings")
 end
 
