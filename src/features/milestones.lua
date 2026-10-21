@@ -24,12 +24,9 @@ local gag_line = U.gag_line
 local function compact_number(value)
     value = math.max(0, math.floor(tonumber(value) or 0))
     if value < 1000 then return tostring(value) end
-    if value < 1000000 then
-        local v = value / 1000
-        return v >= 100 and string.format("%.0fk", v) or string.format("%.1fk", v):gsub("%.0k$", "k")
-    end
-    local v = value / 1000000
-    return v >= 100 and string.format("%.0fm", v) or string.format("%.1fm", v):gsub("%.0m$", "m")
+    if value < 1000000 then return tostring(math.floor(value / 1000)) .. "k" end
+    local tenths = math.floor(value / 100000) / 10
+    return string.format("%.1fm", tenths)
 end
 
 local function command_link(label, command, hint, color)
