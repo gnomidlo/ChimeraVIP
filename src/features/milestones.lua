@@ -233,13 +233,19 @@ function M:render_overview(data)
             .. P.text_muted .. "   " .. tostring(attr.selected or 0) .. "/" .. tostring(attr.unlocked or 0))
 
         for _, stone in ipairs(attr.stones or {}) do
-            hecho("\n      ")
+            local percent_text = stone.percent and (tostring(stone.percent) .. "%") or "--"
+            local xp_text = stone.current and stone.required
+                and (compact_number(stone.current) .. " / " .. compact_number(stone.required)) or "--"
+
+            hecho("\n      " .. P.mint .. string.format("%4s", percent_text) .. P.text_muted .. "   ")
+            if stone.current and stone.required then
+                xp_link(stone.current, stone.required)
+            else
+                hecho(P.peach .. xp_text)
+            end
+            hecho(P.text_muted .. string.rep(" ", math.max(3, 18 - #xp_text)))
             command_link(stone.name, "kamien " .. normalize(stone.name), "Szczegoly Kamienia", P.text)
             hecho(P.lavender .. "  " .. tostring(stone.rank or ""))
-            if stone.percent then
-                hecho(P.text_muted .. "   " .. P.mint .. tostring(stone.percent) .. "%   ")
-                xp_link(stone.current, stone.required)
-            end
         end
     end
     if data.full_set then hecho("\n\n" .. P.text_muted .. "  Pelny zestaw Kamieni.") end
