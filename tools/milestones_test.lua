@@ -122,3 +122,39 @@ assert(not overview_rendered:find("\n\n  Wt", 1, true))
 assert(overview_rendered:find("\n  Zr", 1, true))
 assert(overview_rendered:find("\n  Wt", 1, true))
 print("Milestones overview compact spacing: PASS")
+
+
+assert(M:is_action_argument("wybierz sila tytana"))
+assert(M:is_action_argument("wybierz sila tytana na pewno"))
+assert(M:is_action_argument("potwierdz"))
+assert(M:is_action_argument("porzuc glebokie zrodlo"))
+assert(M:is_action_argument("porzuc glebokie zrodlo na pewno"))
+assert(not M:is_action_argument("glebokie zrodlo"))
+print("Milestone action commands bypass detail capture: PASS")
+
+local choose_attribute = M:parse_attribute_lines({
+    "SILA",
+    "Szczyt cechy: 173",
+    "Wybrane:",
+    "-",
+    "Wybrane 0 z 3 (odblokowane szczytem cechy)",
+    "Dostepne:",
+    "[I] Sila Tytana",
+    "udzwig +5/10/15%.",
+    "Aby wybrac:",
+    "kamien wybierz sila tytana na pewno",
+})
+assert(#choose_attribute.available_stones == 1)
+assert(choose_attribute.available_stones[1].choose_command == "kamien wybierz sila tytana")
+assert(choose_attribute.available_stones[1].description[1] == "udzwig +5/10/15%.")
+print("Milestone choose action parsing: PASS")
+
+M.capture = {kind="overview", lines={}}
+assert(M:is_capture_line("overview", "Kamienie Milowe -- aktywne 0 z 3."))
+assert(M:is_capture_line("overview", "Sila (szczyt 173), wybrane 0 z 3 (odblokowane szczytem cechy):"))
+assert(not M:is_capture_line("overview", "Czujny krepy mezczyzna mowi: cos tam."))
+M.capture = {kind="attribute", lines={}, last_was_stone=true}
+assert(M:is_capture_line("attribute", "      udzwig +5/10/15%."))
+assert(not M:is_capture_line("attribute", "Czujny krepy mezczyzna mowi: cos tam."))
+M.capture = nil
+print("Milestone capture ignores unrelated text: PASS")
