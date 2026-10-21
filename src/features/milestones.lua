@@ -102,6 +102,29 @@ end
 function M:parse_attribute_lines(lines)
     local out = {kind="attribute", selected_stones={}, available_stones={}, locked_stones={}}
     local section, last_stone
+
+    local function all_stones()
+        local result = {}
+        for _, list in ipairs({out.selected_stones, out.available_stones, out.locked_stones}) do
+            for _, stone in ipairs(list) do result[#result+1] = stone end
+        end
+        return result
+    end
+
+    local function attach_choose_command(command)
+        local name = command:match("^kamien wybierz (.-)%s+na pewno$")
+            or command:match("^kamien wybierz (.+)$")
+        if not name then return false end
+        local wanted = normalize(name)
+        for _, stone in ipairs(all_stones()) do
+            if normalize(stone.name) == wanted then
+                stone.choose_command = "kamien wybierz " .. trim(name)
+                return true
+            end
+        end
+        return false
+    end
+
     for _, raw in ipairs(lines or {}) do
         local line = trim(raw)
         if line ~= "" then
@@ -129,7 +152,9 @@ function M:parse_attribute_lines(lines)
                         or section == "available" and out.available_stones
                         or out.locked_stones
                     target[#target+1] = last_stone
-                elseif line ~= "-" and last_stone
+                elseif line:match("^kamien wybierz ") then
+                    attach_choose_command(line)
+                elseif line ~= "-" and line ~= "Aby wybrac:" and last_stone
                     and not line:match("^Szczegoly:")
                     and not line:match("^kamien%s+") then
                     last_stone.description[#last_stone.description+1] = line
@@ -228,6 +253,13 @@ local function render_stone_list(title, stones, color)
     for _, stone in ipairs(stones) do
         hecho("\n  " .. P.lavender .. "[" .. tostring(stone.rank or "?") .. "] ")
         command_link(stone.name, "kamien " .. normalize(stone.name), "Szczegoly Kamienia", P.text)
+        hecho(P.text_muted .. "  ")
+        command_link("[SZCZEGOLY]", "kamien " .. normalize(stone.name), "Pokaz pelny opis Kamienia", P.blue)
+        if stone.choose_command then
+            hecho(P.text_muted .. " ")
+            command_link("[WYBIERZ]", stone.choose_command,
+                "Rozpocznij wybor Kamienia; gra poprosi jeszcze o potwierdzenie.", P.mint)
+        end
         for _, desc in ipairs(stone.description or {}) do
             hecho("\n      " .. P.text_muted .. desc)
         end
@@ -284,6 +316,61 @@ function M:render_detail(data)
     hecho("\n")
 end
 
+function M:is_capture_line(kind, raw)
+    local line = trim(raw)
+    if line == "" then return true end
+
+    if kind == "overview" then
+        return line:match("^Kamienie Milowe %-%- aktywne %d+ z %d+%.?$")
+            or line:match("^.- %(szczyt %d+%), wybrane %d+ z %d+ %(odblokowane szczytem cechy%):$")
+            or line:match("^%*%s+")
+            or line:match("^Masz juz pelny zestaw")
+            or line:match("^Zmiana wyboru bedzie")
+            or line:match('^"kamienie <cecha>"')
+            or line:match("^wysokosc nie jest")
+    elseif kind == "attribute" then
+        return line:match("^[A-Z]+$")
+            or line:match("^Szczyt cechy:")
+            or line == "Wybrane:"
+            or line:match("^Wybrane %d+ z %d+")
+            or line == "Dostepne:"
+            or line:match("^Zablokowane ")
+            or line:match("^%[[IVX]+%]%s+")
+            or line == "-"
+            or line == "Aby wybrac:"
+            or line == "Szczegoly:"
+            or line:match("^kamien wybierz ")
+            or line:match("^kamien <nazwa>")
+            or (self.capture and self.capture.last_was_stone and not line:match("^%S+:%s*$"))
+    elseif kind == "detail" then
+        return line:match("^[A-Z0-9 ]+$")
+            or line:match("^Cecha:")
+            or line == "Status:"
+            or line:match("^wybrany, poziom ")
+            or line == "Dzialanie:"
+            or line:match("^Porzucenie kosztuje ")
+            or line:match("^kamien porzuc ")
+            or (self.capture and self.capture.in_effect == true)
+    end
+    return false
+end
+
+function M:update_capture_state(kind, raw)
+    local line = trim(raw)
+    if kind == "attribute" then
+        if line:match("^%[[IVX]+%]%s+") then
+            self.capture.last_was_stone = true
+        elseif line == "" or line == "Aby wybrac:" or line == "Szczegoly:"
+            or line:match("^kamien ") or line:match("^[A-Z]+$")
+            or line:match("^Szczyt cechy:") or line:match("^Wybrane ") or line:match("^Zablokowane ") then
+            self.capture.last_was_stone = false
+        end
+    elseif kind == "detail" then
+        if line == "Dzialanie:" then self.capture.in_effect = true
+        elseif line:match("^Porzucenie kosztuje ") then self.capture.in_effect = false end
+    end
+end
+
 function M:finish_capture()
     local capture = self.capture
     self.capture = nil
@@ -310,7 +397,13 @@ end
 function M:capture_line()
     if not self.capture then return end
     local current = getCurrentLine and getCurrentLine() or line or ""
+    local kind = self.capture.kind
+    if not self:is_capture_line(kind, current) then
+        if #self.capture.lines > 0 then self:finish_capture() end
+        return
+    end
     self.capture.lines[#self.capture.lines+1] = current
+    self:update_capture_state(kind, current)
     gag_line()
     self:touch_capture()
 end
@@ -327,12 +420,17 @@ function M:install()
     end)
     self.alias_ids[#self.alias_ids+1] = tempAlias([[^kamien\s+(.+)$]], function()
         local arg = trim(matches[2])
-        if arg:match("^porzuc%s+") then send("kamien " .. arg, false); return end
+        if arg == "potwierdz"
+            or arg:match("^wybierz%s+")
+            or arg:match("^porzuc%s+") then
+            send("kamien " .. arg, false)
+            return
+        end
         M:start_capture("detail", "kamien " .. arg)
     end)
 
-    -- Wstepna wersja: podczas aktywnego capture przechwytujemy odpowiedz tekstowa
-    -- do chwili krotkiej ciszy. Poza capture trigger niczego nie zmienia.
+    -- Globalny trigger jest aktywny tylko logicznie podczas capture. Gagujemy wylacznie
+    -- linie rozpoznane jako czesc konkretnego raportu; obcy tekst konczy capture i zostaje widoczny.
     self.trigger_ids[#self.trigger_ids+1] = tempRegexTrigger([[^.*$]], function()
         if M.capture then M:capture_line() end
     end)
