@@ -1,3 +1,10 @@
+## 0.161
+
+- Kamienie Milowe: komendy akcyjne `kamien wybierz`, `kamien potwierdz` i `kamien porzuc` omijaja renderer raportow.
+- Widok cechy rozpoznaje serwerowe `Aby wybrac:` i dodaje bezpieczny przycisk [WYBIERZ].
+- Capture raportow nie gaguje juz nierozpoznanych, obcych linii z MUD-a.
+- Dodano regresje dla workflow wyboru Kamienia z logu uzytkownika.
+
 ## 0.160
 
 - Widok `kamienie` jest bardziej zwarty: usunieto puste linie miedzy kolejnymi cechami.
