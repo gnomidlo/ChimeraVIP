@@ -408,6 +408,13 @@ function M:capture_line()
     self:touch_capture()
 end
 
+function M:is_action_argument(arg)
+    arg = trim(arg)
+    return arg == "potwierdz"
+        or arg:match("^wybierz%s+") ~= nil
+        or arg:match("^porzuc%s+") ~= nil
+end
+
 function M:install()
     U.clear_triggers(self)
     U.clear_aliases(self)
@@ -420,9 +427,7 @@ function M:install()
     end)
     self.alias_ids[#self.alias_ids+1] = tempAlias([[^kamien\s+(.+)$]], function()
         local arg = trim(matches[2])
-        if arg == "potwierdz"
-            or arg:match("^wybierz%s+")
-            or arg:match("^porzuc%s+") then
+        if M:is_action_argument(arg) then
             send("kamien " .. arg, false)
             return
         end
