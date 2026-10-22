@@ -330,6 +330,8 @@ function M:is_capture_line(kind, raw)
         return line:match("^Kamienie Milowe %-%- aktywne %d+ z %d+%.?$")
             or line:match("^.- %(szczyt %d+%), wybrane %d+ z %d+ %(odblokowane szczytem cechy%):$")
             or line:match("^%*%s+")
+            or line:match("^Do wyboru:")
+            or (self.capture and self.capture.overview_in_choices and raw:match("^%s%s%s%s%s%s+") ~= nil)
             or line:match("^Masz juz pelny zestaw")
             or line:match("^Zmiana wyboru bedzie")
             or line:match('^"kamienie <cecha>"')
@@ -363,7 +365,16 @@ end
 
 function M:update_capture_state(kind, raw)
     local line = trim(raw)
-    if kind == "attribute" then
+    if kind == "overview" then
+        if line:match("^Do wyboru:") then
+            self.capture.overview_in_choices = true
+        elseif line:match("^.- %(szczyt %d+%), wybrane %d+ z %d+ %(odblokowane szczytem cechy%):$")
+            or line:match("^%*%s+")
+            or line:match('^"kamienie <cecha>"')
+            or line:match("^Masz juz pelny zestaw") then
+            self.capture.overview_in_choices = false
+        end
+    elseif kind == "attribute" then
         if line:match("^%[[IVX]+%]%s+") then
             self.capture.last_was_stone = true
         elseif line == "" or line == "Aby wybrac:" or line == "Szczegoly:"
@@ -417,6 +428,8 @@ end
 function M:is_action_argument(arg)
     arg = trim(arg)
     return arg == "potwierdz"
+        or arg == "wybierz"
+        or arg == "porzuc"
         or arg:match("^wybierz%s+") ~= nil
         or arg:match("^porzuc%s+") ~= nil
 end

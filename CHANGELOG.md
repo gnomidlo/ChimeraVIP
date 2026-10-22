@@ -1,3 +1,9 @@
+## 0.163
+
+- Kamienie Milowe: glowny widok poprawnie przechwytuje linie `Do wyboru:` i ich zawiniete kontynuacje przy wolnym slocie.
+- Kamienie Milowe: gole `kamien porzuc` i `kamien wybierz` omijaja karte szczegolow i zostawiaja odpowiedz serwera widoczna.
+- Dodano regresje na oba przypadki z realnego logu.
+
 ## 0.162
 
 - Widok `kamienie`: aktywne Kamienie sa teraz wyrównane w kolumnach procent -> XP -> nazwa -> poziom.

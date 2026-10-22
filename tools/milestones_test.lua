@@ -186,3 +186,20 @@ assert(column_at(p1) == column_at(p2))
 assert(column_at(p2) == column_at(p3))
 assert(aligned_rendered:find("  2%   656k / 25.3m", 1, true))
 print("Milestones overview progress columns: PASS")
+
+
+assert(M:is_action_argument("porzuc"))
+assert(M:is_action_argument("wybierz"))
+print("Bare milestone actions bypass detail capture: PASS")
+
+M.capture = {kind="overview", lines={}}
+assert(M:is_capture_line("overview", "      Do wyboru: Sila Tytana, Zelazny Chwyt, Niepowstrzymany, Zywy Taran i"))
+M:update_capture_state("overview", "      Do wyboru: Sila Tytana, Zelazny Chwyt, Niepowstrzymany, Zywy Taran i")
+assert(M.capture.overview_in_choices == true)
+assert(M:is_capture_line("overview", "      Zelazny Uscisk."))
+M:update_capture_state("overview", "  Zrecznosc (szczyt 151), wybrane 0 z 3 (odblokowane szczytem cechy):")
+assert(M.capture.overview_in_choices == false)
+assert(M:is_capture_line("overview", "  Zrecznosc (szczyt 151), wybrane 0 z 3 (odblokowane szczytem cechy):"))
+assert(not M:is_capture_line("overview", "Czujny krepy mezczyzna mowi: cos tam."))
+M.capture = nil
+print("Free-slot overview choice lines are captured safely: PASS")
