@@ -1,11 +1,12 @@
 return {
     name = "ChimeraVIP",
-    version = "0.162",
+    version = "0.163",
     schema = 2,
     tested_upstream = "4.3",
     raw_base = "https://raw.githubusercontent.com/gnomidlo/ChimeraVIP/main/",
     changes = {
-        "Kamienie Milowe: kolumny procent, XP, nazwa i poziom w glownym widoku",
+        "Kamienie Milowe: poprawione listy Do wyboru przy wolnym slocie",
+        "Kamienie Milowe: gole komendy wyboru i porzucenia omijaja renderer",
     },
     files = {
         "loader.lua",
@@ -53,7 +54,7 @@ return {
         ["src/features/tactical_aliases.lua"] = {hash="8ce7ee3b20fc756d4d321adf84dba58e7aa7bca1", size=5006},
         ["loader.lua"] = {hash="1381414d89e55d2fad70beb8f42e48098d4b1802", size=4501},
         ["src/init.lua"] = {hash="cff3d927f1df8dc512978b3dfd12ceedabaa8471", size=2305},
-        ["src/core/bootstrap.lua"] = {hash="2f6325625107767c60b6632b91c81a4cd4f0b673", size=1471},
+        ["src/core/bootstrap.lua"] = {hash="b90bd81b06afd52704d472e3474e92a301fe0269", size=1471},
         ["src/core/util.lua"] = {hash="7561cd9259be9ff0ce74228e9048eef0b5aba280", size=6686},
         ["src/core/hash.lua"] = {hash="362c18bf131c9939d03b59dd50568d66de8f6a5e", size=2118},
         ["src/integrations/runtime.lua"] = {hash="e8e4a7efac14fcb7ac6f6f0d3cc473f42e556d7a", size=2649},
@@ -83,7 +84,7 @@ return {
         ["src/features/containers.lua"] = {hash="8b7ac23518a81c077c759733817ca6cfd3606242", size=7941},
         ["src/features/skills_view.lua"] = {hash="b8257b4a14d6751ae49a0b17eb2ffe100c152edc", size=24563},
         ["src/features/character_sheet.lua"] = {hash="8138c16473f1d3dfb2c1b72af07b0625a9cb460c", size=5804},
-        ["src/features/milestones.lua"] = {hash="0a22c3ceba0a3b6b2be332dbaee6970e9b6aa84a", size=18624},
+        ["src/features/milestones.lua"] = {hash="4f6d213f60542775e0313337aac4ab0f1cd95fca", size=19262},
         ["src/features/retainer_progress.lua"] = {hash="4a45a38e4375237d539756fce1bc1024b4e23d0e", size=8817},
         ["src/features/equipment_view.lua"] = {hash="14d6f882f2b48d1b937603949a7d21b81027e49b", size=1721},
         ["src/features/weapon_info.lua"] = {hash="a243cd891af622974582e0e2c5d35c940cee4026", size=16514},
