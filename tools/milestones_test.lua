@@ -203,3 +203,35 @@ assert(M:is_capture_line("overview", "  Zrecznosc (szczyt 151), wybrane 0 z 3 (o
 assert(not M:is_capture_line("overview", "Czujny krepy mezczyzna mowi: cos tam."))
 M.capture = nil
 print("Free-slot overview choice lines are captured safely: PASS")
+
+
+local locked_overview = M:parse_overview_lines({
+    "KAMIENIE MILOWE -- aktywne 0 z 3.",
+    "Zrecznosc (szczyt 31) -- pierwszy wybor przy 50.",
+    "Wytrzymalosc (szczyt 31) -- pierwszy wybor przy 50.",
+    "Inteligencja (szczyt 36) -- pierwszy wybor przy 50.",
+    "Madrosc (szczyt 30) -- pierwszy wybor przy 50.",
+    "Odwaga (szczyt 37) -- pierwszy wybor przy 50.",
+})
+assert(#locked_overview.order == 5)
+assert(locked_overview.attributes.zrecznosc.peak == 31)
+assert(locked_overview.attributes.zrecznosc.unlocked == 0)
+assert(locked_overview.attributes.zrecznosc.first_threshold == 50)
+assert(locked_overview.attributes.odwaga.first_threshold == 50)
+
+M.capture = {kind="overview", lines={}}
+assert(M:is_capture_line("overview", "Zrecznosc (szczyt 31) -- pierwszy wybor przy 50."))
+M:update_capture_state("overview", "Zrecznosc (szczyt 31) -- pierwszy wybor przy 50.")
+assert(M.capture.overview_in_choices ~= true)
+M.capture = nil
+
+local locked_output = {}
+hecho = function(text) locked_output[#locked_output+1] = text end
+hechoLink = function(text) locked_output[#locked_output+1] = text end
+M:render_overview(locked_overview)
+local locked_rendered = table.concat(locked_output):gsub('#%x%x%x%x%x%x', '')
+assert(locked_rendered:find("Zr", 1, true))
+assert(locked_rendered:find("31", 1, true))
+assert(locked_rendered:find("0/0", 1, true))
+assert(locked_rendered:find("pierwszy wybor przy 50", 1, true))
+print("Milestones below first threshold: PASS")
