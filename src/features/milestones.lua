@@ -81,6 +81,9 @@ function M:parse_overview_lines(lines)
             local name, peak, selected, unlocked = line:match(
                 "^(.-) %(szczyt (%d+)%), wybrane (%d+) z (%d+) %(odblokowane szczytem cechy%):$"
             )
+            local locked_name, locked_peak, threshold = line:match(
+                "^(.-) %(szczyt (%d+)%) %-%- pierwszy wybor przy (%d+)%.?$"
+            )
             if name then
                 current = {
                     name=trim(name), peak=tonumber(peak), selected=tonumber(selected),
@@ -88,6 +91,13 @@ function M:parse_overview_lines(lines)
                 }
                 out.attributes[normalize(name)] = current
                 out.order[#out.order+1] = normalize(name)
+            elseif locked_name then
+                current = {
+                    name=trim(locked_name), peak=tonumber(locked_peak), selected=0,
+                    unlocked=0, first_threshold=tonumber(threshold), stones={},
+                }
+                out.attributes[normalize(locked_name)] = current
+                out.order[#out.order+1] = normalize(locked_name)
             elseif current and line:match("^%*") then
                 local stone = self:parse_stone_line(line)
                 if stone then current.stones[#current.stones+1] = stone end
@@ -231,6 +241,9 @@ function M:render_overview(data)
         })[key] or attr.name), "kamienie " .. key, "Pokaz Kamienie cechy: " .. attr.name, P.blue)
         hecho(P.text_muted .. "  " .. P.text .. tostring(attr.peak or "?")
             .. P.text_muted .. "   " .. tostring(attr.selected or 0) .. "/" .. tostring(attr.unlocked or 0))
+        if attr.first_threshold then
+            hecho(P.text_muted .. "   pierwszy wybor przy " .. P.yellow .. tostring(attr.first_threshold))
+        end
 
         for _, stone in ipairs(attr.stones or {}) do
             local percent_text = stone.percent and (tostring(stone.percent) .. "%") or "--"
@@ -329,6 +342,7 @@ function M:is_capture_line(kind, raw)
     if kind == "overview" then
         return line:match("^Kamienie Milowe %-%- aktywne %d+ z %d+%.?$")
             or line:match("^.- %(szczyt %d+%), wybrane %d+ z %d+ %(odblokowane szczytem cechy%):$")
+            or line:match("^.- %(szczyt %d+%) %-%- pierwszy wybor przy %d+%.?$")
             or line:match("^%*%s+")
             or line:match("^Do wyboru:")
             or (self.capture and self.capture.overview_in_choices and raw:match("^%s%s%s%s%s%s+") ~= nil)
@@ -369,6 +383,7 @@ function M:update_capture_state(kind, raw)
         if line:match("^Do wyboru:") then
             self.capture.overview_in_choices = true
         elseif line:match("^.- %(szczyt %d+%), wybrane %d+ z %d+ %(odblokowane szczytem cechy%):$")
+            or line:match("^.- %(szczyt %d+%) %-%- pierwszy wybor przy %d+%.?$")
             or line:match("^%*%s+")
             or line:match('^"kamienie <cecha>"')
             or line:match("^Masz juz pelny zestaw") then
