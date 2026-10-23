@@ -1,3 +1,9 @@
+## 0.164
+
+- Kamienie Milowe: glowny widok obsluguje cechy ponizej pierwszego progu wyboru.
+- Zamiast surowego tekstu `pierwszy wybor przy 50` widok pokazuje zwarty wiersz z wartoscia cechy, `0/0` i progiem.
+- Dodano test regresji dla postaci, ktora nie odblokowala jeszcze Kamieni.
+
 ## 0.163
 
 - Kamienie Milowe: glowny widok poprawnie przechwytuje linie `Do wyboru:` i ich zawiniete kontynuacje przy wolnym slocie.
