@@ -89,11 +89,17 @@ assert(fonts.chimeravip_kondycje==7,"Kondycje default 7pt")
 assert(w("gauge1").text:find("HP: 123/150 82%%"),"HP x/y percentage missing")
 assert(w("gauge2").text:find("MP: 80/120 67%%"),"MP x/y percentage missing")
 assert(w("gauge3").text:find("ZM: 45%%"),"fatigue percentage fallback missing")
-assert(w("gauge8").text:find("EXP: 71%%"),"EXP missing")
+assert(w("exp_percent").text:find("71%%"),"EXP missing from bottom strip")
+assert(w("exp_track").y==68,"EXP track must stay along bottom edge")
 for i,label in ipairs({"PR 12%","GL 4%","OBC 38%","PAN 0%"}) do
     assert(w("gauge"..(i+3)).text:find(label,1,true),label)
 end
 assert(w("fill1").height==3,"HP fill must be a subtle bottom line")
+assert(w("fill1").css:find("#69C9A1",1,true),"82% HP should be green")
+assert(w("fill2").css:find("#D7B56B",1,true),"67% mana should be amber")
+assert(w("fill3").css:find("#D7B56B",1,true),"45% fatigue should be amber")
+assert(w("section_exits").css:find("#232938",1,true),"footer background missing")
+assert(w("exit_up").text=="GORA" and w("exit_down").text=="DOL","vertical exits missing")
 assert(not w("exit2").css:find("background%-color"),"compass should not resemble buttons")
 assert(w("special1").text:find("wejdz",1,true),"nonstandard exits missing")
 assert(not w("action_bg").hidden,"context actions should be visible")
@@ -107,6 +113,7 @@ for _,line in ipairs(printed) do
     if line.text=="Neutral" then npc_color=line.color end
 end
 assert(npc_color=="189,196,206","neutral NPC should not be red")
+assert(not table.concat((function() local out={} for _,v in ipairs(printed) do out[#out+1]=v.text end return out end)(),""):find("◆",1,true),"section headings should have no diamond")
 assert(aliases[1]=="/pasek pasek nie" and aliases[2]=="/ustaw kondycje okno nie")
 ctx:set("czcionka",8)
 assert(fonts.chimeravip_kondycje==8,"font change not applied")
@@ -125,6 +132,11 @@ ctx:set("akcje",false)
 flush()
 assert(w("action_bg").hidden or widgets["chimeravip2_floating_1"].hidden,
     "disabled context actions remain visible")
+vitals.progress=137
+handlers["chimera.room.changed"]()
+flush()
+assert(w("exp_percent").text:find("+37%%"),"overcap event progress not reflected")
+assert(not w("exp_extra").hidden,"overflow strip missing")
 commands.cvhud("oficjalny")
 assert(not api.active() and border==0 and not chimera_vip_ui_targets)
 commands.cvhud("vip")

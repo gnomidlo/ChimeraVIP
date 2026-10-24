@@ -69,7 +69,7 @@ return {
         local generation=ctx.state.vip_generation
         local S={active=false,built=false,opened=false,pending=false,widgets={},
             marks={members={},enemies={}},signature=nil,root=nil,cached_vitals=nil,
-            floating=nil,floating_widgets={},specials={},action_count=0}
+            floating=nil,floating_widgets={},specials={},action_count=0,exp_progress=nil}
         local function available()
             return type(Geyser)=="table" and type(Geyser.Container)=="table"
                 and type(Geyser.Label)=="table" and type(getMainWindowSize)=="function"
@@ -117,6 +117,9 @@ return {
                 widget("control"..i,function() action(command) end)
             end
             -- Special exits are plain text; actions move to a floating list.
+            for _,name in ipairs({"section_exits","section_stats","section_controls","exp_track","exp_base","exp_extra","exp_label","exp_percent","exit_up","exit_down"}) do
+                widget(name)
+            end
             for i=1,3 do
                 local slot=i
                 widget("special"..i,function()
@@ -275,7 +278,7 @@ return {
             if S.signature==signature then return end
             S.signature=signature
             clearWindow(WINDOW)
-            print_segment("  ◆ DRUZYNA\n","lavender")
+            print_segment("  DRUZYNA\n","lavender")
             local me=view.self or {}
             local fighting=me.attacking or (me.attackers and #me.attackers>0) or false
             for _,p in ipairs(view.members or {}) do
@@ -286,7 +289,7 @@ return {
             for _,part in ipairs({{view.enemies or {},"WROGOWIE",true},
                                    {view.others or {},"POZOSTALI",false}}) do
                 if #part[1]>0 then
-                    print_segment("\n  ◆ "..part[2].."\n","lavender")
+                    print_segment("\n  "..part[2].."\n","lavender")
                     for _,p in ipairs(part[1]) do
                         row(map.by_id[tostring(p.id)] or "?",p,false,false,map,fighting,part[3])
                     end
@@ -356,6 +359,21 @@ return {
             end
             return def[2]..": "..math.floor(pct+0.5).."%"
         end
+        -- Thresholds apply to all three primary percentages:
+        -- 70-100: green; 40-69: amber; 0-39: red.
+        local function condition_color(pct)
+            if pct==nil then return "#6B778B" end
+            if pct>=70 then return "#69C9A1" end
+            if pct>=40 then return "#D7B56B" end
+            return "#CB7580"
+        end
+        local function panel(w,x,y,width,height)
+            w:move(math.floor(x),math.floor(y))
+            w:resize(math.max(1,math.floor(width)),math.max(1,math.floor(height)))
+            w:setStyleSheet("QLabel {background-color:#232938;"
+                .."border:1px solid #41485C;border-radius:4px;}")
+            w:show()
+        end
         local function draw_bar(i,x,y,width,height,reading,view)
             local pct=tonumber(reading)
             local track=S.widgets["track"..i]
@@ -368,7 +386,7 @@ return {
             if amount>0 then
                 fill:move(math.floor(x+1),math.floor(y+height-4))
                 fill:resize(amount,3)
-                fill:setStyleSheet("QLabel {background-color:"..color(GAUGES[i][3])
+                fill:setStyleSheet("QLabel {background-color:"..(i<=3 and condition_color(pct) or color(GAUGES[i][3]))
                     ..";border:0;border-radius:2px;}")
                 fill:show()
             else fill:hide() end
@@ -435,6 +453,52 @@ return {
             end
             S.action_count=count
         end
+        local function draw_experience(width,vitals)
+            local track=S.widgets.exp_track
+            local base=S.widgets.exp_base
+            local extra=S.widgets.exp_extra
+            local label=S.widgets.exp_label
+            local number=S.widgets.exp_percent
+            local left=91
+            local right=width-9
+            local span=math.max(50,right-left-70)
+            local raw=tonumber(vitals.progress) or S.exp_progress
+            -- Upstream's progress is often capped at 100. Never invent
+            -- overcap progress if neither event nor GMCP exposes it.
+            local full=raw and math.max(0,raw) or nil
+            local initial=full and math.min(100,full) or nil
+            local over=full and math.max(0,full-100) or nil
+            panel(track,left,HEIGHT-8,span,4)
+            track:setStyleSheet("QLabel {background-color:#34384B;border:0;border-radius:2px;}")
+            if initial then
+                base:move(left,HEIGHT-8)
+                base:resize(math.max(1,math.floor(span*initial/100)),4)
+                base:setStyleSheet("QLabel {background-color:#A892CF;border:0;border-radius:2px;}")
+                base:show()
+            else base:hide() end
+            if over and over>0 then
+                -- Overlay a full-width second cycle; successive cycles
+                -- move lavender towards rich amber/gold.
+                local tier=math.floor(over/100)
+                local fraction=(over%100)/100
+                if fraction==0 then fraction=1 end
+                local shades={"#D4C08A","#DEB46F","#E6AA4E","#EBA837","#F2BF4A"}
+                local shade=shades[math.min(tier+1,#shades)]
+                extra:move(left,HEIGHT-8)
+                extra:resize(math.max(1,math.floor(span*fraction)),4)
+                extra:setStyleSheet("QLabel {background-color:"..shade..";border:0;border-radius:2px;}")
+                extra:show()
+            else extra:hide() end
+            place(label,8,HEIGHT-18,81,11,"EXP","lavender")
+            label:setStyleSheet("QLabel {background:transparent;border:0;color:#C7B9E8;"
+                .."font-family:'Bitstream Vera Sans Mono';font-size:7pt;}")
+            local display=not full and "--" or
+                (full>100 and ("100% +"..math.floor(full-100+0.5).."%")
+                    or (math.floor(full+0.5).."%"))
+            place(number,right-65,HEIGHT-18,65,11,display,"lavender")
+            number:setStyleSheet("QLabel {background:transparent;border:0;color:#D5C3E5;"
+                .."font-family:'Bitstream Vera Sans Mono';font-size:7pt;}")
+        end
         local function draw_footer(view)
             if not S.built then return end
             local width=tonumber((getMainWindowSize())) or 1000
@@ -444,6 +508,14 @@ return {
             local vitals=current_vitals()
             local normal={}
             for _,e in ipairs(EXITS) do normal[e[1]]=true end
+            local controls=math.min(180,math.max(151,math.floor(width*0.17)))
+            local x=168
+            local rx=width-controls-8
+            local space=math.max(170,rx-x-8)
+            -- Slate background panels: continuous, discreet, distinct zones.
+            panel(S.widgets.section_exits,2,2,x-7,HEIGHT-24)
+            panel(S.widgets.section_stats,x-1,2,space+5,HEIGHT-24)
+            panel(S.widgets.section_controls,rx-3,2,controls+7,HEIGHT-24)
             -- The compass is only a text hint, never a button.
             for i,e in ipairs(EXITS) do
                 local active=e[1]=="" or exits[e[1]]~=nil
@@ -456,7 +528,7 @@ return {
             end
             local specials={}
             for cmd in pairs(exits) do
-                if type(cmd)=="string" and not normal[cmd] then specials[#specials+1]=cmd end
+                if type(cmd)=="string" and cmd~="gora" and cmd~="dol" and not normal[cmd] then specials[#specials+1]=cmd end
             end
             table.sort(specials)
             S.specials=specials
@@ -470,10 +542,6 @@ return {
                         .."font-family:'Bitstream Vera Sans Mono';font-size:7pt;}")
                 else w:hide() end
             end
-            local controls=math.min(180,math.max(151,math.floor(width*0.17)))
-            local x=168
-            local rx=width-controls-8
-            local space=math.max(170,rx-x-8)
             for i=1,3 do
                 local cell=space/3
                 draw_bar(i,x+(i-1)*cell,6,cell-5,22,vitals[GAUGES[i][1]],view)
@@ -483,11 +551,59 @@ return {
                 local cell=space/4
                 draw_chip(i,x+(offset-1)*cell,32,cell-5,vitals[GAUGES[i][1]])
             end
-            draw_bar(8,x,55,space-5,14,vitals.progress,view)
+            -- Include up/down alongside the eight compass directions.
+            for _,pair in ipairs({{"exit_up","gora",0},{"exit_down","dol",1}}) do
+                local w=S.widgets[pair[1]]
+                place(w,5,5+pair[3]*37,48,13,
+                    pair[3]==0 and "GORA" or "DOL",
+                    exits[pair[2]]~=nil and "mint" or "muted")
+                w:setStyleSheet("QLabel {background:transparent;border:0;color:"
+                    ..(exits[pair[2]] and "#A8DCC2" or "#667083")
+                    ..";font-family:'Bitstream Vera Sans Mono';font-size:6pt;}")
+            end
+            S.widgets.track8:hide()
+            S.widgets.fill8:hide()
+            S.widgets.gauge8:hide()
+            draw_experience(width,vitals)
+            -- Only official status_bar.model() determines upstream states.
+            local official_model=nil
+            local sb=ctx:use("status_bar")
+            if sb and type(sb.model)=="function" then
+                local ok,model=pcall(sb.model)
+                if ok and type(model)=="table" then official_model=model end
+            end
+            local states={}
+            if official_model then
+                for _,v in ipairs(official_model.toggles or {}) do
+                    if v.command=="/autowsparcie" then states[2]=v.on
+                    elseif v.command=="/autopogon" then states[3]=v.on end
+                end
+                if official_model.collect then states[4]=official_model.collect.on end
+            end
+            local lamp=ctx:use("lamp")
+            if lamp and type(lamp.state)=="function" then
+                local ok,v=pcall(lamp.state)
+                if ok and type(v)=="table" then states[5]=v.lit end
+            end
             local cell=controls/3
             for i,btn in ipairs(BUTTONS) do
-                place(S.widgets["control"..i],rx+(i-1)%3*cell,
-                    7+math.floor((i-1)/3)*21,cell-4,16,btn[1],"text")
+                local title=btn[1]
+                local state=states[i]
+                if i==1 and official_model and official_model.mode then
+                    title=(official_model.mode=="Atak" and "TRYB A" or "TRYB R")
+                elseif state~=nil then
+                    title=title.." "..(state and "ON" or "OFF")
+                end
+                local control=S.widgets["control"..i]
+                place(control,rx+(i-1)%3*cell,
+                    7+math.floor((i-1)/3)*21,cell-4,16,title,"text")
+                local fg=state==true and "#A8DCC2" or state==false and "#8590A2" or "#D8DCE6"
+                local bg=state==true and "#26463F" or "#232938"
+                control:setStyleSheet("QLabel {background-color:"..bg
+                    ..";color:"..fg..";border:1px solid "
+                    ..(state==true and "#4F977E" or "#41485C")
+                    ..";border-radius:4px;font-family:'Bitstream Vera Sans Mono';font-size:7pt;}")
+
             end
             float_actions(width)
         end
@@ -547,6 +663,13 @@ return {
             end}
         ctx:on("chimera.team.changed",function()
             S.signature=nil
+            schedule()
+        end)
+        ctx:on("chimera.progress",function(data)
+            -- Some servers provide only capped percent; this is conditional.
+            if type(data)=="table" and tonumber(data.percent) then
+                S.exp_progress=tonumber(data.percent)
+            end
             schedule()
         end)
         ctx:on("chimera.room.changed",schedule)

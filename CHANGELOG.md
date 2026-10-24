@@ -1,3 +1,13 @@
+## 0.171 — Quiet HUD: wariant 1, stan i poziomy EXP
+
+- Footer 76 px: grafitowo-lawendowe panele wyjsc, statystyk i kontrolek.
+- HP, MP, ZM: zielony >=70%, bursztynowy 40-69%, czerwony ponizej 40%.
+- EXP: wydzielony na calej szerokosci u dolu paska, czytelna etykieta,
+  nakladki w zloto-bursztynowych odcieniach, jezeli GMCP przekaze >100%.
+- Kompas: 8 kierunkow, GORA i DOL oraz wyjscia nietypowe.
+- Oficjalny status bar i lampa dostarczaja informacji ON/OFF i TRYB.
+- Naglowki Kondycji bez ozdobnego rombu.
+
 ## 0.170 — Quiet HUD 2.0 (Classic Quiet+ i Kondycje Hybrid)
 
 - Compass jako plaska sciagawka GMCP bez obramowanych przyciskow; wyjscia

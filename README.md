@@ -1,7 +1,7 @@
 # ChimeraVIP
 
 Pastelowa nakladka na **oficjalne skrypty Chimery 5.0** dla Mudleta.
-Serwer: `chimera.co.pl:2300`. Wersja ChimeraVIP: **0.170**.
+Serwer: `chimera.co.pl:2300`. Wersja ChimeraVIP: **0.171**.
 Testowana baza: **5.0.0-beta.13**.
 
 ## Instalacja i aktualizacja
@@ -84,3 +84,14 @@ pozostanie jako `--`; nie zmyslamy procentow.
 
 Po scaleniu: `/cvip aktualizuj`, `/cvip v5 instaluj`,
 oficjalne `/przeladuj`.
+
+
+## Kolorystyczny Quiet HUD 0.171
+
+Nowy wyglad inspirowany wariantem 1: stonowane panele Geyser, kolor
+HP/MP/ZM zalezy od procentu, GORA/DOL w kompasie, a przyciski wspieraja
+wskazania ON/OFF pobierane z oficjalnego `status_bar.model()`.
+Pasek EXP zajmuje dolna krawedz footera. Dodatkowe warstwy w zloto-
+bursztynowych odcieniach widac tylko gdy oficjalne GMCP albo zdarzenie
+postepu dostarczy wartosc wyzsza niz 100; w przeciwnym razie nie ma
+wiarygodnych danych o nadwyzce. /cvhud oficjalny cofa zmiany.
