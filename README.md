@@ -1,7 +1,7 @@
 # ChimeraVIP
 
 Pastelowa nakladka na **oficjalne skrypty Chimery 5.0** dla Mudleta.
-Serwer: `chimera.co.pl:2300`. Wersja ChimeraVIP: **0.169**.
+Serwer: `chimera.co.pl:2300`. Wersja ChimeraVIP: **0.170**.
 Testowana baza: **5.0.0-beta.13**.
 
 ## Instalacja i aktualizacja
@@ -64,3 +64,23 @@ Po scaleniu aktualizacji: `/cvip aktualizuj`, `/cvip v5 instaluj`,
 oficjalne `/przeladuj`. W razie problemow: `/cvhud oficjalny`.
 Gdy serwer nie przeslal jeszcze `Char.Vitals`, brak wartosci
 pozostanie jako `--`; nie zmyslamy procentow.
+
+
+## Quiet HUD 2.0 — 0.170
+
+- Footer pozostaje wysoki na **76 px**. Kompas jest tekstowa sciagawka,
+  wyjscia nietypowe sa wypisane obok.
+- HP/MP/ZM wyswietlaja procent, a gdy oficjalne GMCP udostepnia
+  rzeczywiste wartosci takze `x/y`. Nie wyliczamy `x/y` z procentow.
+- PR, GL, OBC i PAN nadal maja cztery oddzielne, dyskretne pola.
+- Akcje kontekstowe lokacji pojawiaja sie jako polprzezroczysta lista
+  nad blokiem ATK/WSP/POG. Klawisze pobierane sa z `locations.room_actions()`,
+  klikniecie wywoluje `locations.run_action(index)`. Po opuszczeniu
+  lokacji lub braku akcji lista znika. Wylaczenie: `/cvhud ustawienia`
+  → `akcje`.
+- Kondycje: styl Hybrid z osmioma segmentami, mniejsza czcionka
+  (domyslnie 7 pt, regulacja 6-12), neutralne nazwy w POZOSTALI.
+- Powrot do oryginalu: `/cvhud oficjalny`.
+
+Po scaleniu: `/cvip aktualizuj`, `/cvip v5 instaluj`,
+oficjalne `/przeladuj`.
