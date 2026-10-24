@@ -1,13 +1,15 @@
 -- ChimeraVIP UI smoke/regression test; run: texlua tools/chimera5_ui_test.lua
 local handlers,commands,timers,aliases={}, {}, {}, {}
 local windows,border={},0
+local widgets,colors,fonts,printed={},{},{},{}
 local function mock_widget(name)
     local w={name=name}
-    function w:setStyleSheet() end
+    widgets[name]=w
+    function w:setStyleSheet(css) self.css=css end
     function w:setClickCallback() end
     function w:move() end
     function w:resize() end
-    function w:echo() end
+    function w:echo(value) self.text=value end
     function w:hide() end
     function w:show() end
     function w:delete() end
@@ -24,11 +26,16 @@ function windowType(name) return windows[name] end
 function showWindow(name) windows[name]="userwindow" end
 function hideWindow(name) windows[name]="hidden" end
 function setUserWindowTitle() end
-function setFontSize() end
+function setFontSize(name,size) fonts[name]=size end
 function saveWindowLayout() end
 function clearWindow() end
-function cecho(...) print("DIAG CECHO", ...) end
+function cecho() end
 function cechoLink() end
+function setFgColor(name,r,g,b)
+    colors[#colors+1]={name,r,g,b}
+end
+function echo(name,value) printed[#printed+1]=value end
+function echoLink(name,value) printed[#printed+1]=value end
 function expandAlias(command) aliases[#aliases+1]=command end
 local gmcp={
     room=function() return {id="room",exits={polnoc="next"}} end,
@@ -64,7 +71,23 @@ local function flush()
     end
 end
 flush()
-assert(api.active() and border==120, "HUD not active; border="..tostring(border).." aliases="..table.concat(aliases," | "))
+assert(api.active() and border==76, "HUD not active; border="..tostring(border).." aliases="..table.concat(aliases," | "))
+assert(fonts["chimeravip_kondycje"]==8,"window should use 8pt")
+assert(#colors>0 and table.concat(printed,""):find("[@]",1,true),
+    "Kondycje lost colored text or own marker")
+assert(not table.concat(printed,""):find("<#",1,true),"literal color tags in Kondycje")
+assert(widgets["chimeravip2_1_gauge1"].text:find("KOND 90",1,true),"missing HP value")
+assert(widgets["chimeravip2_1_gauge2"].text:find("MANA 55",1,true),"missing mana")
+assert(widgets["chimeravip2_1_gauge8"].text:find("EXP 45",1,true),"missing exp")
+assert(widgets["chimeravip2_1_fill1"].css:find("background-color:#F0A8B8",1,true),"HP fill not colored")
+-- The plugin may start with an empty internal cache after reload; raw GMCP
+-- and the next Char.Vitals event must repopulate the compact HUD.
+gmcp.vitals=function() return nil end
+_G.gmcp={Char={Vitals={hp=63,mana=50,fatigue=20,thirst=70,hunger=50,panic=2,encumbrance=12,progress=81}}}
+handlers["gmcp.Char.Vitals"]("gmcp.Char.Vitals")
+flush()
+assert(widgets["chimeravip2_1_gauge1"].text:find("KOND 63",1,true),"raw GMCP fallback not applied")
+assert(widgets["chimeravip2_1_gauge8"].text:find("EXP 81",1,true),"raw progress not applied")
 assert(aliases[1]=="/pasek pasek nie")
 assert(aliases[2]=="/ustaw kondycje okno nie")
 assert(chimera_vip_ui_targets.members.A=="friend1")
@@ -77,4 +100,4 @@ flush()
 assert(api.active())
 ctx.clean()
 assert(not api.active() and not chimera_vip_ui_targets)
-print("PASS ChimeraVIP UI switch, dense marks, fallback and teardown")
+print("PASS compact 76px HUD, pastel gauges, GMCP, Kondycje colors, 8pt, switchback")
