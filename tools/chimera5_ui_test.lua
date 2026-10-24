@@ -51,6 +51,7 @@ function setFgColor(n,r,g,b) fg=string.format("%d,%d,%d",r,g,b) end
 function echo(n,t) printed[#printed+1]={text=t,color=fg} end
 function echoLink(label,command,hint)
     links[#links+1]={label=label,command=command,hint=hint}
+    printed[#printed+1]={text=command,color=fg}
 end
 function expandAlias(t) aliases[#aliases+1]=t end
 local room={id="one",exits={polnoc="north",zachod="west",gora=false,
@@ -312,12 +313,13 @@ assert(#saved_files["/fake/profile/ChimeraVIP-data/room_actions.lua"].rooms.one=
     "Adding same name should update existing action, not duplicate")
 assert(chimera_vip.ui.room_action(2)==true and
     called[#called]=="obejrzyj skrzynie","Updated action was not applied")
+local link_count=#links
 commands.cvakcja("")
-assert(#links==4,"Help must present clickable deletion for four actions")
-assert(links[1].label:find("usun",1,true) and
-    links[1].command:find("chimera_vip.ui.delete_action",1,true),
+assert(#links==link_count+4,"Help must present clickable deletion for four actions")
+assert(links[link_count+1].label:find("usun",1,true) and
+    links[link_count+1].command:find("chimera_vip.ui.delete_action",1,true),
     "Help should have a clickable deletion link")
-local remove_click=assert(loadstring(links[1].command))
+local remove_click=assert(loadstring(links[link_count+1].command))
 remove_click()
 assert(#saved_files["/fake/profile/ChimeraVIP-data/room_actions.lua"].rooms.one==3,
     "Click-to-delete must remove selected action")
