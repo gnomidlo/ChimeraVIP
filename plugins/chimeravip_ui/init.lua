@@ -195,11 +195,12 @@ return {
                 expandAlias(entry.value,false)
             elseif entry.kind=="sequence" then
                 for i,command in ipairs(entry.steps or {}) do
+                    local step=command
                     if i==1 then
                         ctx:send(command,true)
                     else
                         ctx:timer((i-1)*0.15,function()
-                            if not S.destroyed then ctx:send(command,true) end
+                            if not S.destroyed then ctx:send(step,true) end
                         end)
                     end
                 end
@@ -689,7 +690,7 @@ return {
                     local y=top+18+(i-1)*20
                     row:move(left+6,y)
                     row:resize(panel_w-12,20)
-                    row:echo("        "..html_escape(short))
+                    row:echo(string.rep("&nbsp;",7)..html_escape(short))
                     row:setStyleSheet("QLabel {background-color:rgba(37,44,59,55);"
                         .."color:#D4DAE5;border:0;border-bottom:1px solid rgba(160,175,195,25);"
                         .."font-family:'Bitstream Vera Sans Mono';font-size:7pt;}"
@@ -1092,7 +1093,7 @@ return {
                     records[#records+1]=entry
                 end
                 entry.name=name
-                entry.kind=op=="dodaj" and "send" or op
+                entry.kind=op=="dodaj" and "send" or (op=="sekwencja" and "sequence" or op)
                 entry.value=value
                 entry.steps=steps
                 if save_actions() then
