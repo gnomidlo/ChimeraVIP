@@ -1,7 +1,7 @@
 # ChimeraVIP
 
 Pastelowa nakladka na **oficjalne skrypty Chimery 5.0** dla Mudleta.
-Serwer: `chimera.co.pl:2300`. Wersja ChimeraVIP: **0.167**.
+Serwer: `chimera.co.pl:2300`. Wersja ChimeraVIP: **0.168**.
 Testowana baza: **5.0.0-beta.13**.
 
 ## Instalacja i aktualizacja
@@ -51,3 +51,16 @@ odmian graczy. Dawne dane w `ChimeraVIP-data/` pozostaja nietkniete.
 `lua tools/release_check.lua` sprawdza manifest v2, SHA Git blob i skladnie.
 `texlua tools/chimera5_ui_test.lua` uruchamia mock UI bez Mudleta.
 Wymagane jest jeszcze sprawdzenie w prawdziwej sesji Chimera 5.
+
+
+## Quiet HUD i Kondycje — 0.168
+
+HUD zachowuje kompaktowa wysokosc **76 px**. Zamiast duzych przyciskow
+pokazuje kolorowe paski procentowe. Dane pobiera z cache GMCP Chimery
+oraz z `gmcp.Char.Vitals` Mudleta (rowniez po przeladowaniu pluginu).
+Okno Kondycje uzywa fizycznych kolorow i czcionki 8 pt.
+
+Po scaleniu aktualizacji: `/cvip aktualizuj`, `/cvip v5 instaluj`,
+oficjalne `/przeladuj`. W razie problemow: `/cvhud oficjalny`.
+Gdy serwer nie przeslal jeszcze `Char.Vitals`, brak wartosci
+pozostanie jako `--`; nie zmyslamy procentow.

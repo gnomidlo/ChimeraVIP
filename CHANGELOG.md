@@ -1,3 +1,12 @@
+## 0.168 — Quiet HUD, czytelne Kondycje i odczyty GMCP
+
+- Pasek ChimeraVIP zmniejszony ze 120 px do pierwotnych 76 px (Quiet Footer).
+- Maly kompas, trzy rzedy drobnych wskaznikow, kompaktowe przyciski, skrocone akcje lokacji.
+- Kolorowe wypelnienie HP, many, zmeczenia, pragnienia, glodu, obciazenia, paniki i XP.
+- Odczyt wartosci z gmcp.vitals(), zdarzen Char.Vitals oraz surowego GMCP Mudleta po reloadzie.
+- Kondycje: kolor tekstu przez setFgColor (bez doslownych znacznikow <#HEX>), czcionka 8 pt.
+- Testy regresji renderowania, kolorow i awaryjnego odczytu GMCP.
+
 ## 0.167 — Hotfix pastelowego HUD-u Chimera 5
 
 - Naprawiono uruchamianie HUD: getMainWindowSize() zwraca szerokosc i wysokosc, a tonumber() musi otrzymac tylko szerokosc.
