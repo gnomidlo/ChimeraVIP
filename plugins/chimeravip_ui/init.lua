@@ -104,6 +104,10 @@ return {
             if S.built then return end
             S.root=Geyser.Container:new({name="chimeravip2_footer_"..generation,
                 x=0,y=-HEIGHT,width="100%",height=HEIGHT})
+            -- Backdrops must be created first (Qt/Geyser stacking order).
+            for _,name in ipairs({"section_exits","section_stats","section_controls","exp_track"}) do
+                widget(name)
+            end
             for i,exit in ipairs(EXITS) do
                 local command=exit[1]
                 widget("exit"..i,command~="" and function() ctx:send(command,true) end or nil)
@@ -117,7 +121,7 @@ return {
                 widget("control"..i,function() action(command) end)
             end
             -- Special exits are plain text; actions move to a floating list.
-            for _,name in ipairs({"section_exits","section_stats","section_controls","exp_track","exp_base","exp_extra","exp_label","exp_percent","exit_up","exit_down"}) do
+            for _,name in ipairs({"exp_base","exp_extra","exp_label","exp_percent","exit_up","exit_down"}) do
                 widget(name)
             end
             for i=1,3 do
