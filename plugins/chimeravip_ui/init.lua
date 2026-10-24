@@ -13,16 +13,21 @@ local EXITS = {
     {"poludniowy-zachod","SW"},{"poludnie","S"},{"poludniowy-wschod","SE"},
 }
 local GAUGES = {
-    {"hp","HP","hp"},{"mana","MP","mp"},
-    {"fatigue","ZM","zm"},{"thirst","PR","blue"},
-    {"hunger","GL","mint"},{"encumbrance","OBC","peach"},
-    {"panic","PAN","rose"},{"progress","EXP","lavender"},
+    {"hp","życie","hp"},{"mana","mana","mp"},
+    {"fatigue","siły","zm"},{"thirst","pragnienie","blue"},
+    {"hunger","głód","mint"},{"encumbrance","obciążenie","peach"},
+    {"panic","panika","rose"},{"progress","EXP","lavender"},
 }
 local BUTTONS = {
-    {"TRYB","/tryb_ataku"},{"WSP","/autowsparcie"},
-    {"POG","/autopogon"},{"ZBIER","/zbieranie"},
-    {"LAMPA","/lampa"},{"KOL","@kolory"},{"MB","/mbind"},
-    {"OPCJE","/cvhud ustawienia"},{"OFIC","/cvhud oficjalny"},
+    {"⚔","/tryb_ataku","Tryb ataku"},
+    {"⬡","/autowsparcie","Autowsparcie"},
+    {"➤","/autopogon","Autopogoń"},
+    {"♣","/zbieranie","Zbieranie"},
+    {"✦","/lampa","Lampa"},
+    {"◐","@kolory","Kolorowanie walki"},
+    {"⌨","/mbind","MBindy"},
+    {"⚙","/cvhud ustawienia","Ustawienia"},
+    {"↶","/cvhud oficjalny","Oficjalny HUD"},
 }
 local function clean(value)
     return tostring(value == nil and "?" or value):gsub("[<>\r]", "")
@@ -105,7 +110,7 @@ return {
             S.root=Geyser.Container:new({name="chimeravip2_footer_"..generation,
                 x=0,y=-HEIGHT,width="100%",height=HEIGHT})
             -- Backdrops must be created first (Qt/Geyser stacking order).
-            for _,name in ipairs({"section_exits","section_stats","section_controls","exp_track","exp_over_track"}) do
+            for _,name in ipairs({"hud_background","section_exits","section_stats","section_needs","section_controls","exp_track","exp_over_track"}) do
                 widget(name)
             end
             for i,exit in ipairs(EXITS) do
@@ -116,6 +121,8 @@ return {
             for i=1,#GAUGES do widget("track"..i) end
             for i=1,#GAUGES do widget("fill"..i) end
             for i=1,#GAUGES do widget("gauge"..i) end
+            for i=1,3 do widget("value"..i) end
+            for i=4,7 do widget("need_value"..i) end
             for i,button in ipairs(BUTTONS) do
                 local command=button[2]
                 widget("control"..i,function() action(command) end)
@@ -378,38 +385,85 @@ return {
                 .."border:1px solid #41485C;border-radius:4px;}")
             w:show()
         end
-        local function draw_bar(i,x,y,width,height,reading,view)
-            local pct=tonumber(reading)
+        -- Three large inset bars and four equal compact need rows.
+        -- Life is threshold-colored, mana always blue, and available
+        -- strength = 100 - fatigue (no guessed absolute quantity).
+        local function primary_tint(i,pct)
+            if i==1 then return condition_color(pct) end
+            if i==2 then return "#639EDB" end
+            return "#D8B671"
+        end
+        local function draw_primary(i,x,y,width,height,reading,view)
+            local raw=tonumber(reading)
+            local pct=raw
+            if i==3 and raw then pct=math.max(0,math.min(100,100-raw)) end
             local track=S.widgets["track"..i]
             local fill=S.widgets["fill"..i]
-            local text=S.widgets["gauge"..i]
-            place(track,x,y,width,height,"","muted")
-            track:setStyleSheet("QLabel {background-color:#202633;"
-                .."border:1px solid #343B4B;border-radius:3px;}")
-            local amount=pct and math.floor((width-2)*math.max(0,math.min(1,pct/100))) or 0
+            local title=S.widgets["gauge"..i]
+            local value=S.widgets["value"..i]
+            panel(track,x,y,width,height)
+            track:setStyleSheet("QLabel {background-color:#181E2B;"
+                .."border:1px solid #424D64;border-radius:4px;}")
+            local name=GAUGES[i][2]
+            local label=pct and (math.floor(pct+0.5).."%") or "--"
+            -- Only display actual x/y when the official model exposes it.
+            local now,max=exact(GAUGES[i][1],view)
+            if i~=3 and now and max and width>=166 then
+                label=string.format("%d/%d %s",now,max,label)
+            end
+            local title_w=width<122 and 40 or 55
+            place(title,x+5,y+4,title_w,16,name,"text")
+            title:setStyleSheet("QLabel {background:transparent;color:#C2CCDC;"
+                .."border:0;font-family:'DejaVu Sans';font-size:7pt;}")
+            place(value,x+title_w,y+4,width-title_w-7,16,label,"text")
+            value:setStyleSheet("QLabel {background:transparent;color:#E4E9F2;"
+                .."border:0;font-family:'DejaVu Sans Mono';font-size:7pt;}")
+            local rail_x=x+6
+            local rail_y=y+height-13
+            local rail_w=math.max(1,width-12)
+            local rail_h=7
+            -- Inset rail and full-height, resource-specific fill.
+            -- These two labels sit above the panel but below text widgets.
+            local amount=pct and math.floor(rail_w*math.max(0,math.min(1,pct/100))) or 0
             if amount>0 then
-                fill:move(math.floor(x+1),math.floor(y+height-4))
-                fill:resize(amount,3)
-                fill:setStyleSheet("QLabel {background-color:"..(i<=3 and condition_color(pct) or color(GAUGES[i][3]))
+                fill:move(math.floor(rail_x),math.floor(rail_y))
+                fill:resize(amount,rail_h)
+                fill:setStyleSheet("QLabel {background-color:"..primary_tint(i,pct)
                     ..";border:0;border-radius:2px;}")
                 fill:show()
             else fill:hide() end
-            place(text,x,y,width,height,main_label(i,reading,view),"text")
-            -- Thin colored line and neutral text: no pale text on pale fill.
-            text:setStyleSheet("QLabel {background:transparent;color:#DCE1EA;"
-                .."border:0;font-family:'Bitstream Vera Sans Mono';font-size:7pt;}")
         end
-        local function draw_chip(i,x,y,width,v)
-            -- Keep the four original separate PR/GL/OBC/PAN capsules.
-            S.widgets["track"..i]:hide()
-            S.widgets["fill"..i]:hide()
-            local number=tonumber(v)
-            local label=GAUGES[i][2].." "..(number and math.floor(number+0.5).."%" or "--")
-            local w=S.widgets["gauge"..i]
-            place(w,x,y,width,17,label,"text")
-            w:setStyleSheet("QLabel {background-color:#202633;color:#DCE1EA;"
-                .."border:1px solid #343B4B;border-radius:3px;"
-                .."font-family:'Bitstream Vera Sans Mono';font-size:7pt;}")
+        local function draw_need(i,x,y,width,height,reading)
+            local raw=tonumber(reading)
+            local background=S.widgets["track"..i]
+            local bar=S.widgets["fill"..i]
+            local label=S.widgets["gauge"..i]
+            local value=S.widgets["need_value"..i]
+            panel(background,x,y,width,height)
+            background:setStyleSheet("QLabel {background-color:#1C2331;"
+                .."border:1px solid #3B465C;border-radius:2px;}")
+            local text=GAUGES[i][2]
+            local label_w=math.min(83,math.floor(width*0.53))
+            place(label,x+4,y,math.max(1,label_w),height,text,"text")
+            label:setStyleSheet("QLabel {background:transparent;color:#BFC9D7;"
+                .."border:0;font-family:'DejaVu Sans';font-size:6pt;}")
+            local value_w=27
+            place(value,x+width-value_w-4,y,value_w,height,
+                raw and (math.floor(raw+0.5).."%") or "--","text")
+            value:setStyleSheet("QLabel {background:transparent;color:#E3E8F0;"
+                .."border:0;font-family:'DejaVu Sans Mono';font-size:6pt;}")
+            local rail_x=x+label_w+7
+            local rail_w=math.max(1,width-label_w-value_w-15)
+            if raw and raw>0 then
+                local len=math.floor(rail_w*math.max(0,math.min(1,raw/100)))
+                if len>0 then
+                    bar:move(math.floor(rail_x),math.floor(y+height-5))
+                    bar:resize(len,3)
+                    bar:setStyleSheet("QLabel {background-color:"..color(GAUGES[i][3])
+                        ..";border:0;border-radius:2px;}")
+                    bar:show()
+                else bar:hide() end
+            else bar:hide() end
         end
         local function float_actions(width)
             local items=ctx.settings.akcje and locations.room_actions() or {}
@@ -457,172 +511,244 @@ return {
             end
             S.action_count=count
         end
-        -- Experience belongs INSIDE the central stats panel. It may have
-        -- two tracks: base 0-100% and an independent overflow cycle.
-        -- Never paint a bar across the entire footer or below HEIGHT.
-        local function draw_experience(x,space,vitals)
-            local track=S.widgets.exp_track
-            local overflow_track=S.widgets.exp_over_track
+        -- A single bottom ribbon, outside all four top panels.
+        -- The main lavender cycle occupies four pixels; optional overcap
+        -- uses two distinct amber pixels underneath only with real data.
+        local function draw_experience(width,vitals)
+            local background=S.widgets.exp_track
+            local over_bg=S.widgets.exp_over_track
             local base=S.widgets.exp_base
             local extra=S.widgets.exp_extra
-            local label=S.widgets.exp_label
+            local title=S.widgets.exp_label
             local number=S.widgets.exp_percent
-            local rail_x=x+53
-            local rail_w=math.max(26,math.floor(space-134))
-            local raw=tonumber(vitals.progress) or S.exp_progress
-            -- Official GMCP usually caps at 100. Only show extra cycles
-            -- when the server supplies an uncapped progress value.
-            local full=raw and math.max(0,raw) or nil
-            local initial=full and math.min(100,full) or nil
-            local over=full and math.max(0,full-100) or nil
-            track:move(math.floor(rail_x),58)
-            track:resize(rail_w,4)
-            track:setStyleSheet("QLabel {background-color:#34384B;border:0;border-radius:2px;}")
-            track:show()
-            if initial then
-                local amount=math.floor(rail_w*initial/100)
-                if amount>0 then
-                    base:move(math.floor(rail_x),58)
-                    base:resize(amount,4)
-                    base:setStyleSheet("QLabel {background-color:#A892CF;border:0;border-radius:2px;}")
-                    base:show()
-                else base:hide() end
+            local value=tonumber(vitals.progress) or S.exp_progress
+            local p=value and math.max(0,value) or nil
+            local capped=p and math.min(100,p) or 0
+            local overflow=p and math.max(0,p-100) or 0
+            local rail_x=46
+            local rail_w=math.max(30,math.floor(width-150))
+            background:move(rail_x,65)
+            background:resize(rail_w,7)
+            background:setStyleSheet("QLabel {background-color:#343C4D;border:0;border-radius:2px;}")
+            background:show()
+            if capped>0 then
+                base:move(rail_x,65)
+                base:resize(math.max(1,math.floor(rail_w*capped/100)),4)
+                base:setStyleSheet("QLabel {background-color:#AC97D4;border:0;border-radius:2px;}")
+                base:show()
             else base:hide() end
-            if over and over>0 then
-                overflow_track:move(math.floor(rail_x),65)
-                overflow_track:resize(rail_w,3)
-                overflow_track:setStyleSheet("QLabel {background-color:#34384B;border:0;border-radius:2px;}")
-                overflow_track:show()
-                local tier=math.floor((over-1)/100)
-                local fraction=((over-1)%100+1)/100
-                local shades={"#D4C08A","#DEB46F","#E6AA4E","#EBA837","#F2BF4A"}
-                local amount=math.floor(rail_w*fraction)
-                if amount>0 then
-                    extra:move(math.floor(rail_x),65)
-                    extra:resize(amount,3)
-                    extra:setStyleSheet("QLabel {background-color:"..shades[math.min(tier+1,#shades)]
-                        ..";border:0;border-radius:2px;}")
-                    extra:show()
-                else extra:hide() end
+            if overflow>0 then
+                local tier=math.floor((overflow-1)/100)
+                local part=((overflow-1)%100+1)/100
+                local shades={"#DFB779","#E6B56E","#EDB05C","#F3BC51"}
+                over_bg:move(rail_x,70)
+                over_bg:resize(rail_w,2)
+                over_bg:setStyleSheet("QLabel {background-color:#343C4D;border:0;}")
+                over_bg:show()
+                extra:move(rail_x,70)
+                extra:resize(math.max(1,math.floor(rail_w*part)),2)
+                extra:setStyleSheet("QLabel {background-color:"..shades[math.min(tier+1,#shades)]
+                    ..";border:0;}")
+                extra:show()
             else
-                overflow_track:hide()
+                over_bg:hide()
                 extra:hide()
             end
-            place(label,x+7,55,42,15,"EXP","lavender")
-            label:setStyleSheet("QLabel {background:transparent;border:0;color:#C7B9E8;"
-                .."font-family:'Bitstream Vera Sans Mono';font-size:7pt;}")
-            local display=not full and "--" or
-                (full>100 and ("100% +"..math.floor(full-100+0.5).."%")
-                    or (math.floor(full+0.5).."%"))
-            place(number,x+space-77,55,71,15,display,"lavender")
-            number:setStyleSheet("QLabel {background:transparent;border:0;color:#D5C3E5;"
-                .."font-family:'Bitstream Vera Sans Mono';font-size:7pt;}")
+            place(title,7,62,33,11,"EXP","lavender")
+            title:setStyleSheet("QLabel {background:transparent;border:0;color:#C7B9E8;"
+                .."font-family:'DejaVu Sans Mono';font-size:7pt;}")
+            local display=not p and "--" or (p>100 and
+                ("100% +"..math.floor(p-100+0.5).."%") or math.floor(p+0.5).."%")
+            place(number,width-97,62,87,11,display,"lavender")
+            number:setStyleSheet("QLabel {background:transparent;border:0;color:#D5C3E7;"
+                .."font-family:'DejaVu Sans Mono';font-size:7pt;}")
+        end
+        local function resolve_exits()
+            local room=gmcp.room()
+            local exits=type(room)=="table" and room.exits
+            if type(exits)~="table" or next(exits)==nil then
+                local raw=rawget(_G,"gmcp")
+                local fallback=type(raw)=="table" and raw.Room and raw.Room.Info
+                exits=type(fallback)=="table" and fallback.exits or exits
+            end
+            local found={}
+            if type(exits)=="table" then
+                for key,value in pairs(exits) do
+                    -- Normalize keyed Room.Info.exits AND older array forms.
+                    local command=type(key)=="string" and key or
+                        (type(value)=="string" and value or
+                         (type(value)=="table" and (value.command or value.direction)))
+                    if type(command)=="string" and command~="" then
+                        found[command:lower()]=true
+                    end
+                end
+            end
+            return found
+        end
+        local function geometry(width)
+            local edge,gap=5,5
+            local narrow=width<900
+            local nav=narrow and 164 or 193
+            local needs=narrow and 174 or 191
+            local controls=narrow and 127 or 139
+            local stats=math.max(180,width-edge*2-gap*3-nav-needs-controls)
+            local nav_x=edge
+            local stats_x=nav_x+nav+gap
+            local needs_x=stats_x+stats+gap
+            local controls_x=needs_x+needs+gap
+            return {
+                nav_x=nav_x,nav=nav,stats_x=stats_x,stats=stats,
+                needs_x=needs_x,needs=needs,controls_x=controls_x,
+                controls=controls,top_y=4,top_h=53,
+            }
         end
         local function draw_footer(view)
             if not S.built then return end
-            local width=tonumber((getMainWindowSize())) or 1000
-            width=math.max(450,width)
-            local room=gmcp.room() or {}
-            local exits=type(room.exits)=="table" and room.exits or {}
+            local width=tonumber((getMainWindowSize())) or 1200
+            -- Client window widths below 640 cannot fit four panels
+            -- with readable labels; the supported laptop range is 760+.
+            width=math.max(640,width)
+            local g=geometry(width)
+            local exits=resolve_exits()
             local vitals=current_vitals()
-            local normal={}
-            for _,e in ipairs(EXITS) do normal[e[1]]=true end
-            local controls=math.min(180,math.max(151,math.floor(width*0.17)))
-            local x=168
-            local rx=width-controls-8
-            local space=math.max(170,rx-x-8)
-            -- Slate background panels: continuous, discreet, distinct zones.
-            panel(S.widgets.section_exits,2,2,x-7,HEIGHT-4)
-            panel(S.widgets.section_stats,x-1,2,space+5,HEIGHT-4)
-            panel(S.widgets.section_controls,rx-3,2,controls+7,HEIGHT-4)
-            -- The compass is only a text hint, never a button.
+            local bg=S.widgets.hud_background
+            bg:move(0,0)
+            bg:resize(width,HEIGHT)
+            bg:setStyleSheet("QLabel {background-color:#1B2030;border:0;"
+                .."border-top:2px solid #535E77;}")
+            bg:show()
+            panel(S.widgets.section_exits,g.nav_x,g.top_y,g.nav,g.top_h)
+            panel(S.widgets.section_stats,g.stats_x,g.top_y,g.stats,g.top_h)
+            panel(S.widgets.section_needs,g.needs_x,g.top_y,g.needs,g.top_h)
+            panel(S.widgets.section_controls,g.controls_x,g.top_y,g.controls,g.top_h)
+            -- Compass: 3x3 directions, arrows to its right and a narrow
+            -- nonstandard-exit column. No overlapping rectangles.
             for i,e in ipairs(EXITS) do
-                local active=e[1]=="" or exits[e[1]]~=nil
+                local exists=e[1]=="" or exits[e[1]]==true
                 local w=S.widgets["exit"..i]
-                place(w,8+(i-1)%3*18,13+math.floor((i-1)/3)*17,
-                    17,14,e[2],active and "mint" or "muted")
+                local x=g.nav_x+7+((i-1)%3)*19
+                local y=g.top_y+6+math.floor((i-1)/3)*13
+                place(w,x,y,18,12,e[2],exists and "mint" or "muted")
                 w:setStyleSheet("QLabel {background:transparent;border:0;color:"
-                    ..(active and "#A8DCC2" or "#556070")
-                    ..";font-family:'Bitstream Vera Sans Mono';font-size:7pt;}")
+                    ..(exists and "#A4F3D2" or "#596677")
+                    ..";font-family:'DejaVu Sans Mono';font-weight:"
+                    ..(exists and "bold" or "normal")..";font-size:7pt;}")
             end
+            for _,entry in ipairs({{"exit_up","gora","↑",0},{"exit_down","dol","↓",1}}) do
+                local w=S.widgets[entry[1]]
+                local lit=exits[entry[2]]==true
+                place(w,g.nav_x+67,g.top_y+11+entry[4]*20,
+                    26,16,entry[3],lit and "mint" or "muted")
+                w:setStyleSheet("QLabel {background:transparent;border:0;color:"
+                    ..(lit and "#A4F3D2" or "#667083")
+                    ..";font-family:'DejaVu Sans';font-weight:bold;font-size:10pt;}")
+                if type(w.setToolTip)=="function" then
+                    w:setToolTip(entry[2]..(lit and " (dostępne)" or " (brak wyjścia)"))
+                end
+            end
+            local known={}
+            for _,e in ipairs(EXITS) do known[e[1]]=true end
+            known.gora=true
+            known.dol=true
             local specials={}
-            for cmd in pairs(exits) do
-                if type(cmd)=="string" and cmd~="gora" and cmd~="dol" and not normal[cmd] then specials[#specials+1]=cmd end
+            for command in pairs(exits) do
+                if not known[command] then specials[#specials+1]=command end
             end
             table.sort(specials)
             S.specials=specials
+            local sx=g.nav_x+97
+            local sw=math.max(1,g.nav-102)
+            local header=S.widgets.special1
+            -- The label of a room exit is shortened only visually.
             for i=1,3 do
                 local w=S.widgets["special"..i]
                 local cmd=specials[i]
                 if cmd then
-                    local short=#cmd>16 and cmd:sub(1,13).."..." or cmd
-                    place(w,65,33+(i-1)*14,94,12,short,"peach")
-                    w:setStyleSheet("QLabel {background:transparent;border:0;color:#D5B98F;"
-                        .."font-family:'Bitstream Vera Sans Mono';font-size:7pt;}")
+                    local short=#cmd>14 and cmd:sub(1,11).."..." or cmd
+                    place(w,sx,g.top_y+16+(i-1)*12,sw,11,short,"peach")
+                    w:setStyleSheet("QLabel {background:transparent;border:0;color:#DABF9F;"
+                        .."font-family:'DejaVu Sans Mono';font-size:6pt;}")
+                    if type(w.setToolTip)=="function" then w:setToolTip(cmd) end
                 else w:hide() end
             end
+            -- Three full, tinted resource bars share the central panel.
+            local pad=7
+            local cell=(g.stats-2*pad)/3
             for i=1,3 do
-                local cell=space/3
-                draw_bar(i,x+(i-1)*cell,6,cell-5,22,vitals[GAUGES[i][1]],view)
+                draw_primary(i,g.stats_x+pad+(i-1)*cell,g.top_y+6,
+                    cell-6,41,vitals[GAUGES[i][1]],view)
             end
+            -- Four identically sized, *stacked* need indicators.
+            local need_pad=4
+            local row_w=g.needs-need_pad*2
             for offset=1,4 do
                 local i=offset+3
-                local cell=space/4
-                draw_chip(i,x+(offset-1)*cell,32,cell-5,vitals[GAUGES[i][1]])
+                draw_need(i,g.needs_x+need_pad,g.top_y+3+(offset-1)*12,
+                    row_w,11,vitals[GAUGES[i][1]])
             end
-            -- Include up/down alongside the eight compass directions.
-            for _,pair in ipairs({{"exit_up","gora",0},{"exit_down","dol",1}}) do
-                local w=S.widgets[pair[1]]
-                place(w,65,5+pair[3]*14,94,12,
-                    pair[3]==0 and "GORA" or "DOL",
-                    exits[pair[2]]~=nil and "mint" or "muted")
-                w:setStyleSheet("QLabel {background:transparent;border:0;color:"
-                    ..(exits[pair[2]] and "#A8DCC2" or "#667083")
-                    ..";font-family:'Bitstream Vera Sans Mono';font-size:6pt;}")
-            end
+            -- The old EXP widget pool (8) is no longer a main gauge.
             S.widgets.track8:hide()
             S.widgets.fill8:hide()
             S.widgets.gauge8:hide()
-            draw_experience(x,space,vitals)
-            -- Only official status_bar.model() determines upstream states.
+            draw_experience(width,vitals)
+            -- Official state model controls visual feedback.
             local official_model=nil
             local sb=ctx:use("status_bar")
             if sb and type(sb.model)=="function" then
-                local ok,model=pcall(sb.model)
-                if ok and type(model)=="table" then official_model=model end
+                local ok,value=pcall(sb.model)
+                if ok and type(value)=="table" then official_model=value end
             end
             local states={}
             if official_model then
-                for _,v in ipairs(official_model.toggles or {}) do
-                    if v.command=="/autowsparcie" then states[2]=v.on
-                    elseif v.command=="/autopogon" then states[3]=v.on end
+                for _,toggle in ipairs(official_model.toggles or {}) do
+                    if toggle.command=="/autowsparcie" then states[2]=toggle.on
+                    elseif toggle.command=="/autopogon" then states[3]=toggle.on end
                 end
                 if official_model.collect then states[4]=official_model.collect.on end
             end
             local lamp=ctx:use("lamp")
             if lamp and type(lamp.state)=="function" then
-                local ok,v=pcall(lamp.state)
-                if ok and type(v)=="table" then states[5]=v.lit end
+                local ok,state=pcall(lamp.state)
+                if ok and type(state)=="table" then states[5]=state.lit end
             end
-            local cell=controls/3
-            for i,btn in ipairs(BUTTONS) do
-                local title=btn[1]
+            local vip=rawget(_G,"chimera_vip")
+            if vip and vip.settings and type(vip.settings.is_module_enabled)=="function" then
+                local ok,result=pcall(vip.settings.is_module_enabled,vip.settings,"combat_colors",true)
+                if ok then states[6]=result end
+            end
+            local controls_pad=4
+            local cellw=(g.controls-2*controls_pad)/3
+            for i,button in ipairs(BUTTONS) do
+                local w=S.widgets["control"..i]
                 local state=states[i]
-                if i==1 and official_model and official_model.mode then
-                    title=(official_model.mode=="Atak" and "TRYB A" or "TRYB R")
+                local symbol=button[1]
+                local tooltip=button[3]
+                local fg=state==true and "#A4F3CF" or
+                    state==false and "#798599" or "#C6CEDC"
+                local background=state==true and "#2A4A41" or "#293143"
+                local border=state==true and "#54957E" or "#465169"
+                if i==1 then
+                    background="#45382E"
+                    fg="#E9C28D"
+                    border="#A48256"
+                    if official_model and official_model.mode then
+                        symbol=official_model.mode=="Atak" and "⚔" or "⛨"
+                        tooltip=button[3]..": "..official_model.mode
+                    end
                 elseif state~=nil then
-                    title=title.." "..(state and "ON" or "OFF")
+                    tooltip=button[3]..": "..(state and "włączone" or "wyłączone")
+                elseif i<=6 then
+                    tooltip=button[3]..": stan nieznany"
                 end
-                local control=S.widgets["control"..i]
-                place(control,rx+(i-1)%3*cell,
-                    7+math.floor((i-1)/3)*21,cell-4,16,title,"text")
-                local fg=state==true and "#A8DCC2" or state==false and "#8590A2" or "#D8DCE6"
-                local bg=state==true and "#26463F" or "#232938"
-                control:setStyleSheet("QLabel {background-color:"..bg
-                    ..";color:"..fg..";border:1px solid "
-                    ..(state==true and "#4F977E" or "#41485C")
-                    ..";border-radius:4px;font-family:'Bitstream Vera Sans Mono';font-size:7pt;}")
-
+                local col=(i-1)%3
+                local line=math.floor((i-1)/3)
+                place(w,g.controls_x+controls_pad+col*cellw,
+                    g.top_y+3+line*16,cellw-3,14,symbol,"text")
+                w:setStyleSheet("QLabel {background-color:"..background
+                    ..";color:"..fg..";border:1px solid "..border
+                    ..";border-radius:3px;font-family:'DejaVu Sans';font-size:10pt;}"
+                    .."QLabel:hover {background-color:#39415C;border-color:#D0BBEA;}")
+                if type(w.setToolTip)=="function" then w:setToolTip(tooltip) end
             end
             float_actions(width)
         end

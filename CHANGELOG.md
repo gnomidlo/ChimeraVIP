@@ -1,3 +1,19 @@
+## 0.173 — Quiet HUD: docelowy uklad i feedback ikon
+
+- Tekstowa roza wiatrow z podswietlaniem kierunkow GMCP, strzalki gora/dol
+  bezposrednio po jej prawej stronie, mniejsza kolumna wyjsc nietypowych.
+- Glowny rzad: zycie (progowy zielony/bursztynowy/czerwony), mana (zawsze
+  stalowy niebieski), sily (bursztyn, 100 minus zmeczenie). Wartosci
+  liczbowe x/y jedynie przy faktycznych danych serwera.
+- Cztery ROWNE, pionowo ulozone wiersze: pragnienie, glod, obciazenie,
+  panika; pelne nazwy po polsku, mikro-paski i procenty.
+- EXP na calej dolnej krawedzi footera, poza panelami; nadmiar >100%
+  pokazywany odrebnym bursztynowym torem tylko jesli jest w GMCP.
+- Przyciski opcji jako ikonki 3x3, stany ON/OFF z modelu upstreamu,
+  kolorowanie VIP odczytywane z lokalnych ustawien, podpowiedzi mouseover.
+- Bez zmian rozmiaru footera (76 px), Kondycji ani pływajacych akcji lokacji.
+- Rozszerzone testy kolizji Geysera przy 760/900/1024/1200/1440 px.
+
 ## 0.172 — Hotfix geometrii Quiet HUD
 
 - Wyjscia GORA/DOL i niestandardowe maja wlasne miejsca obok kompasu,

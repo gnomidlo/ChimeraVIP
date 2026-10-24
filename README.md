@@ -1,7 +1,7 @@
 # ChimeraVIP
 
 Pastelowa nakladka na **oficjalne skrypty Chimery 5.0** dla Mudleta.
-Serwer: `chimera.co.pl:2300`. Wersja ChimeraVIP: **0.172**.
+Serwer: `chimera.co.pl:2300`. Wersja ChimeraVIP: **0.173**.
 Testowana baza: **5.0.0-beta.13**.
 
 ## Instalacja i aktualizacja
@@ -95,3 +95,21 @@ Pasek EXP zajmuje dolna krawedz footera. Dodatkowe warstwy w zloto-
 bursztynowych odcieniach widac tylko gdy oficjalne GMCP albo zdarzenie
 postepu dostarczy wartosc wyzsza niz 100; w przeciwnym razie nie ma
 wiarygodnych danych o nadwyzce. /cvhud oficjalny cofa zmiany.
+
+
+## Quiet HUD 0.173 — ostateczny uklad
+
+Footer w Geyser ma stale 76 px. W gornej czesci: roza wiatrow z
+gora/dolem na prawo, skrocone wyjscia nietypowe, duze paski **zycie**,
+**mana** i **sily** (sily = 100% - zmeczenie z Char.Vitals), cztery
+niewielkie, rowne wiersze **pragnienie**, **glod**, **obciazenie** i
+**panika**, oraz rowna siatka 3x3 opcji jako klikalne ikony.
+Aktywne kierunki maja inny kolor niz nieaktywne. Gdy mapa GMCP
+nie zawiera dostepnych wyjsc, nie pokazujemy falszywych oznaczen.
+Na samym dole jest pasek EXP z warstwa nadmiarowa tylko przy
+rzeczywistych danych >100%. Ikony maja podpowiedzi po najechaniu
+oraz kolory ON/OFF na podstawie stanu oficjalnej Chimery.
+
+Aby zobaczyc poprawiony HUD po scaleniu i aktualizacji:
+`/cvip aktualizuj`, `/cvip v5 instaluj`, `/przeladuj`.
+W razie problemow: `/cvhud oficjalny`.
