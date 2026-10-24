@@ -1,11 +1,11 @@
 return {
     name = "ChimeraVIP",
-    version = "0.168",
+    version = "0.169",
     schema = 2,
     tested_upstream = "5.0.0-beta.13",
     raw_base = "https://raw.githubusercontent.com/gnomidlo/ChimeraVIP/main/",
     changes = {
-        "Quiet HUD 76 px: pastelowe paski i drobne kontrolki",
+        "Regulacja czcionki Kondycji od 6 do 12 pt",
         "Kondycje: poprawne kolory i czcionka 8 pt",
         "Odczyty GMCP po przeladowaniu skryptow",
         "Aktualizator 0.166 pobiera nowe wydanie 0.167",
@@ -58,7 +58,7 @@ return {
         ["src/features/tactical_aliases.lua"] = {hash="029c1ae987e52b0bf303c93cf22b480079736b70", size=5545},
         ["loader.lua"] = {hash="1381414d89e55d2fad70beb8f42e48098d4b1802", size=4501},
         ["src/init.lua"] = {hash="9e26ff60fa02eb5d425b460f70e708e08c3cce7a", size=2440},
-        ["src/core/bootstrap.lua"] = {hash="4facd75c33ff0ae94df2cc200d9e0440f02d43d3", size=1631},
+        ["src/core/bootstrap.lua"] = {hash="7b1fc1c391da21fe53f9756e3b2bcdc0bbcc68d9", size=1631},
         ["src/core/util.lua"] = {hash="7561cd9259be9ff0ce74228e9048eef0b5aba280", size=6686},
         ["src/core/hash.lua"] = {hash="362c18bf131c9939d03b59dd50568d66de8f6a5e", size=2118},
         ["src/integrations/runtime.lua"] = {hash="c3b367edc08a8b5a1124dc73b1142e6bda513a50", size=3676},

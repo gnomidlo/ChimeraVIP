@@ -1,3 +1,9 @@
+## 0.169 — Konfigurowalna czcionka Kondycji
+
+- Rozmiar czcionki Kondycji regulowany w ustawieniach wtyczki (6–12 pt, domyslnie 8).
+- Zmiana rozmiaru dziala bez restartu, rowniez dla istniejacego dokowanego okna.
+- Testy zmiany 8 → 7 → 8 pt.
+
 ## 0.168 — Quiet HUD, czytelne Kondycje i odczyty GMCP
 
 - Pasek ChimeraVIP zmniejszony ze 120 px do pierwotnych 76 px (Quiet Footer).
