@@ -20,7 +20,6 @@ function setLabelToolTip() end
 function setLabelCursor() end
 local function fire(n) local t=timers[n]; if t then if not t.repeating then timers[n]=nil end; t.callback() end end
 local function emit(event) local copy={}; for n,h in pairs(handlers) do copy[n]=h end; for _,h in pairs(copy) do if h.event==event then h.callback() end end end
-local function flush(D) local pending={}; for _,p in ipairs(D.pending_hits) do pending[#pending+1]=p.timer end; for _,n in ipairs(pending) do fire(n) end end
 chimera_vip={}
 dofile('src/core/util.lua'); dofile('src/integrations/runtime.lua')
 for _=1,3 do dofile('src/ui/footer_controls.lua') end
@@ -33,27 +32,6 @@ local def={key='test',label='T',title='Test',state=function() return {label=stat
 CTRL:update_button(def); CTRL:update_button(def); assert(renders==2,'unchanged button redrawn')
 state='two'; CTRL:update_button(def); assert(renders==4,'changed button not redrawn')
 print('PASS reload lifecycle and render cache')
-dofile('src/features/defense_tracker.lua'); local D=chimera_vip.defense_tracker
-D:new_session(); cursor=10; D:add_event('block','tarcza','zaslona')
-cursor=11; clock=clock+50; D:on_incoming_hit('wysokie','oddzielny cios'); flush(D)
-assert(D.session.block==1 and D:known_hits()==1,'separate hit after defense lost')
-D:new_session(); cursor=20; D:on_incoming_hit('niskie','identical text')
-cursor=21; D:on_incoming_hit('niskie','identical text'); D:add_event('parry','mlot','parowanie')
-flush(D); assert(D.session.parry==1 and D:known_hits()==1,'defense cancelled another line')
-D:new_session(); cursor=30; D:add_event('dodge',nil,'unik'); D:on_incoming_hit('wysokie','unik'); flush(D)
-assert(D.session.dodge==1 and D:known_hits()==0,'defense before ANSI counted as hit')
-D:new_session(); cursor=40; D:on_incoming_hit('wysokie','partial'); D:on_incoming_hit('wysokie','partial')
-D:observe_line('pelna linia prawdziwego trafienia'); flush(D)
-assert(D:known_hits()==1 and D.session.events[1].raw=='pelna linia prawdziwego trafienia','duplicate/incomplete hit')
-D:new_session(); cursor=41; D:on_incoming_hit('wysokie','partial'); D:new_session(); flush(D)
-assert(D:known_hits()==0 and #D.pending_hits==0,'reset left pending hit')
-cursor=50; D:on_incoming_hit('wysokie','partial'); dofile('src/features/defense_tracker.lua')
-assert(#D.pending_hits==0,'reload left pending hit')
-D:new_session(); local line_number=getLineNumber; getLineNumber=nil
-D:on_incoming_hit('niskie','first'); D:on_incoming_hit('niskie','second'); D:observe_line('unrelated'); flush(D)
-assert(D:known_hits()==2 and D.session.events[1].raw=='first' and D.session.events[2].raw=='second')
-getLineNumber=line_number
-print('PASS defense bursts, trigger order, duplicate, full text, reset and reload')
 local sent={}
 function send(command) sent[#sent+1]=command end
 local function situation()

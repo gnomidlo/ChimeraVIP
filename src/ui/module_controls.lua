@@ -54,8 +54,8 @@ function M:update_ui()
 
     local tooltip = "<b>Kolory walki ChimeraVIP</b>"
         .. "<br>Stan: <b>" .. (enabled and "ON" or "OFF") .. "</b>"
-        .. "<br><br>ON: pastelowe prefiksy ChimeraVIP, oficjalny folder gags wyłączony."
-        .. "<br>OFF: prefiksy ChimeraVIP usunięte, oficjalny folder gags włączony."
+        .. "<br><br>ON: pastelowe prefiksy ChimeraVIP (bez starego folderu gags)."
+        .. "<br>OFF: prefiksy ChimeraVIP usunięte."
         .. "<br><br>Kliknij, aby przełączyć."
 
     pcall(setLabelToolTip, b.name, tooltip, 8)

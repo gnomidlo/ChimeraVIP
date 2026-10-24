@@ -129,25 +129,29 @@ function A:command(command, arguments)
     return false
 end
 
+-- On Chimera 5, official /z and /za remain authoritative.
+-- /vz, /vza and /vrza preserve VIP's original direct-ID logic.
 function A:install_aliases()
     U.clear_aliases(self)
-    self:disable_official_aliases()
-    -- Catch the entire command, including missing/invalid arguments, so it
-    -- cannot silently fall through to an official alias or to the server.
-    for _, command in ipairs({"z", "za", "rza"}) do
-        local action = command
-        local id = tempAlias("^/" .. action .. "(?:\\s+(.*))?\\s*$", function()
-            A:command(action, matches[2])
+    local v5=C.runtime and C.runtime:is_chimera5() or false
+    self.v5_mode=v5
+    if not v5 then self:disable_official_aliases() end
+    local names=v5 and {{"vz","z"},{"vza","za"},{"vrza","rza"}}
+        or {{"z","z"},{"za","za"},{"rza","rza"}}
+    for _,entry in ipairs(names) do
+        local alias,action=entry[1],entry[2]
+        local id=tempAlias("^/"..alias.."(?:\\s+(.*))?\\s*$",function()
+            A:command(action,matches[2])
         end)
-        if id then self.alias_ids[#self.alias_ids + 1] = id end
+        if id then self.alias_ids[#self.alias_ids+1]=id end
     end
 end
-
-for _, event in ipairs({"sysLoadEvent", "scriptsLoaded", "uiReady", "chimeraVipReady", "sysInstallPackage"}) do
-    U.replace_handler(A, event, event, function()
-        A:disable_official_aliases()
-        -- Package loading may finish after the event's other listeners.
-        tempTimer(0, function() A:disable_official_aliases() end)
+for _,event in ipairs({"sysLoadEvent","scriptsLoaded","uiReady",
+    "chimeraVipReady","sysInstallPackage","chimeraVipUpstreamReady"}) do
+    U.replace_handler(A,event,event,function()
+        local v5=C.runtime and C.runtime:is_chimera5() or false
+        if v5~=A.v5_mode then A:install_aliases()
+        elseif not v5 then A:disable_official_aliases() end
     end)
 end
 

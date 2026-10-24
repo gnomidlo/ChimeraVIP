@@ -3,8 +3,8 @@ chimera_overlay = chimera_overlay or chimera_vip
 
 local C = chimera_vip
 C.name = "ChimeraVIP"
-C.version = C.version or "0.164"
-C.tested_upstream = "4.3"
+C.version = C.version or "0.165"
+C.tested_upstream = "5.0.0-beta.13"
 C.handlers = C.handlers or {}
 C.ready = false
 C.theme_ready = C.theme_ready or false
@@ -12,6 +12,9 @@ C.theme_ready = C.theme_ready or false
 local U = C.util
 
 function C:get_upstream_version()
+    if self.runtime and self.runtime:is_chimera5() then
+        return self.runtime:bridge() and "Chimera 5 (API)" or "Chimera 5 (bez mostu)"
+    end
     if scripts and scripts.version and type(scripts.version.installed) == "function" then
         local ok, value = pcall(scripts.version.installed)
         if ok and value and value ~= "" then return tostring(value) end

@@ -453,6 +453,10 @@ function UP:command(argument)
     elseif arg == "moduly" or arg == "modules" then
         if C.settings and type(C.settings.show_modules) == "function" then C.settings:show_modules()
         else out("Modul ustawien nie jest dostepny.", "yellow") end
+    elseif arg == "v5" or arg == "v5 status" then
+        if C.chimera5 then C.chimera5:status() end
+    elseif arg == "v5 instaluj" or arg == "v5 install" then
+        if C.chimera5 then C.chimera5:install() end
     elseif arg == "status" or arg == "wersja" or arg == "version" then self:show_status()
     elseif arg == "diagnostyka" or arg == "diag" or arg == "diagnostics" then self:show_diagnostics()
     elseif arg == "sprawdz" or arg == "check" then self:check(false)
