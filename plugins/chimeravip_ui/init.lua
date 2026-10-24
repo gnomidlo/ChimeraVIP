@@ -59,6 +59,7 @@ return {
     settings={
         mode={type="enum",values={"vip","oficjalny"},default="vip",label="Interfejs",order=1},
         kondycje={type="boolean",default=true,label="VIP Kondycje",order=2},
+        czcionka={type="number",default=8,min=6,max=12,label="Czcionka Kondycji (pt)",order=3},
         akcje={type="boolean",default=true,label="Akcje lokacji",order=3},
     },
     setup=function(ctx)
@@ -128,11 +129,11 @@ return {
                 if type(setUserWindowTitle)=="function" then
                     setUserWindowTitle(WINDOW,"Kondycje — ChimeraVIP")
                 end
-                if type(setFontSize)=="function" then setFontSize(WINDOW,8) end
+                if type(setFontSize)=="function" then setFontSize(WINDOW,ctx.settings.czcionka or 8) end
                 S.opened=true
             elseif type(showWindow)=="function" then showWindow(WINDOW) end
             -- Existing docked windows retain old Mudlet font size on reload.
-            if type(setFontSize)=="function" then setFontSize(WINDOW,8) end
+            if type(setFontSize)=="function" then setFontSize(WINDOW,ctx.settings.czcionka or 8) end
         end
         local function official(on)
             -- Documented official public commands, never private module fields.
@@ -442,6 +443,10 @@ return {
         ctx:on("chimera.config.changed",function(module_name,key,value)
             if module_name=="chimeravip_ui" then
                 if key=="mode" then switch(value)
+                elseif key=="czcionka" then
+                    if S.opened and type(setFontSize)=="function" then
+                        setFontSize(WINDOW,tonumber(value) or 8)
+                    end
                 elseif key=="kondycje" then
                     if value then open_window()
                     elseif S.opened and type(hideWindow)=="function" then

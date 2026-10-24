@@ -73,6 +73,10 @@ end
 flush()
 assert(api.active() and border==76, "HUD not active; border="..tostring(border).." aliases="..table.concat(aliases," | "))
 assert(fonts["chimeravip_kondycje"]==8,"window should use 8pt")
+assert(spec.settings.czcionka.default==8 and spec.settings.czcionka.min==6)
+ctx:set("czcionka",7)
+assert(fonts["chimeravip_kondycje"]==7,"font size is not configurable")
+ctx:set("czcionka",8)
 assert(#colors>0 and table.concat(printed,""):find("[@]",1,true),
     "Kondycje lost colored text or own marker")
 assert(not table.concat(printed,""):find("<#",1,true),"literal color tags in Kondycje")
