@@ -1,3 +1,18 @@
+## 0.170 — Quiet HUD 2.0 (Classic Quiet+ i Kondycje Hybrid)
+
+- Compass jako plaska sciagawka GMCP bez obramowanych przyciskow; wyjscia
+  nietypowe obok, bez zmiany skrotow lokacji.
+- HP, MP, ZM: stonowane dolne linie i zapis x/y procent (x/y tylko przy
+  faktycznych liczbach w oficjalnym modelu GMCP).
+- PR/GL/OBC/PAN: cztery osobne, ciemne etykiety jak przed reworkiem.
+- Pojawiajaca sie tylko na lokacjach z akcjami lista kontekstowa,
+  polprzezroczysta, nad prawym blokiem ATK/WSP itd; klikalne etykiety
+  wywoluja te same akcje co oficjalne bindowania.
+- Kondycje Hybrid: osmiopunktowy pasek, font 7 pt, neutralny kolor
+  pozostalych postaci zamiast czerwieni.
+- Testy przejsc, klikania, odswiezania, neutralnych kolorow, stalej
+  wysokosci 76 px oraz bezpiecznego powrotu do oryginalu.
+
 ## 0.169 — Konfigurowalna czcionka Kondycji
 
 - Rozmiar czcionki Kondycji regulowany w ustawieniach wtyczki (6–12 pt, domyslnie 8).
