@@ -1,6 +1,6 @@
 -- ChimeraVIP UI smoke/regression test; run: texlua tools/chimera5_ui_test.lua
 local handlers,commands,timers,aliases={}, {}, {}, {}
-local windows={}, border=0
+local windows,border={},0
 local function mock_widget(name)
     local w={name=name}
     function w:setStyleSheet() end
