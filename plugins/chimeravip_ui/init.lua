@@ -56,7 +56,7 @@ return {
     title="Pastelowy HUD ChimeraVIP",
     section="vip_hud",
     description="Alternatywny HUD i okno Kondycje z powrotem do oficjalnego",
-    deps={"gmcp","team","locations","status_bar","room_window"},
+    deps={"gmcp","team","locations","status_bar","room_window","lamp"},
     settings={
         mode={type="enum",values={"vip","oficjalny"},default="vip",label="Interfejs",order=1},
         kondycje={type="boolean",default=true,label="VIP Kondycje",order=2},
