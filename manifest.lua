@@ -1,11 +1,12 @@
 return {
     name = "ChimeraVIP",
-    version = "0.171",
+    version = "0.172",
     schema = 2,
     tested_upstream = "5.0.0-beta.13",
     raw_base = "https://raw.githubusercontent.com/gnomidlo/ChimeraVIP/main/",
     changes = {
-        "Quiet HUD wariant 1: panele i dynamiczne kolory HP MP ZM",
+        "Quiet HUD 0.172: naprawa geometrii kompasu, wyjsc i EXP",
+        "Pasek EXP w sekcji statystyk, bez nachodzenia na pole komend",
         "Warstwowy EXP i feedback ON OFF",
         "Kontekstowe, polprzezroczyste i klikalne etykiety akcji",
         "Kondycje Hybrid: osiem segmentow, neutralne POZOSTALI",
@@ -55,13 +56,13 @@ return {
         "src/ui/module_controls.lua"
     },
     file_meta = {
-        ["plugins/chimeravip_ui/init.lua"] = {hash="7dd30935b12a78b5e4de9fad1b650200826ae1eb", size=35082},
+        ["plugins/chimeravip_ui/init.lua"] = {hash="7cfd276894b12114b607c68a0674c8252f8e8011", size=35789},
         ["src/integrations/chimera5.lua"] = {hash="98354d53965b65011847b4cec6575dd430f2ee76", size=2706},
         ["plugins/chimera_vip_bridge/init.lua"] = {hash="fca58a6712376c4ba29843674f11c0e89e4540f0", size=2254},
         ["src/features/tactical_aliases.lua"] = {hash="029c1ae987e52b0bf303c93cf22b480079736b70", size=5545},
         ["loader.lua"] = {hash="1381414d89e55d2fad70beb8f42e48098d4b1802", size=4501},
         ["src/init.lua"] = {hash="9e26ff60fa02eb5d425b460f70e708e08c3cce7a", size=2440},
-        ["src/core/bootstrap.lua"] = {hash="92ab81e6ba5f85a76cddcee80b2fec8bc3da3fd1", size=1631},
+        ["src/core/bootstrap.lua"] = {hash="b2d38b9b012dfd21fbc517143d9a6df5e0aef1d9", size=1631},
         ["src/core/util.lua"] = {hash="7561cd9259be9ff0ce74228e9048eef0b5aba280", size=6686},
         ["src/core/hash.lua"] = {hash="362c18bf131c9939d03b59dd50568d66de8f6a5e", size=2118},
         ["src/integrations/runtime.lua"] = {hash="c3b367edc08a8b5a1124dc73b1142e6bda513a50", size=3676},
