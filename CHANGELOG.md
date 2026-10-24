@@ -1,3 +1,10 @@
+## 0.167 — Hotfix pastelowego HUD-u Chimera 5
+
+- Naprawiono uruchamianie HUD: getMainWindowSize() zwraca szerokosc i wysokosc, a tonumber() musi otrzymac tylko szerokosc.
+- Poprawiono test UI i pelne CI dla Lua 5.1.
+- Podniesiono numer wersji, aby aktualizator pobieral poprawke z 0.166.
+- Po aktualizacji uruchom /cvip v5 instaluj i /przeladuj.
+
 ## 0.166 — Pastelowy HUD i Kondycje na Chimera 5
 
 - Wtyczka `chimeravip_ui`: alternatywny footer, kompas, statystyki, kontrolki i akcje lokacji.
