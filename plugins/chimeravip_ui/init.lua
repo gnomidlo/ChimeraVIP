@@ -1,6 +1,6 @@
 -- ChimeraVIP 5: pastel footer and independent, dockable Kondycje.
 -- Public GMCP/team/locations API only; the official UI is never monkeypatched.
-local WINDOW, HEIGHT = "chimeravip_kondycje", 120
+local WINDOW, HEIGHT = "chimeravip_kondycje", 76
 local P = {
     bg="#181C26", soft="#232938", edge="#353C4C", text="#D8DCE6",
     muted="#AEB6C5", mint="#A8DCC2", blue="#AFCBF4",
@@ -38,7 +38,7 @@ local function color(name) return P[name] or P.text end
 local function style(name)
     return "QLabel { background-color:"..P.soft..";color:"..color(name)
         ..";border:1px solid "..P.edge..";border-radius:4px;"
-        .."font-family:'DejaVu Sans Mono';font-size:9pt; }"
+        .."font-family:'Bitstream Vera Sans Mono';font-size:7pt; }"
         .." QLabel:hover {border-color:"..P.lavender..";}"
 end
 local function alias(command)
@@ -66,12 +66,13 @@ return {
         ctx.state.vip_generation=(ctx.state.vip_generation or 0)+1
         local generation=ctx.state.vip_generation
         local S={active=false,built=false,opened=false,pending=false,widgets={},
-            marks={members={},enemies={}},signature=nil,root=nil}
+            marks={members={},enemies={}},signature=nil,root=nil,cached_vitals=nil}
         local function available()
             return type(Geyser)=="table" and type(Geyser.Container)=="table"
                 and type(Geyser.Label)=="table" and type(getMainWindowSize)=="function"
                 and type(setBorderBottom)=="function" and type(openUserWindow)=="function"
-                and type(clearWindow)=="function" and type(cechoLink)=="function"
+                and type(clearWindow)=="function" and type(echo)=="function"
+                and type(setFgColor)=="function"
         end
         local function action(command)
             if command=="@kolory" then
@@ -104,6 +105,8 @@ return {
                 local command=exit[1]
                 widget("exit"..i,command~="" and function() ctx:send(command,true) end or nil)
             end
+            -- Fill widgets are created before the labels so color is behind text.
+            for i=1,#GAUGES do widget("fill"..i) end
             for i=1,#GAUGES do widget("gauge"..i) end
             for i,button in ipairs(BUTTONS) do
                 local command=button[2]
@@ -124,9 +127,11 @@ return {
                 if type(setUserWindowTitle)=="function" then
                     setUserWindowTitle(WINDOW,"Kondycje — ChimeraVIP")
                 end
-                if type(setFontSize)=="function" then setFontSize(WINDOW,10) end
+                if type(setFontSize)=="function" then setFontSize(WINDOW,8) end
                 S.opened=true
             elseif type(showWindow)=="function" then showWindow(WINDOW) end
+            -- Existing docked windows retain old Mudlet font size on reload.
+            if type(setFontSize)=="function" then setFontSize(WINDOW,8) end
         end
         local function official(on)
             -- Documented official public commands, never private module fields.
@@ -165,13 +170,24 @@ return {
             _G.chimera_vip_ui_targets=m
             return m
         end
+        local function set_window_color(tint)
+            local hex=color(tint)
+            -- setFgColor works in both user windows and main console.
+            -- No cecho markup: Mudlet printed literal <#RRGGBB> in this window.
+            local r=tonumber(hex:sub(2,3),16) or 216
+            local g=tonumber(hex:sub(4,5),16) or 220
+            local b=tonumber(hex:sub(6,7),16) or 230
+            setFgColor(WINDOW,r,g,b)
+        end
         local function print_segment(text,tint,command,hint)
-            local formatted="<"..color(tint)..">"..clean(text).."<reset>"
-            if command then
-                cechoLink(WINDOW,formatted,
+            set_window_color(tint)
+            if command and type(echoLink)=="function" then
+                echoLink(WINDOW,clean(text),
                     "send("..string.format("%q",command)..", false)",
                     hint or command,true)
-            else cecho(WINDOW,formatted) end
+            else
+                echo(WINDOW,clean(text))
+            end
         end
         local function row(mark,p,ally,self_row,map,fighting)
             local id=p.id and tostring(p.id) or nil
@@ -247,47 +263,104 @@ return {
                 end
             end
         end
+        -- Use the official GMCP cache, the latest event payload, and only
+        -- then raw Mudlet GMCP. A plugin reload need not replay Char.Vitals.
+        local function current_vitals()
+            local values=gmcp.vitals()
+            if type(values)=="table" and next(values) then
+                S.cached_vitals=values
+                return values
+            end
+            if type(S.cached_vitals)=="table" then return S.cached_vitals end
+            local raw=rawget(_G,"gmcp")
+            local incoming=type(raw)=="table" and raw.Char and raw.Char.Vitals
+            if type(incoming)=="table" and next(incoming) then
+                S.cached_vitals=incoming
+                return incoming
+            end
+            -- The official status bar uses precisely these GMCP key names.
+            local api=ctx:use("status_bar")
+            if api and type(api.model)=="function" then
+                local model=api.model()
+                local out={}
+                for _,reading in ipairs(model and model.gauges or {}) do
+                    out[reading.key]=reading.value
+                end
+                if next(out) then return out end
+            end
+            return {}
+        end
+        local function paint_gauge(index,x,y,w,h,reading)
+            local def=GAUGES[index]
+            local value=tonumber(reading)
+            local label=def[2].." "..(value and (math.floor(value+0.5).."%") or "--")
+            local gauge=S.widgets["gauge"..index]
+            local fill=S.widgets["fill"..index]
+            if value then
+                local fraction=math.max(0,math.min(1,value/100))
+                local length=math.floor((w-2)*fraction)
+                if length>0 then
+                    fill:move(math.floor(x+1),math.floor(y+1))
+                    fill:resize(math.max(1,length),math.max(1,h-2))
+                    fill:setStyleSheet("QLabel {background-color:"..color(def[3])
+                        ..";border:0px;border-radius:2px;}")
+                    fill:show()
+                else fill:hide() end
+            else fill:hide() end
+            place(gauge,x,y,w,h,label,value and def[3] or "muted")
+        end
         local function draw_footer()
             if not S.built then return end
             local width=tonumber((getMainWindowSize())) or 1000
-            width=math.max(350,width)
+            width=math.max(450,width)
             local room=gmcp.room() or {}
             local exits=type(room.exits)=="table" and room.exits or {}
-            local vitals=gmcp.vitals() or {}
+            local vitals=current_vitals()
+            -- Tight compass: 60px wide instead of 260px in 0.166.
             for i,exit in ipairs(EXITS) do
                 local col=(i-1)%3
                 local line=math.floor((i-1)/3)
                 local enabled=exit[1]=="" or exits[exit[1]]~=nil
-                place(S.widgets["exit"..i],6+col*58,8+line*32,53,27,exit[2],
-                    enabled and "mint" or "muted")
+                place(S.widgets["exit"..i],5+col*19,7+line*19,17,16,
+                    exit[2],enabled and "mint" or "muted")
             end
-            local x=193
-            local space=math.max(100,width-x-8)
-            local columns=space>=680 and 4 or 2
-            for i,gauge in ipairs(GAUGES) do
-                local w=S.widgets["gauge"..i]
-                if i<=columns*2 then
-                    local value=tonumber(vitals[gauge[1]])
-                    local text=gauge[2]..": "..(value and (math.floor(value+0.5).."%") or "--")
-                    place(w,x+((i-1)%columns)*space/columns,
-                        8+math.floor((i-1)/columns)*26,
-                        space/columns-5,22,text,gauge[3])
-                else w:hide() end
+            local controls=math.min(228,math.max(176,math.floor(width*0.21)))
+            local x=78
+            local rx=width-controls-8
+            local space=math.max(200,rx-x-8)
+            -- Three main readings, four secondary and one long EXP track.
+            for index=1,3 do
+                local size=space/3
+                paint_gauge(index,x+(index-1)*size,6,size-5,16,
+                    vitals[GAUGES[index][1]])
             end
-            local button_width=(space-5)/#BUTTONS
-            for i,btn in ipairs(BUTTONS) do
-                place(S.widgets["control"..i],x+(i-1)*button_width,62,
-                    button_width-4,22,btn[1],"text")
+            for offset=1,4 do
+                local index=offset+3
+                local size=space/4
+                paint_gauge(index,x+(offset-1)*size,29,size-5,15,
+                    vitals[GAUGES[index][1]])
             end
+            local progress=vitals[GAUGES[8][1]]
+            paint_gauge(8,x,52,space*0.54-4,15,progress)
+            -- Two small actions share the EXP row, never full-width tiles.
             local actions=ctx.settings.akcje and locations.room_actions() or {}
             for i=1,3 do
                 local w=S.widgets["action"..i]
-                local a=type(actions)=="table" and actions[i] or nil
-                if a then
+                if i<=2 and type(actions)=="table" and actions[i] then
+                    local a=actions[i]
                     local text=clean(a.key or i).." "..clean(a.command or a.label or "Akcja")
                     if #text>24 then text=text:sub(1,21).."..." end
-                    place(w,x+(i-1)*(space-5)/3,91,(space-5)/3-5,22,text,"yellow")
+                    local part=space*0.46/2
+                    place(w,x+space*0.54+(i-1)*part,52,part-5,15,text,"yellow")
                 else w:hide() end
+            end
+            -- Nine tiny buttons in the right-hand 3x3 grid.
+            local bw=controls/3
+            for i,btn in ipairs(BUTTONS) do
+                local col=(i-1)%3
+                local row=math.floor((i-1)/3)
+                place(S.widgets["control"..i],rx+col*bw,7+row*21,
+                    bw-4,16,btn[1],"text")
             end
         end
         local function render()
@@ -343,9 +416,21 @@ return {
                         .." | /cvhud vip | /cvhud oficjalny")
                 end
             end}
-        ctx:on("chimera.team.changed",schedule)
+        ctx:on("chimera.team.changed",function()
+            S.signature=nil
+            schedule()
+        end)
         ctx:on("chimera.room.changed",schedule)
-        ctx:on("chimera.char.vitals",schedule)
+        ctx:on("chimera.char.vitals",function(vitals)
+            if type(vitals)=="table" then S.cached_vitals=vitals end
+            schedule()
+        end)
+        ctx:on("gmcp.Char.Vitals",function()
+            local raw=rawget(_G,"gmcp")
+            local values=type(raw)=="table" and raw.Char and raw.Char.Vitals
+            if type(values)=="table" then S.cached_vitals=values end
+            schedule()
+        end)
         ctx:on("sysWindowResizeEvent",schedule)
         ctx:on("chimera.config.changed",function(module_name,key,value)
             if module_name=="chimeravip_ui" then
