@@ -37,7 +37,7 @@ function H:register_defaults()
     self:register("interface", {
         title="INTERFEJS",
         description={
-            "Pastelowy motyw i Quiet Footer porządkują oficjalny interfejs Chimery.",
+            "ChimeraVIP wymaga oficjalnej Chimery 5; nowy HUD i Kondycje powstaja w PR 2.",
             "Footer pokazuje kompas, wyjścia specjalne, KOND/SIŁY/MANA, potrzeby, OBC/UPI, EXP oraz kontrolki walki.",
         },
         commands={{"/ui pomoc", "ta pomoc"},{"/cvip ustawienia", "panel ustawień interfejsu i modułów"}},
@@ -45,7 +45,7 @@ function H:register_defaults()
 
     self:register("combat", {
         title="KOLORY WALKI",
-        description={"Combat Colors dodaje prefiksy siły obrażeń 0/3–3/3 i integruje otrzymywane ciosy z Defense Trackerem.","Kolory są odczytywane z oficjalnej komendy 'kolory'."},
+        description={"Combat Colors dodaje prefiksy siły obrażeń 0/3–3/3.","Kolory są odczytywane z oficjalnej komendy 'kolory'."},
         commands={{"/walka pomoc", "ta pomoc"},{"KOL ● / KOL ○", "włącz lub wyłącz Combat Colors w footerze"},{"kolory", "oficjalna lista kolorów komunikatów Chimery"}},
     })
 
@@ -53,12 +53,6 @@ function H:register_defaults()
         title="AUTO-WSPARCIE",
         description={"Auto-wsparcie obserwuje GMCP drużyny i pilnuje celu lidera.","Próba wsparcia wysyła 'wesprzyj' dwukrotnie z krótkim odstępem i ma anty-spam 1,5 s."},
         commands={{"/wsparcie pomoc", "ta pomoc"},{"AUTO-WSPARCIE ON/OFF", "przełącznik w prawej części footera"}},
-    })
-
-    self:register("defense", {
-        title="OBRONA",
-        description={"Defense Tracker prowadzi wyłącznie sesyjne statystyki obrony: pudła, uniki, parowania, zasłony, pancerz i trafienia.","Parowania, zasłony i zatrzymania pancerzem są rozbijane według użytego sprzętu."},
-        commands={{"/def", "podsumowanie sesji"},{"/def sprzet", "statystyki tarcz, broni i pancerza"},{"/def last [N]", "ostatnie zdarzenia"},{"/def reset", "wyzeruj sesję"},{"/def pomoc", "ta pomoc"}},
     })
 
     self:register("xp", {
@@ -79,12 +73,6 @@ function H:register_defaults()
         commands={{"kamienie", "przeglad aktywnych Kamieni"},{"kamienie <cecha>", "Kamienie wybranej cechy"},{"kamien <nazwa>", "szczegoly Kamienia"},{"/kamienie pomoc", "ta pomoc"}},
     })
 
-    self:register("postacie", {
-        title="POSTACIE I RELACJE",
-        description={"Rejestruje sześć odmian imienia, relację z postacią i koloruje wszystkie znane formy w tekście gry.","Nowe postacie są nieprzypisane do czasu wybrania relacji."},
-        commands={{"odmien <imie>", "zapisz lub odśwież odmianę"},{"/postacie", "lista zapisanych postaci"},{"/postacie szukaj <tekst>", "wyszukaj postać"},{"/postacie pomoc", "ta pomoc"}},
-    })
-
     self:register("settings", {
         title="USTAWIENIA",
         description={"Trwałe ustawienia ChimeraVIP: rozmiar oficjalnych okien stanów i przełączniki modułów."},
@@ -93,7 +81,7 @@ function H:register_defaults()
 
     self:register("system", {
         title="SYSTEM I AKTUALIZACJE",
-        description={"ChimeraVIP jest nakładką na oficjalne skrypty Chimery i nie edytuje ich kodu.","Kod nakładki jest aktualizowany z GitHuba, a dane użytkownika pozostają w ChimeraVIP-data."},
+        description={"ChimeraVIP jest nakladka na oficjalna Chimere 5 i nie edytuje jej kodu.","Kod nakładki jest aktualizowany z GitHuba, a dane użytkownika pozostają w ChimeraVIP-data."},
         commands={{"/cvip", "główne informacje i lista modułów"},{"/cvip status", "wersja ChimeraVIP i upstreamu"},{"/cvip diagnostyka", "lokalny stan manifestu i updatera"},{"/cvip sprawdz", "sprawdź aktualizację"},{"/cvip aktualizuj", "pobierz aktualizację"},{"/cvip przeladuj", "przeładuj lokalne moduły"}},
     })
 end
@@ -102,12 +90,10 @@ H.catalog = {
     {"/ui pomoc",         "Interfejs",     "motyw, Quiet Footer i układ UI"},
     {"/walka pomoc",      "Kolory walki",  "prefiksy siły obrażeń i integracja walki"},
     {"/wsparcie pomoc",   "Auto-wsparcie", "automatyczne podążanie za celem lidera"},
-    {"/def pomoc",        "Obrona",        "sesyjne statystyki defensywy i sprzętu"},
     {"/xp pomoc",         "Doświadczenie", "XP/h, zabójstwa i typy mobów"},
     {"/bron pomoc",       "Bron",          "skrocone parametry wywazenia i skutecznosci"},
     {"/cechy pomoc",      "Cechy",         "cechy, delty, historia rozwoju i XP między wzrostami"},
     {"/kamienie pomoc",   "Kamienie",       "Kamienie Milowe, poziomy i postep"},
-    {"/postacie pomoc",   "Postacie",      "odmiany, relacje i kolorowanie imion"},
     {"/ustawienia pomoc", "Ustawienia",    "konfiguracja interfejsu i modułów"},
 }
 
@@ -165,8 +151,8 @@ function H:resolve(section_id)
     local id = U.normalize(section_id)
     local aliases = {
         cechy="stats", exp="xp", ui="interface", walka="combat", kolory="combat", combat="combat",
-        wsparcie="automation", auto="automation", automation="automation", obrona="defense", def="defense", defense="defense",
-        bron="weapon", weapon="weapon", kamienie="milestones", milestone="milestones", milestones="milestones", postacie="postacie", characters="postacie",
+        wsparcie="automation", auto="automation", automation="automation", 
+        bron="weapon", weapon="weapon", kamienie="milestones", milestone="milestones", milestones="milestones",
         ustawienia="settings", settings="settings", moduly="settings", modules="settings", system="system",
     }
     return aliases[id] or id

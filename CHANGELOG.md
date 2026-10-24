@@ -1,3 +1,11 @@
+## 0.165 — Chimera 5.0 compatibility, PR 1
+
+- Most do oficjalnego API gmcp/team (beta.13), jawna instalacja przez /cvip v5 instaluj.
+- Odrzucenie integracji z legacy gags, Defense Tracker i wlasnej bazy postaci; dane pozostaja.
+- Na Chimera 5 bez kolizji z oficjalnym /z i /za: aliasy /vz, /vza i /vrza.
+- Auto-wsparcie ChimeraVIP nie dubluje oficjalnego.
+- Oficjalny HUD pozostaje widoczny do czasu gotowosci alternatywnego HUD i Kondycji (PR 2).
+
 ## 0.164
 
 - Kamienie Milowe: glowny widok obsluguje cechy ponizej pierwszego progu wyboru.

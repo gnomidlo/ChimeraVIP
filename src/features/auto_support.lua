@@ -116,6 +116,7 @@ function AS:send_support_pair()
 end
 
 function AS:combat()
+    if C.runtime and C.runtime:is_chimera5() then return end -- official autowsparcie
     if not self.enabled then return end
 
     local now = getEpochMs and getEpochMs() or (os.time()*1000)

@@ -12,7 +12,7 @@ S.data = S.data or {}
 S.module_defs = {}
 S.setting_defs = {}
 S.defaults = {ui={states_font_size=10},modules={combat_colors=true}}
-S.section_order = {interface=10, combat=20, defense=30, xp=40, characters=50, automation=60, system=90}
+S.section_order = {interface=10, combat=20, xp=40, automation=60, system=90}
 
 local merge_defaults = U.merge_defaults
 local trim = U.trim
@@ -21,7 +21,7 @@ local text_width = U.text_width
 
 local function normalize_module_id(id)
     id=trim(id):lower():gsub("%-","_"):gsub("%s+","_")
-    local aliases={kolory="combat_colors",walka="combat_colors",combat="combat_colors",combatcolors="combat_colors",kolory_walki="combat_colors",postacie="postacie",characters="postacie"}
+    local aliases={kolory="combat_colors",walka="combat_colors",combat="combat_colors",combatcolors="combat_colors",kolory_walki="combat_colors"}
     return aliases[id] or id
 end
 
