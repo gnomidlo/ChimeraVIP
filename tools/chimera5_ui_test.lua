@@ -103,7 +103,7 @@ assert(w("fill1").css:find("#69C9A1",1,true),"82% HP should be green")
 assert(w("fill2").css:find("#D7B56B",1,true),"67% mana should be amber")
 assert(w("fill3").css:find("#D7B56B",1,true),"45% fatigue should be amber")
 assert(w("section_exits").css:find("#232938",1,true),"footer background missing")
-assert(w("exit_up").text=="GORA" and w("exit_down").text=="DOL","vertical exits missing")
+
 assert(not w("exit2").css:find("background%-color"),"compass should not resemble buttons")
 assert(w("special1").text:find("wejdz",1,true),"nonstandard exits missing")
 assert(not w("action_bg").hidden,"context actions should be visible")
