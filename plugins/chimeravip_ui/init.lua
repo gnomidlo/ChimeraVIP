@@ -105,7 +105,7 @@ return {
             S.root=Geyser.Container:new({name="chimeravip2_footer_"..generation,
                 x=0,y=-HEIGHT,width="100%",height=HEIGHT})
             -- Backdrops must be created first (Qt/Geyser stacking order).
-            for _,name in ipairs({"section_exits","section_stats","section_controls","exp_track"}) do
+            for _,name in ipairs({"section_exits","section_stats","section_controls","exp_track","exp_over_track"}) do
                 widget(name)
             end
             for i,exit in ipairs(EXITS) do
@@ -457,49 +457,64 @@ return {
             end
             S.action_count=count
         end
-        local function draw_experience(width,vitals)
+        -- Experience belongs INSIDE the central stats panel. It may have
+        -- two tracks: base 0-100% and an independent overflow cycle.
+        -- Never paint a bar across the entire footer or below HEIGHT.
+        local function draw_experience(x,space,vitals)
             local track=S.widgets.exp_track
+            local overflow_track=S.widgets.exp_over_track
             local base=S.widgets.exp_base
             local extra=S.widgets.exp_extra
             local label=S.widgets.exp_label
             local number=S.widgets.exp_percent
-            local left=91
-            local right=width-9
-            local span=math.max(50,right-left-70)
+            local rail_x=x+53
+            local rail_w=math.max(26,math.floor(space-134))
             local raw=tonumber(vitals.progress) or S.exp_progress
-            -- Upstream's progress is often capped at 100. Never invent
-            -- overcap progress if neither event nor GMCP exposes it.
+            -- Official GMCP usually caps at 100. Only show extra cycles
+            -- when the server supplies an uncapped progress value.
             local full=raw and math.max(0,raw) or nil
             local initial=full and math.min(100,full) or nil
             local over=full and math.max(0,full-100) or nil
-            panel(track,left,HEIGHT-8,span,4)
+            track:move(math.floor(rail_x),58)
+            track:resize(rail_w,4)
             track:setStyleSheet("QLabel {background-color:#34384B;border:0;border-radius:2px;}")
+            track:show()
             if initial then
-                base:move(left,HEIGHT-8)
-                base:resize(math.max(1,math.floor(span*initial/100)),4)
-                base:setStyleSheet("QLabel {background-color:#A892CF;border:0;border-radius:2px;}")
-                base:show()
+                local amount=math.floor(rail_w*initial/100)
+                if amount>0 then
+                    base:move(math.floor(rail_x),58)
+                    base:resize(amount,4)
+                    base:setStyleSheet("QLabel {background-color:#A892CF;border:0;border-radius:2px;}")
+                    base:show()
+                else base:hide() end
             else base:hide() end
             if over and over>0 then
-                -- Overlay a full-width second cycle; successive cycles
-                -- move lavender towards rich amber/gold.
-                local tier=math.floor(over/100)
-                local fraction=(over%100)/100
-                if fraction==0 then fraction=1 end
+                overflow_track:move(math.floor(rail_x),65)
+                overflow_track:resize(rail_w,3)
+                overflow_track:setStyleSheet("QLabel {background-color:#34384B;border:0;border-radius:2px;}")
+                overflow_track:show()
+                local tier=math.floor((over-1)/100)
+                local fraction=((over-1)%100+1)/100
                 local shades={"#D4C08A","#DEB46F","#E6AA4E","#EBA837","#F2BF4A"}
-                local shade=shades[math.min(tier+1,#shades)]
-                extra:move(left,HEIGHT-8)
-                extra:resize(math.max(1,math.floor(span*fraction)),4)
-                extra:setStyleSheet("QLabel {background-color:"..shade..";border:0;border-radius:2px;}")
-                extra:show()
-            else extra:hide() end
-            place(label,8,HEIGHT-18,81,11,"EXP","lavender")
+                local amount=math.floor(rail_w*fraction)
+                if amount>0 then
+                    extra:move(math.floor(rail_x),65)
+                    extra:resize(amount,3)
+                    extra:setStyleSheet("QLabel {background-color:"..shades[math.min(tier+1,#shades)]
+                        ..";border:0;border-radius:2px;}")
+                    extra:show()
+                else extra:hide() end
+            else
+                overflow_track:hide()
+                extra:hide()
+            end
+            place(label,x+7,55,42,15,"EXP","lavender")
             label:setStyleSheet("QLabel {background:transparent;border:0;color:#C7B9E8;"
                 .."font-family:'Bitstream Vera Sans Mono';font-size:7pt;}")
             local display=not full and "--" or
                 (full>100 and ("100% +"..math.floor(full-100+0.5).."%")
                     or (math.floor(full+0.5).."%"))
-            place(number,right-65,HEIGHT-18,65,11,display,"lavender")
+            place(number,x+space-77,55,71,15,display,"lavender")
             number:setStyleSheet("QLabel {background:transparent;border:0;color:#D5C3E5;"
                 .."font-family:'Bitstream Vera Sans Mono';font-size:7pt;}")
         end
@@ -517,15 +532,15 @@ return {
             local rx=width-controls-8
             local space=math.max(170,rx-x-8)
             -- Slate background panels: continuous, discreet, distinct zones.
-            panel(S.widgets.section_exits,2,2,x-7,HEIGHT-24)
-            panel(S.widgets.section_stats,x-1,2,space+5,HEIGHT-24)
-            panel(S.widgets.section_controls,rx-3,2,controls+7,HEIGHT-24)
+            panel(S.widgets.section_exits,2,2,x-7,HEIGHT-4)
+            panel(S.widgets.section_stats,x-1,2,space+5,HEIGHT-4)
+            panel(S.widgets.section_controls,rx-3,2,controls+7,HEIGHT-4)
             -- The compass is only a text hint, never a button.
             for i,e in ipairs(EXITS) do
                 local active=e[1]=="" or exits[e[1]]~=nil
                 local w=S.widgets["exit"..i]
-                place(w,5+(i-1)%3*18,9+math.floor((i-1)/3)*18,
-                    17,15,e[2],active and "mint" or "muted")
+                place(w,8+(i-1)%3*18,13+math.floor((i-1)/3)*17,
+                    17,14,e[2],active and "mint" or "muted")
                 w:setStyleSheet("QLabel {background:transparent;border:0;color:"
                     ..(active and "#A8DCC2" or "#556070")
                     ..";font-family:'Bitstream Vera Sans Mono';font-size:7pt;}")
@@ -541,7 +556,7 @@ return {
                 local cmd=specials[i]
                 if cmd then
                     local short=#cmd>16 and cmd:sub(1,13).."..." or cmd
-                    place(w,61,7+(i-1)*21,99,17,short,"peach")
+                    place(w,65,33+(i-1)*14,94,12,short,"peach")
                     w:setStyleSheet("QLabel {background:transparent;border:0;color:#D5B98F;"
                         .."font-family:'Bitstream Vera Sans Mono';font-size:7pt;}")
                 else w:hide() end
@@ -558,7 +573,7 @@ return {
             -- Include up/down alongside the eight compass directions.
             for _,pair in ipairs({{"exit_up","gora",0},{"exit_down","dol",1}}) do
                 local w=S.widgets[pair[1]]
-                place(w,5,5+pair[3]*37,48,13,
+                place(w,65,5+pair[3]*14,94,12,
                     pair[3]==0 and "GORA" or "DOL",
                     exits[pair[2]]~=nil and "mint" or "muted")
                 w:setStyleSheet("QLabel {background:transparent;border:0;color:"
@@ -568,7 +583,7 @@ return {
             S.widgets.track8:hide()
             S.widgets.fill8:hide()
             S.widgets.gauge8:hide()
-            draw_experience(width,vitals)
+            draw_experience(x,space,vitals)
             -- Only official status_bar.model() determines upstream states.
             local official_model=nil
             local sb=ctx:use("status_bar")

@@ -1,3 +1,15 @@
+## 0.172 — Hotfix geometrii Quiet HUD
+
+- Wyjscia GORA/DOL i niestandardowe maja wlasne miejsca obok kompasu,
+  bez kolizji z osmioma kierunkami.
+- Pasek EXP pozostaje calkowicie w sekcji statystyk, ponizej glownych
+  paskow i czterech osobnych wskaznikow potrzeb.
+- Dla EXP >100%% drugi pasek ma oddzielny tor i etykiete +postep.
+- Panele wyjsc, statystyk i opcji wypełniają 76px wysokosci footera.
+- Testy sprawdzaja granice widgetow, brak nachodzenia napisow, exp i kompas
+  przy szerokosciach 760/1024/1200/1440.
+- Bez zmiany ukladu przyciskow, kolorystyki ani danych GMCP.
+
 ## 0.171 — Quiet HUD: wariant 1, stan i poziomy EXP
 
 - Footer 76 px: grafitowo-lawendowe panele wyjsc, statystyk i kontrolek.

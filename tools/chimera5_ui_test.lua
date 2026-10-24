@@ -2,6 +2,7 @@
 local handlers,commands,timers,aliases={},{},{},{}
 local widgets,fonts,printed={}, {}, {}
 local windows,fg,border={},nil,0
+local main_width=1200
 local function element(name)
     local w={name=name,hidden=false}
     widgets[name]=w
@@ -19,7 +20,7 @@ Geyser={
     Container={new=function(_,a) return element(a.name) end},
     Label={new=function(_,a,parent) assert(parent);return element(a.name) end},
 }
-function getMainWindowSize() return 1200,800 end
+function getMainWindowSize() return main_width,800 end
 function setBorderBottom(value) border=value end
 function openUserWindow(name) windows[name]="visible" end
 function windowType(name) return windows[name] and "userwindow" or nil end
@@ -90,7 +91,8 @@ assert(w("gauge1").text:find("HP: 123/150 82%%"),"HP x/y percentage missing")
 assert(w("gauge2").text:find("MP: 80/120 67%%"),"MP x/y percentage missing")
 assert(w("gauge3").text:find("ZM: 45%%"),"fatigue percentage fallback missing")
 assert(w("exp_percent").text:find("71%%"),"EXP missing from bottom strip")
-assert(w("exp_track").y==68,"EXP track must stay along bottom edge")
+assert(w("exp_track").y==58,"EXP rail must stay inside stats panel")
+assert(w("exp_over_track").hidden,"No overflow bar at 71 percent")
 for i,label in ipairs({"PR 12%","GL 4%","OBC 38%","PAN 0%"}) do
     assert(w("gauge"..(i+3)).text:find(label,1,true),label)
 end
@@ -141,6 +143,53 @@ handlers["chimera.room.changed"]()
 flush()
 assert(w("exp_percent").text:find("+37%%"),"overcap event progress not reflected")
 assert(not w("exp_extra").hidden,"overflow strip missing")
+assert(not w("exp_over_track").hidden,"overflow background missing")
+assert(w("exp_extra").y==65 and w("exp_base").y==58,"EXP base and overflow rails overlap")
+local function touches(a,b)
+    return a.x < b.x+b.width and b.x < a.x+a.width
+        and a.y < b.y+b.height and b.y < a.y+a.height
+end
+local function verify_geometry()
+    for name,item in pairs(widgets) do
+        if name:match("^chimeravip2_1_") and
+            not name:match("^chimeravip2_1_action") and
+            item.hidden==false and item.x~=nil then
+            assert(item.x>=0 and item.y>=0 and item.width>0 and item.height>0
+                and item.x+item.width<=main_width
+                and item.y+item.height<=76,
+                string.format("Widget outside HUD at width %d: %s (%s,%s) %sx%s",
+                    main_width,name,tostring(item.x),tostring(item.y),
+                    tostring(item.width),tostring(item.height)))
+        end
+    end
+    local rail=w("exp_track")
+    local stats=w("section_stats")
+    assert(rail.x>=stats.x and rail.x+rail.width<=stats.x+stats.width,
+        "EXP rail escaped central section")
+    assert(not touches(rail,w("exp_percent")) and not touches(rail,w("exp_label")),
+        "EXP rail overlaps text")
+    for i=1,9 do
+        assert(not touches(w("exit"..i),w("exit_up")),
+            "GORA overlaps compass")
+        assert(not touches(w("exit"..i),w("exit_down")),
+            "DOL overlaps compass")
+    end
+    for i=1,3 do
+        local special=w("special"..i)
+        if not special.hidden then
+            assert(not touches(special,w("exit_up"))
+                and not touches(special,w("exit_down")),
+                "vertical exits overlap special exits")
+        end
+    end
+end
+for _,width in ipairs({760,1024,1200,1440}) do
+    main_width=width
+    handlers["sysWindowResizeEvent"]()
+    flush()
+    assert(api.active(),"resize deactivated footer")
+    verify_geometry()
+end
 commands.cvhud("oficjalny")
 assert(not api.active() and border==0 and not chimera_vip_ui_targets)
 commands.cvhud("vip")
@@ -149,4 +198,4 @@ assert(api.active())
 ctx.cleanup()
 assert(not api.active() and not chimera_vip_ui_targets)
 assert(widgets["chimeravip2_floating_1"].hidden,"cleanup did not hide popup")
-print("PASS variant 1: section panels, status colors, EXP bottom, compass and switchback")
+print("PASS 0.172: footer bounds at 760/1024/1200/1440, compass, EXP, switchback")
