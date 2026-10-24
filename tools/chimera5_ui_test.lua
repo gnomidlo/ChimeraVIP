@@ -27,7 +27,7 @@ function setUserWindowTitle() end
 function setFontSize() end
 function saveWindowLayout() end
 function clearWindow() end
-function cecho() end
+function cecho(...) print("DIAG CECHO", ...) end
 function cechoLink() end
 function expandAlias(command) aliases[#aliases+1]=command end
 local gmcp={
@@ -64,7 +64,7 @@ local function flush()
     end
 end
 flush()
-assert(api.active() and border==120)
+assert(api.active() and border==120, "HUD not active; border="..tostring(border).." aliases="..table.concat(aliases," | "))
 assert(aliases[1]=="/pasek pasek nie")
 assert(aliases[2]=="/ustaw kondycje okno nie")
 assert(chimera_vip_ui_targets.members.A=="friend1")
