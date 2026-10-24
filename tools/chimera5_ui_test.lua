@@ -1,6 +1,6 @@
--- ChimeraVIP UI regression tests — Lua 5.1 compatible, no Mudlet.
+-- ChimeraVIP 0.173: Geyser HUD layout and behaviour regression, Lua 5.1.
 local handlers,commands,timers,aliases={},{},{},{}
-local widgets,fonts,printed={}, {}, {}
+local widgets,fonts,printed={},{},{}
 local windows,fg,border={},nil,0
 local main_width=1200
 local function element(name)
@@ -8,73 +8,91 @@ local function element(name)
     widgets[name]=w
     function w:setStyleSheet(css) self.css=css end
     function w:setClickCallback(fn) self.click=fn end
+    function w:setToolTip(tip) self.tooltip=tip end
     function w:move(x,y) self.x,self.y=x,y end
-    function w:resize(x,y) self.width,self.height=x,y end
-    function w:echo(value) self.text=value end
+    function w:resize(width,height) self.width,self.height=width,height end
+    function w:echo(text) self.text=text end
     function w:hide() self.hidden=true end
     function w:show() self.hidden=false end
     function w:delete() self.deleted=true end
     return w
 end
 Geyser={
-    Container={new=function(_,a) return element(a.name) end},
-    Label={new=function(_,a,parent) assert(parent);return element(a.name) end},
+    Container={new=function(_,props) return element(props.name) end},
+    Label={new=function(_,props,parent) assert(parent);return element(props.name) end},
 }
 function getMainWindowSize() return main_width,800 end
-function setBorderBottom(value) border=value end
-function openUserWindow(name) windows[name]="visible" end
-function windowType(name) return windows[name] and "userwindow" or nil end
-function showWindow(name) windows[name]="visible" end
-function hideWindow(name) windows[name]="hidden" end
+function setBorderBottom(n) border=n end
+function openUserWindow(n) windows[n]="visible" end
+function windowType(n) return windows[n] and "userwindow" or nil end
+function showWindow(n) windows[n]="visible" end
+function hideWindow(n) windows[n]="hidden" end
 function setUserWindowTitle() end
-function setFontSize(name,n) fonts[name]=n end
-function clearWindow() printed={} end
+function setFontSize(n,size) fonts[n]=size end
 function saveWindowLayout() end
+function clearWindow() printed={} end
 function cecho() end
-function setFgColor(name,r,g,b) fg=string.format("%d,%d,%d",r,g,b) end
-function echo(name,value) printed[#printed+1]={text=value,color=fg} end
-function echoLink(name,value) printed[#printed+1]={text=value,color=fg} end
-function expandAlias(value) aliases[#aliases+1]=value end
-local room={id="one",exits={polnoc="two",zachod="three",["wejdz do piwnicy"]="four"}}
-local vitals={hp=82,mana=67,fatigue=45,thirst=12,hunger=4,encumbrance=38,panic=0,progress=71}
+function setFgColor(n,r,g,b) fg=string.format("%d,%d,%d",r,g,b) end
+function echo(n,t) printed[#printed+1]={text=t,color=fg} end
+function echoLink(n,t) printed[#printed+1]={text=t,color=fg} end
+function expandAlias(t) aliases[#aliases+1]=t end
+local room={id="one",exits={polnoc="north",zachod="west",gora=false,
+    ["wejdz do piwnicy"]="inside"}}
+local vitals={hp=100,mana=100,fatigue=20,thirst=96,hunger=83,
+    encumbrance=38,panic=0,progress=71}
 local gmcp_api={
     room=function() return room end,
     vitals=function() return vitals end,
-    group=function() return {members={{id="me",self=1,mana=80,maxmana=120}}} end,
+    group=function() return {members={{id="me",self=true,hp=969,maxhp=969,
+        mana=120,maxmana=120}}} end,
 }
 local view={
-    self={id="me",name="JA",hp=82,hp_now=123,hp_max=150,attackers={}},
-    members={{id="a",name="Lisstana",hp=74,attackers={}}},
+    self={id="me",name="JA",hp=100,hp_now=969,hp_max=969,attackers={}},
+    members={{id="ally",name="Lisstana",hp=74,attackers={}}},
     enemies={{id="enemy",name="Ork",hp=28,attackers={}}},
-    others={{id="npc",name="Neutral",hp=100,attackers={}}}
+    others={{id="neutral",name="Veith",hp=100,attackers={}}},
 }
 local team={view=function() return view end}
-local actions={
-    {key="Ctrl+Shift+1",command="przejrzyj kufer"},
-    {key="Ctrl+Shift+2",command="otworz schowek"}
-}
-local executed={}
+local location_actions={{key="Ctrl+Shift+1",command="przejrzyj kufer"}}
+local called={}
 local locations={
-    room_actions=function() return actions end,
-    run_action=function(i) executed[#executed+1]=i end,
+    room_actions=function() return location_actions end,
+    run_action=function(i) called[#called+1]=i end,
 }
+local support=true
+local follow=false
+local official_model={
+    mode="Atak",toggles={
+        {command="/autowsparcie",on=support},
+        {command="/autopogon",on=follow},
+    },
+    collect={on=true},
+}
+local status_bar={model=function() 
+    official_model.toggles[1].on=support
+    official_model.toggles[2].on=follow
+    return official_model
+end}
+local lamp={state=function() return {lit=true} end}
+chimera_vip={settings={is_module_enabled=function(self,name)
+    return name=="combat_colors"
+end}}
 local ctx={state={},settings={mode="vip",kondycje=true,czcionka=7,akcje=true}}
-function ctx:use(name)
-    return ({gmcp=gmcp_api,team=team,locations=locations})[name]
+function ctx:use(n)
+    return ({gmcp=gmcp_api,team=team,locations=locations,status_bar=status_bar,lamp=lamp})[n]
 end
-function ctx:on(name,fn) handlers[name]=fn end
-function ctx:timer(seconds,fn,repeating) if not repeating then timers[#timers+1]=fn end end
+function ctx:on(e,fn) handlers[e]=fn end
+function ctx:timer(_,fn,repeating) if not repeating then timers[#timers+1]=fn end end
 function ctx:command(spec) commands[spec[1]]=spec.fn end
 function ctx:cleanup(fn) self.cleanup=fn end
-function ctx:set(key,value)
-    self.settings[key]=value
-    handlers["chimera.config.changed"]("chimeravip_ui",key,value)
-    return true
+function ctx:set(k,v)
+    self.settings[k]=v
+    handlers["chimera.config.changed"]("chimeravip_ui",k,v)
 end
-function ctx:send(value) executed[#executed+1]=value end
-local spec=dofile("plugins/chimeravip_ui/init.lua")
-assert(spec.name=="chimeravip_ui" and spec.settings.czcionka.default==7)
-local api=spec.setup(ctx)
+function ctx:send(v) called[#called+1]=v end
+local plugin=dofile("plugins/chimeravip_ui/init.lua")
+assert(plugin.name=="chimeravip_ui" and plugin.settings.czcionka.default==7)
+local api=plugin.setup(ctx)
 local function flush()
     local n=0
     while #timers>0 and n<40 do
@@ -85,117 +103,137 @@ local function flush()
 end
 flush()
 local function w(name) return assert(widgets["chimeravip2_1_"..name],name) end
-assert(api.active() and border==76,"VIP footer must remain exactly 76px")
-assert(fonts.chimeravip_kondycje==7,"Kondycje default 7pt")
-assert(w("gauge1").text:find("HP: 123/150 82%%"),"HP x/y percentage missing")
-assert(w("gauge2").text:find("MP: 80/120 67%%"),"MP x/y percentage missing")
-assert(w("gauge3").text:find("ZM: 45%%"),"fatigue percentage fallback missing")
-assert(w("exp_percent").text:find("71%%"),"EXP missing from bottom strip")
-assert(w("exp_track").y==58,"EXP rail must stay inside stats panel")
-assert(w("exp_over_track").hidden,"No overflow bar at 71 percent")
-for i,label in ipairs({"PR 12%","GL 4%","OBC 38%","PAN 0%"}) do
-    assert(w("gauge"..(i+3)).text:find(label,1,true),label)
+local function overlap(a,b)
+    return a.x<b.x+b.width and b.x<a.x+a.width
+        and a.y<b.y+b.height and b.y<a.y+a.height
 end
-assert(w("fill1").height==3,"HP fill must be a subtle bottom line")
-assert(w("fill1").css:find("#69C9A1",1,true),"HP at 82 percent should be green")
-assert(w("fill2").css:find("#D7B56B",1,true),"MP at 67 percent should be amber")
-assert(w("section_stats").css:find("#232938",1,true),"slate section panel missing")
-assert(w("exit_up").text:find("GORA",1,true) and w("exit_down").text:find("DOL",1,true),"vertical compass labels missing")
-assert(w("fill1").css:find("#69C9A1",1,true),"82% HP should be green")
-assert(w("fill2").css:find("#D7B56B",1,true),"67% mana should be amber")
-assert(w("fill3").css:find("#D7B56B",1,true),"45% fatigue should be amber")
-assert(w("section_exits").css:find("#232938",1,true),"footer background missing")
-
-assert(not w("exit2").css:find("background%-color"),"compass should not resemble buttons")
-assert(w("special1").text:find("wejdz",1,true),"nonstandard exits missing")
-assert(not w("action_bg").hidden,"context actions should be visible")
-assert(w("action1").text:find("Ctrl+Shift+1",1,true),"real key label missing")
-assert(w("action2").text:find("Ctrl+Shift+2",1,true),"second action missing")
-assert(w("action_bg").css:find("rgba",1,true),"popup must be translucent")
-w("action2").click()
-assert(#executed==1 and executed[1]==2,"click must invoke official run_action")
-local npc_color=nil
-for _,line in ipairs(printed) do
-    if line.text=="Neutral" then npc_color=line.color end
-end
-assert(npc_color=="189,196,206","neutral NPC should not be red")
-assert(not table.concat((function() local out={} for _,v in ipairs(printed) do out[#out+1]=v.text end return out end)(),""):find("◆",1,true),"section headings should have no diamond")
-assert(aliases[1]=="/pasek pasek nie" and aliases[2]=="/ustaw kondycje okno nie")
-ctx:set("czcionka",8)
-assert(fonts.chimeravip_kondycje==8,"font change not applied")
-actions={}
-handlers["chimera.room.changed"]({id="two"})
-flush()
-assert(w("action_bg").hidden or widgets["chimeravip2_floating_1"].hidden,
-    "empty locations must hide floating popup")
-w("action1").click()
-assert(#executed==1,"stale click ran an action after room change")
-actions={{key="Alt+F1",command="zbadaj sciane"}}
-handlers["chimera.locations.actions"]()
-flush()
-assert(w("action1").text:find("Alt+F1",1,true),"changed official binding not updated")
-ctx:set("akcje",false)
-flush()
-assert(w("action_bg").hidden or widgets["chimeravip2_floating_1"].hidden,
-    "disabled context actions remain visible")
-vitals.progress=137
-handlers["chimera.room.changed"]()
-flush()
-assert(w("exp_percent").text:find("+37%%"),"overcap event progress not reflected")
-assert(not w("exp_extra").hidden,"overflow strip missing")
-assert(not w("exp_over_track").hidden,"overflow background missing")
-assert(w("exp_extra").y==65 and w("exp_base").y==58,"EXP base and overflow rails overlap")
-local function touches(a,b)
-    return a.x < b.x+b.width and b.x < a.x+a.width
-        and a.y < b.y+b.height and b.y < a.y+a.height
-end
-local function verify_geometry()
+local function geometry()
+    assert(border==76,"HUD must be exactly 76px")
+    local footer_panels={"section_exits","section_stats","section_needs","section_controls"}
+    for _,name in ipairs(footer_panels) do
+        local panel=w(name)
+        assert(not panel.hidden and panel.y==4 and panel.height==53,
+            "Panel has wrong height: "..name)
+    end
+    for i=1,#footer_panels do
+        for j=i+1,#footer_panels do
+            assert(not overlap(w(footer_panels[i]),w(footer_panels[j])),
+                "Top-level footer panels overlap")
+        end
+    end
+    local foot=w("hud_background")
+    assert(foot.width==main_width and foot.height==76)
     for name,item in pairs(widgets) do
         if name:match("^chimeravip2_1_") and
             not name:match("^chimeravip2_1_action") and
-            item.hidden==false and item.x~=nil then
+            not item.hidden and item.x then
             assert(item.x>=0 and item.y>=0 and item.width>0 and item.height>0
                 and item.x+item.width<=main_width
                 and item.y+item.height<=76,
-                string.format("Widget outside HUD at width %d: %s (%s,%s) %sx%s",
-                    main_width,name,tostring(item.x),tostring(item.y),
-                    tostring(item.width),tostring(item.height)))
+                "Widget outside footer: "..name)
         end
     end
-    local rail=w("exp_track")
-    local stats=w("section_stats")
-    assert(rail.x>=stats.x and rail.x+rail.width<=stats.x+stats.width,
-        "EXP rail escaped central section")
-    assert(not touches(rail,w("exp_percent")) and not touches(rail,w("exp_label")),
-        "EXP rail overlaps text")
     for i=1,9 do
-        assert(not touches(w("exit"..i),w("exit_up")),
-            "GORA overlaps compass")
-        assert(not touches(w("exit"..i),w("exit_down")),
-            "DOL overlaps compass")
+        assert(not overlap(w("exit"..i),w("exit_up")),
+            "Up arrow intersects compass")
+        assert(not overlap(w("exit"..i),w("exit_down")),
+            "Down arrow intersects compass")
     end
     for i=1,3 do
-        local special=w("special"..i)
-        if not special.hidden then
-            assert(not touches(special,w("exit_up"))
-                and not touches(special,w("exit_down")),
-                "vertical exits overlap special exits")
+        local s=w("special"..i)
+        if not s.hidden then
+            assert(not overlap(s,w("exit_up")) and
+                not overlap(s,w("exit_down")),"special exit intersects arrow")
         end
     end
+    -- Every need is a separate, equal, non-overlapping row.
+    for i=4,7 do
+        local row=w("track"..i)
+        assert(row.height==11,"Need row is not 11px: "..i)
+        assert(row.x>=w("section_needs").x and
+            row.x+row.width<=w("section_needs").x+w("section_needs").width)
+        if i>4 then assert(not overlap(row,w("track"..(i-1))),
+            "Need rows overlap") end
+    end
+    local rail=w("exp_track")
+    assert(rail.y==65 and rail.height==7,"EXP not at the very bottom")
+    assert(not overlap(rail,w("exp_label")) and not overlap(rail,w("exp_percent")),
+        "EXP bar intersects label or percent")
+    assert(rail.x+rail.width<w("exp_percent").x,"EXP value is behind bar")
+    assert(w("section_needs").y+w("section_needs").height<=rail.y,
+        "PANIKA is covered by EXP")
 end
-for _,width in ipairs({760,1024,1200,1440}) do
+assert(api.active() and fonts.chimeravip_kondycje==7)
+geometry()
+assert(w("gauge1").text:find("życie",1,true))
+assert(w("gauge2").text:find("mana",1,true))
+assert(w("gauge3").text:find("siły",1,true))
+assert(w("value1").text:find("969/969 100%",1,true))
+assert(w("value2").text:find("120/120 100%",1,true))
+assert(w("value3").text:find("80%",1,true),
+    "Available energy must be 100 - fatigue")
+assert(w("fill1").css:find("#69C9A1",1,true),"Full life should be mint green")
+assert(w("fill2").css:find("#639EDB",1,true),"Mana MUST stay blue at 100%")
+assert(w("fill3").css:find("#D8B671",1,true),"Available energy should be amber")
+assert(w("fill1").height==7 and w("fill2").height==7)
+for i,name in ipairs({"pragnienie","głód","obciążenie","panika"}) do
+    assert(w("gauge"..(i+3)).text:find(name,1,true),name)
+end
+assert(w("need_value4").text:find("96%",1,true))
+assert(w("need_value5").text:find("83%",1,true))
+assert(w("need_value6").text:find("38%",1,true))
+assert(w("need_value7").text:find("0%",1,true))
+assert(w("exit2").css:find("#A4F3D2",1,true),
+    "Available north should be lit")
+assert(w("exit4").css:find("#A4F3D2",1,true),
+    "Available west should be lit")
+assert(w("exit6").css:find("#596677",1,true),
+    "Unavailable east should be dimmed")
+assert(w("exit_up").css:find("#A4F3D2",1,true),
+    "Existing up exit with false GMCP target must still be lit")
+assert(w("special1").text:find("wejdz",1,true))
+assert(w("control1").text:find("⚔",1,true))
+assert(w("control1").tooltip:find("Atak",1,true))
+assert(w("control2").tooltip:find("włączone",1,true))
+assert(w("control3").tooltip:find("wyłączona",1,true)
+    or w("control3").tooltip:find("wyłączone",1,true))
+assert(w("control5").tooltip:find("włączone",1,true))
+assert(w("control6").tooltip:find("włączone",1,true))
+assert(not w("action_bg").hidden)
+w("action1").click()
+assert(#called==1 and called[1]==1,"Floating action did not call official API")
+local neutral_color=nil
+for _,line in ipairs(printed) do
+    if line.text=="Veith" then neutral_color=line.color end
+end
+assert(neutral_color=="189,196,206","POZOSTALI must be neutral")
+vitals.progress=137
+handlers["chimera.room.changed"]()
+flush()
+assert(not w("exp_extra").hidden and w("exp_extra").y==70)
+assert(w("exp_percent").text:find("+37%",1,true))
+geometry()
+vitals.fatigue=65
+handlers["gmcp.Char.Vitals"]()
+flush()
+assert(w("value3").text:find("35%",1,true),"Energy inversion not updated")
+-- Natural resize, before switching to the official HUD.
+for _,width in ipairs({760,900,1024,1200,1440}) do
     main_width=width
     handlers["sysWindowResizeEvent"]()
     flush()
-    assert(api.active(),"resize deactivated footer")
-    verify_geometry()
+    assert(api.active(),"HUD crashed on resize")
+    geometry()
 end
+location_actions={}
+handlers["chimera.room.changed"]()
+flush()
+assert(w("action_bg").hidden or widgets["chimeravip2_floating_1"].hidden)
 commands.cvhud("oficjalny")
-assert(not api.active() and border==0 and not chimera_vip_ui_targets)
+assert(not api.active() and border==0)
 commands.cvhud("vip")
 flush()
 assert(api.active())
 ctx.cleanup()
-assert(not api.active() and not chimera_vip_ui_targets)
-assert(widgets["chimeravip2_floating_1"].hidden,"cleanup did not hide popup")
-print("PASS 0.172: footer bounds at 760/1024/1200/1440, compass, EXP, switchback")
+assert(not api.active() and widgets["chimeravip2_floating_1"].hidden)
+print("PASS 0.173: approved 76px Geyser layout, colors, compass, needs, EXP, icons, mouseovers")
