@@ -37,10 +37,10 @@ function H:register_defaults()
     self:register("interface", {
         title="INTERFEJS",
         description={
-            "ChimeraVIP wymaga oficjalnej Chimery 5; nowy HUD i Kondycje powstaja w PR 2.",
-            "Footer pokazuje kompas, wyjścia specjalne, KOND/SIŁY/MANA, potrzeby, OBC/UPI, EXP oraz kontrolki walki.",
+            "Pastelowy HUD i dokowalne Kondycje dzialaja jako wtyczka Chimery 5.",
+            "Przelaczanie: /cvhud vip lub /cvhud oficjalny. Ustawienia: /cvhud ustawienia.",
         },
-        commands={{"/ui pomoc", "ta pomoc"},{"/cvip ustawienia", "panel ustawień interfejsu i modułów"}},
+        commands={{"/ui pomoc", "ta pomoc"},{"/cvhud vip", "włącz HUD VIP"},{"/cvhud oficjalny", "powrót do oficjalnego"},{"/cvhud ustawienia", "opcje UI"}},
     })
 
     self:register("combat", {
@@ -51,7 +51,7 @@ function H:register_defaults()
 
     self:register("automation", {
         title="AUTO-WSPARCIE",
-        description={"Auto-wsparcie obserwuje GMCP drużyny i pilnuje celu lidera.","Próba wsparcia wysyła 'wesprzyj' dwukrotnie z krótkim odstępem i ma anty-spam 1,5 s."},
+        description={"Chimera 5 obsługuje autowsparcie oficjalnie; VIP nie uruchamia drugiego automatu."},
         commands={{"/wsparcie pomoc", "ta pomoc"},{"AUTO-WSPARCIE ON/OFF", "przełącznik w prawej części footera"}},
     })
 
@@ -75,7 +75,7 @@ function H:register_defaults()
 
     self:register("settings", {
         title="USTAWIENIA",
-        description={"Trwałe ustawienia ChimeraVIP: rozmiar oficjalnych okien stanów i przełączniki modułów."},
+        description={"Trwałe ustawienia VIP i przełączniki modułów; UI w /cvhud ustawienia."},
         commands={{"/ustawienia pomoc", "ta pomoc"},{"/cvip ustawienia", "otwórz panel"},{"/cvip moduly", "lista stanów modułów"}},
     })
 

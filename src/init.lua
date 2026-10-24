@@ -26,16 +26,21 @@ load("src/core/bootstrap.lua")
 load("src/integrations/chimera5.lua")
 load("src/core/settings.lua")
 load("src/core/help.lua")
-load("src/theme/pastel.lua")
-load("src/ui/quiet_footer.lua")
-load("src/ui/settings_apply.lua")
+-- On Chimera 5 the new UI is a real upstream plugin; old scripts.ui widgets
+-- must never be instantiated or monkeypatched.
+local upstream_v5=chimera_vip.runtime and chimera_vip.runtime:is_chimera5()
+if not upstream_v5 then
+    load("src/theme/pastel.lua")
+    load("src/ui/quiet_footer.lua")
+    load("src/ui/settings_apply.lua")
+end
 load("src/ui/settings_panel.lua")
 load("src/features/combat_colors.lua")
 if not (chimera_vip.runtime and chimera_vip.runtime:is_chimera5()) then
     load("src/features/auto_support.lua")
 end
 load("src/features/tactical_states.lua")
-load("src/features/tactical_states_view.lua")
+if not upstream_v5 then load("src/features/tactical_states_view.lua") end
 load("src/features/tactical_aliases.lua")
 load("src/features/xp_tracker.lua")
 load("src/features/xp_kill_card_view.lua")
@@ -50,8 +55,10 @@ load("src/features/retainer_progress.lua")
 load("src/features/equipment_view.lua")
 load("src/features/weapon_info.lua")
 load("src/features/blacksmith_info.lua")
-load("src/ui/footer_controls.lua")
-load("src/ui/module_controls.lua")
+if not upstream_v5 then
+    load("src/ui/footer_controls.lua")
+    load("src/ui/module_controls.lua")
+end
 load("src/core/hash.lua")
 load("src/core/updater.lua")
 
