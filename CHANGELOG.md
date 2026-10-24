@@ -1,3 +1,12 @@
+## 0.166 — Pastelowy HUD i Kondycje na Chimera 5
+
+- Wtyczka `chimeravip_ui`: alternatywny footer, kompas, statystyki, kontrolki i akcje lokacji.
+- Dokowalne Kondycje z pelnym modelem team.view(), litery bez luk i akcje po ID.
+- Bezpieczne przejscie VIP / oficjalny: `/cvhud vip`, `/cvhud oficjalny`.
+- Instalatorem `/cvip v5 instaluj` aktualizujemy most i wtyczke UI.
+- Stary motyw, Quiet Footer, renderer Kondycji i kontrolki 4.x nie sa uruchamiane w Chimera 5.
+- Wlasne aliasy /vz /vza korzystaja ze znacznikow aktualnego VIP UI.
+
 ## 0.165 — Chimera 5.0 compatibility, PR 1
 
 - Most do oficjalnego API gmcp/team (beta.13), jawna instalacja przez /cvip v5 instaluj.

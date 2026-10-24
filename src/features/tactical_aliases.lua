@@ -42,6 +42,10 @@ end
 local function group_target(mark, allow_self)
     mark = tostring(mark or ""):upper()
     if mark == "" then return nil end
+    local targets=rawget(_G,"chimera_vip_ui_targets")
+    if targets and targets.members and targets.members[mark] then
+        return tostring(targets.members[mark])
+    end
     if not refresh_snapshot() then return nil end
     if mark == "@" and not allow_self then
         note("Znacznik @ oznacza ciebie i nie jest dozwolony w tej komendzie.", P().yellow)
@@ -58,6 +62,10 @@ end
 local function enemy_target(mark)
     mark = tostring(mark or "")
     if mark == "" then return nil end
+    local targets=rawget(_G,"chimera_vip_ui_targets")
+    if targets and targets.enemies and targets.enemies[mark] then
+        return tostring(targets.enemies[mark])
+    end
     if not refresh_snapshot() then return nil end
     local id = T:get_enemy_target(mark)
     if not id then

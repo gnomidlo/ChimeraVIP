@@ -1,175 +1,53 @@
 # ChimeraVIP
 
-Nakładka do oficjalnych skryptów **Chimera MUD** dla Mudleta. Projekt nie modyfikuje kodu upstreamu; korzysta z jego GMCP, eventów i publicznych struktur.
+Pastelowa nakladka na **oficjalne skrypty Chimery 5.0** dla Mudleta.
+Serwer: `chimera.co.pl:2300`. Wersja ChimeraVIP: **0.166**.
+Testowana baza: **5.0.0-beta.13**.
 
-Serwer: `chimera.co.pl:2300`  
-Aktualna wersja ChimeraVIP: **0.113**<br>
-Wersja upstreamu potwierdzona w działającym runtime: **4.3**
+## Instalacja i aktualizacja
 
-## Instalacja
-
-W linii poleceń Mudleta wpisz:
+Oficjalna Chimera 5 musi byc zainstalowana i uruchomiona.
+W Mudlecie:
 
 ```lua
 lua installPackage("https://raw.githubusercontent.com/gnomidlo/ChimeraVIP/main/packages/ChimeraVIP.xml")
 ```
 
-Pakiet tworzy trwały loader `ChimeraVIP/loader`, który pobiera aktualny runtime do:
+Po aktualizacji `/cvip aktualizuj` wykonaj `/cvip v5 instaluj`
+i oficjalne `/przeladuj`. Instaluje to most API i wtyczke HUD do
+`chimera_wtyczki/`; nie modyfikuje plikow oficjalnej paczki.
 
-```text
-getMudletHomeDir()/ChimeraVIP/
-```
+## Interfejs i powrot do oryginalu
 
-Dane użytkownika są przechowywane osobno w `getMudletHomeDir()/ChimeraVIP-data/`.
+- `/cvhud vip` — pastelowy pasek i dokowalne okno Kondycje.
+- `/cvhud oficjalny` — przywraca oficjalny pasek i Kondycje.
+- `/cvhud ustawienia` — ustawienia widocznosci i trybu wtyczki.
+- `/cvhud status` — ktory HUD jest aktywny.
+- `/cvip v5` — stan instalacji wtyczek.
 
-Aktualizacja istniejącej instalacji:
+VIP stara sie utworzyc oba widoki przed ukryciem oficjalnych.
+Gdy Geyser lub okna Mudleta nie dzialaja, nie wylacza oficjalnego
+interfejsu. Widoki tworzy osobna wtyczka `chimeravip_ui`; kod 4.x
+nie jest uruchamiany na Chimera 5. Wlasne Kondycje stosuja
+litery `A,B,C...` bez luk, wyswietlaja druzyne, pachołkow, ogluszenie,
+cel ataku, przeciwnikow, osoby na lokacji i nieaktywnych walczacych `[X]`.
 
-```text
-/cvip sprawdz
-/cvip aktualizuj
-```
+Przyciski wywoluja oficjalne komendy:
+`/tryb_ataku`, `/autowsparcie`, `/autopogon`, `/zbieranie`,
+`/lampa`, `/mbind`, a akcje lokacji wykonuja API `locations.run_action()`.
+Skroty VIP `/vz NUMER`, `/vza LITERA`, `/vrza LITERA LITERA`
+korzystaja z oznaczen z aktualnych Kondycji; oficjalne `/z` i `/za`
+zachowuja swoja semantyke.
 
-Updater 2.0 korzysta z manifestu v2 i po pierwszym przejściu pobiera tylko pliki, których Git blob SHA zmienił się względem lokalnego `installed_manifest.lua`. Aktualizacja jest przygotowywana w stagingu i tworzy backup przed podmianą. Od 0.111 updater ustala commit przez API GitHuba i z niego pobiera manifest oraz pliki. Weryfikuje rozmiar, Git blob SHA-1 i składnię Lua. Timeout pozwala ponowić pobieranie; rollback obejmuje również VERSION i installed_manifest.lua. Mechanizm dotyczy aktualizatora działającego od 0.111; przejście ze starszego wydania wykonuje jeszcze starszy updater.
+## Pozostale moduly
 
-## Interfejs
+Wlasny `/xp` (zabicia, XP/h, typy mobow), Combat Colors,
+Kamienie Milowe, cechy, ekwipunek, skracanie opisow i raporty pozostaja
+czescia VIP. Nie instalujemy Defense Trackera ani osobnej bazy
+odmian graczy. Dawne dane w `ChimeraVIP-data/` pozostaja nietkniete.
 
-ChimeraVIP dodaje pastelowy motyw oraz responsywny Quiet Footer z kompasem, wyjściami specjalnymi, KOND/SIŁY/MANA, potrzebami, OBC/UPI, EXP, auto-wsparciem i dynamicznymi kontrolkami oficjalnych funkcji Chimery.
+## Testowanie i repozytorium
 
-Ustawienie rozmiaru w `/cvip ustawienia` dotyczy wyłącznie oficjalnych okien `states_window` i `enemy_states_window`. Quiet Footer zachowuje własne stałe fonty.
-
-Od 0.103 footer nie przebudowuje ponownie elementów vitals, których wartość nie zmieniła się od poprzedniego eventu GMCP.
-
-## Combat Colors
-
-`features/combat_colors` dodaje pastelowe prefiksy `0/3–3/3` dla `zadane_*`, `otrzymane_*`, `innych_zadane_*` i `innych_otrzymane_*`. Moduł uczy się ustawień z wyniku `kolory`; `-1` oznacza brak koloru.
-
-Rozpoznane trafienia `otrzymane_*` podnoszą `chimeraVipIncomingHit`, z którego korzysta Defense Tracker.
-
-## Defense Tracker
-
-`features/defense_tracker` po cichu prowadzi statystyki wyłącznie w pamięci bieżącej sesji. Niczego nie zapisuje na dysku.
-
-Liczy pudła przeciwników, uniki, parowania, zasłony, ciosy zatrzymane pancerzem oraz znane trafienia `0/3–3/3`. Zasłony, parowania i pancerz mają dodatkowe zestawienie według użytego przedmiotu.
-
-```text
-/def
-/def sprzet
-/def last [N]
-/def reset
-/def pomoc
-```
-
-## Auto-wsparcie
-
-Auto-wsparcie obserwuje dane drużyny i walki z GMCP Chimery. Gdy relacje pozwalają ustalić cel lidera, pilnuje aby postać biła ten sam cel.
-
-Próba wsparcia podlega cooldownowi. Drugie `wesprzyj` jest wysyłane tylko wtedy, gdy nadal jest potrzebne, cel lidera pozostaje ten sam i postać jest na tej samej lokacji.
-
-## Tracker XP
-
-```text
-/xp
-/xp mobs
-/xp mob <nazwa>
-/xp last [N]
-/xp reset
-/xp pomoc
-```
-
-Tracker liczy XP/h, aktywny czas, trend, własne i drużynowe zabójstwa oraz statystyki mobów. Statystyki są agregowane inkrementalnie, a bufory ostatnich zdarzeń są ograniczone.
-
-## Cechy i rozwój
-
-`features/stats` formatuje odczyt `cechy`, tworzy snapshoty, liczy delty oraz zapisuje historię rozwoju osobno dla każdej postaci rozpoznanej przez `gmcp.Char.Name`.
-
-```text
-cechy
-/cechy historia [N]
-/cechy pomoc
-```
-
-Dane historyczne pozostają w `ChimeraVIP-data/progression.lua` dla zgodności z wcześniejszymi wersjami, ale osobny moduł `/progres` nie jest już używany.
-
-## Postacie
-
-`features/characters` zapisuje sześć odmian imienia, relację i kolory highlightu. Baza znajduje się w `ChimeraVIP-data/characters.lua`.
-
-```text
-odmien <imie>
-/postacie
-/postacie szukaj <tekst>
-/postacie info <imie>
-/postacie grupa <imie> p|n|w|?
-/postacie kolor
-```
-
-## Pojemniki i ekwipunek
-
-ChimeraVIP formatuje zawartość rozpoznanych pojemników, przenosi monety na górę raportu oraz lekko koloruje standardowe linie `RECE`, `EKWIPUNEK` i `PRZY SOBIE` bez przebudowywania tekstu MUD-a.
-
-## Pomoc, ustawienia i system
-
-```text
-/cvip
-/cvip ustawienia
-/cvip moduly
-/cvip diagnostyka
-/cvip status
-/cvip sprawdz
-/cvip aktualizuj
-/cvip przeladuj
-```
-
-`/cvip ustawienia` jest centralnym panelem trwałych ustawień ChimeraVIP i będzie rozszerzany o konfigurację kolejnych modułów.
-
-## Struktura
-
-```text
-ChimeraVIP/
-├── VERSION
-├── manifest.lua
-├── loader.lua
-├── releases/
-├── packages/
-├── tools/
-└── src/
-    ├── init.lua
-    ├── core/
-    ├── integrations/
-    ├── theme/
-    ├── ui/
-    └── features/
-```
-
-## Walidacja wydań
-
-GitHub Actions uruchamia `tools/release_check.lua`. Checker pilnuje zgodności `VERSION`, manifestu i bootstrapu, składni Lua, istnienia plików oraz hashy i rozmiarów `file_meta`.
-
-## Zgodność
-
-Rdzeń i tekstowe moduły ChimeraVIP mogą się inicjalizować bez oficjalnego UI. Motyw, stopka i kontrolki oficjalnych funkcji nadal zależą od jego struktur. Adapter runtime udostępnia drużynę, walkę oraz lokację bezpośrednio z GMCP (z fallbackiem lokacji do starszego adaptera). `/cvip diagnostyka` pokazuje obecność zależności oraz błędy ładowania. Aktualnie działanie zostało potwierdzone z upstreamem **4.3**. Integracje z publicznymi strukturami upstreamu powinny być ponownie sprawdzane po większych zmianach oficjalnych skryptów.
-
-### Manewry po znacznikach okna Kondycje (0.131)
-
-Nakladka korzysta z oficjalnej Chimery. Wlasna postac jest w DRUZYNA pod `@`,
-rowniez podczas gry solo. Aktualny sklad ma kolejne litery od A, bez luk po dawnych
-czlonkach, w kolejnosci okna (prowadzacy, potem nazwy). Zmiana skladu moze zmienic
-litery: aliasy korzystaja z aktualnego przypisania. Litery czlonkow druzyny mozna wpisywac mala lub duza litera.
-
-| Alias | Komenda wysylana do gry |
-| --- | --- |
-| `/za a` | `zaslon ID_A` |
-| `/z 1` | `zabij ID_1` |
-| `/rza a b` | `parozkaz ID_A zaslon ID_B` |
-| `/rza a @` | `parozkaz ID_A zaslon ID_GRACZA` |
-
-ID sa odczytywane z aktualnych danych GMCP. Brak znacznika lub bledne argumenty
-powoduja komunikat bez wysylania rozkazu. Numery /z dotycza sekcji WROGOWIE.
-Oficjalne warianty /z i /za (takze bez argumentow i /za z sila) sa wylaczane;
-nalezy podac znacznik. Pozostale aliasy oficjalne pozostaja aktywne.
-Skladnia serwerowa `parozkaz` pochodzi z dotychczasowego modulu; wymaga sprawdzenia w grze.
-
-Zolty `[X]` za nazwa oznacza, ze postac (rowniez JA) ani nie atakuje, ani nie jest
-atakowana, podczas gdy przynajmniej jeden czlonek druzyny uczestniczy w walce.
-Znacznik znika po dolaczeniu do walki lub zakonczeniu walki calej druzyny.
-Walka obcych postaci nie uruchamia tego oznaczenia. Dane pochodza z relacji GMCP.
+`lua tools/release_check.lua` sprawdza manifest v2, SHA Git blob i skladnie.
+`texlua tools/chimera5_ui_test.lua` uruchamia mock UI bez Mudleta.
+Wymagane jest jeszcze sprawdzenie w prawdziwej sesji Chimera 5.
