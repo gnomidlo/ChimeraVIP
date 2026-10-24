@@ -1,11 +1,12 @@
 return {
     name = "ChimeraVIP",
-    version = "0.166",
+    version = "0.167",
     schema = 2,
     tested_upstream = "5.0.0-beta.13",
     raw_base = "https://raw.githubusercontent.com/gnomidlo/ChimeraVIP/main/",
     changes = {
-        "Pastelowy HUD i okno Kondycje na Chimera 5",
+        "Hotfix rysowania HUD-u dla Chimera 5 (szerokosc okna)",
+        "Aktualizator 0.166 pobiera nowe wydanie 0.167",
         "Przelacznik /cvhud vip i /cvhud oficjalny",
         "Bezpieczne aliasy /vz /vza /vrza i bez dublowania auto-wsparcia",
         "Usuniecie Defense Tracker i wlasnej bazy postaci",
@@ -55,7 +56,7 @@ return {
         ["src/features/tactical_aliases.lua"] = {hash="029c1ae987e52b0bf303c93cf22b480079736b70", size=5545},
         ["loader.lua"] = {hash="1381414d89e55d2fad70beb8f42e48098d4b1802", size=4501},
         ["src/init.lua"] = {hash="9e26ff60fa02eb5d425b460f70e708e08c3cce7a", size=2440},
-        ["src/core/bootstrap.lua"] = {hash="8190f45cb2ff0a4d770ddc6189ba61211a9d74f6", size=1631},
+        ["src/core/bootstrap.lua"] = {hash="6a0b8ebac8fff4d52281b41d97ef72ccb24cdd55", size=1631},
         ["src/core/util.lua"] = {hash="7561cd9259be9ff0ce74228e9048eef0b5aba280", size=6686},
         ["src/core/hash.lua"] = {hash="362c18bf131c9939d03b59dd50568d66de8f6a5e", size=2118},
         ["src/integrations/runtime.lua"] = {hash="c3b367edc08a8b5a1124dc73b1142e6bda513a50", size=3676},
