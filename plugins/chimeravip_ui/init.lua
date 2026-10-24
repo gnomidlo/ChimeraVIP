@@ -13,9 +13,9 @@ local EXITS = {
 }
 local GAUGES = {
     {"hp","KOND","rose"},{"mana","MANA","blue"},
-    {"fatigue","ZMECZ","yellow"},{"progress","EXP","lavender"},
-    {"thirst","PRAGN","blue"},{"hunger","GLOD","mint"},
-    {"encumbrance","OBC","peach"},{"panic","PANIKA","rose"},
+    {"fatigue","ZMECZ","yellow"},{"thirst","PRAGN","blue"},
+    {"hunger","GLOD","mint"},{"encumbrance","OBC","peach"},
+    {"panic","PANIKA","rose"},{"progress","EXP","lavender"},
 }
 local BUTTONS = {
     {"TRYB","/tryb_ataku"},{"WSP","/autowsparcie"},
@@ -106,6 +106,7 @@ return {
                 widget("exit"..i,command~="" and function() ctx:send(command,true) end or nil)
             end
             -- Fill widgets are created before the labels so color is behind text.
+            for i=1,#GAUGES do widget("track"..i) end
             for i=1,#GAUGES do widget("fill"..i) end
             for i=1,#GAUGES do widget("gauge"..i) end
             for i,button in ipairs(BUTTONS) do
@@ -226,7 +227,7 @@ return {
             if ally and p.stamina then
                 print_segment(" Z:"..math.floor(100-math.min(100,tonumber(p.stamina) or 0)).."%","muted")
             end
-            cecho(WINDOW,"\n")
+            echo(WINDOW,"\n")
         end
         local function draw_window(view)
             if not S.opened or not ctx.settings.kondycje then return end
@@ -295,7 +296,9 @@ return {
             local value=tonumber(reading)
             local label=def[2].." "..(value and (math.floor(value+0.5).."%") or "--")
             local gauge=S.widgets["gauge"..index]
+            local track=S.widgets["track"..index]
             local fill=S.widgets["fill"..index]
+            place(track,x,y,w,h,"","muted")
             if value then
                 local fraction=math.max(0,math.min(1,value/100))
                 local length=math.floor((w-2)*fraction)
@@ -308,6 +311,10 @@ return {
                 else fill:hide() end
             else fill:hide() end
             place(gauge,x,y,w,h,label,value and def[3] or "muted")
+            -- Transparent label overlays the actual colored bar.
+            gauge:setStyleSheet("QLabel {background:transparent;color:"
+                ..(value and P.text or P.muted)..";border:0px;"
+                .."font-family:'Bitstream Vera Sans Mono';font-size:7pt;}")
         end
         local function draw_footer()
             if not S.built then return end
