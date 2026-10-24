@@ -39,7 +39,7 @@ local vitals={hp=82,mana=67,fatigue=45,thirst=12,hunger=4,encumbrance=38,panic=0
 local gmcp_api={
     room=function() return room end,
     vitals=function() return vitals end,
-    group=function() return {members={{id="me",self=1,mana=80,maxmana=120}} end,
+    group=function() return {members={{id="me",self=1,mana=80,maxmana=120}}} end,
 }
 local view={
     self={id="me",name="JA",hp=82,hp_now=123,hp_max=150,attackers={}},
