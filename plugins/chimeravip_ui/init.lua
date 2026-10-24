@@ -249,7 +249,7 @@ return {
         end
         local function draw_footer()
             if not S.built then return end
-            local width=tonumber(getMainWindowSize()) or 1000
+            local width=tonumber((getMainWindowSize())) or 1000
             width=math.max(350,width)
             local room=gmcp.room() or {}
             local exits=type(room.exits)=="table" and room.exits or {}
