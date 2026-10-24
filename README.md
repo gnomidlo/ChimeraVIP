@@ -1,7 +1,7 @@
 # ChimeraVIP
 
 Pastelowa nakladka na **oficjalne skrypty Chimery 5.0** dla Mudleta.
-Serwer: `chimera.co.pl:2300`. Wersja ChimeraVIP: **0.173**.
+Serwer: `chimera.co.pl:2300`. Wersja ChimeraVIP: **0.174**.
 Testowana baza: **5.0.0-beta.13**.
 
 ## Instalacja i aktualizacja

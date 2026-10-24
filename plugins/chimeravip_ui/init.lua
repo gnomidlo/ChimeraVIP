@@ -41,6 +41,13 @@ local function alpha(i)
     return table.concat(out)
 end
 local function color(name) return P[name] or P.text end
+-- Mudlet's rich-text QLabel can ignore CSS foreground color when echo()
+-- inserts formatted text. Set the compass foreground inside the text too.
+local function compass_html(label,active)
+    local shade=active and "#86E7BC" or "#4A5363"
+    local body=active and ("<b>"..label.."</b>") or label
+    return "<center><font color='"..shade.."'>"..body.."</font></center>"
+end
 local function style(name)
     return "QLabel { background-color:"..P.soft..";color:"..color(name)
         ..";border:1px solid "..P.edge..";border-radius:4px;"
@@ -630,9 +637,10 @@ return {
                 local y=g.top_y+6+math.floor((i-1)/3)*13
                 place(w,x,y,18,12,e[2],exists and "mint" or "muted")
                 w:setStyleSheet("QLabel {background:transparent;border:0;color:"
-                    ..(exists and "#A4F3D2" or "#596677")
+                    ..(exists and "#86E7BC" or "#4A5363")
                     ..";font-family:'DejaVu Sans Mono';font-weight:"
                     ..(exists and "bold" or "normal")..";font-size:7pt;}")
+                w:echo(compass_html(e[2],exists))
             end
             for _,entry in ipairs({{"exit_up","gora","↑",0},{"exit_down","dol","↓",1}}) do
                 local w=S.widgets[entry[1]]
@@ -640,8 +648,10 @@ return {
                 place(w,g.nav_x+67,g.top_y+11+entry[4]*20,
                     26,16,entry[3],lit and "mint" or "muted")
                 w:setStyleSheet("QLabel {background:transparent;border:0;color:"
-                    ..(lit and "#A4F3D2" or "#667083")
-                    ..";font-family:'DejaVu Sans';font-weight:bold;font-size:10pt;}")
+                    ..(lit and "#86E7BC" or "#4A5363")
+                    ..";font-family:'DejaVu Sans';font-weight:"
+                    ..(lit and "bold" or "normal")..";font-size:10pt;}")
+                w:echo(compass_html(entry[3],lit))
                 if type(w.setToolTip)=="function" then
                     w:setToolTip(entry[2]..(lit and " (dostępne)" or " (brak wyjścia)"))
                 end

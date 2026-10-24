@@ -1,11 +1,12 @@
 return {
     name = "ChimeraVIP",
-    version = "0.173",
+    version = "0.174",
     schema = 2,
     tested_upstream = "5.0.0-beta.13",
     raw_base = "https://raw.githubusercontent.com/gnomidlo/ChimeraVIP/main/",
     changes = {
-        "Quiet HUD 0.173: roza wiatrow, ikony, zycie mana sily",
+        "Quiet HUD 0.174: kontrast aktywnych wyjsc i przygaszone niedostepne",
+        "Podwojne formatowanie CSS i rich text etykiet kompasu",
         "Cztery rowne wskazniki potrzeb i EXP na samym dole",
         "Oficjalne stany ON OFF oraz tooltipy Geyser",
         "Pasek EXP w sekcji statystyk, bez nachodzenia na pole komend",
@@ -58,13 +59,13 @@ return {
         "src/ui/module_controls.lua"
     },
     file_meta = {
-        ["plugins/chimeravip_ui/init.lua"] = {hash="4e7022915e060c92642d8e8960f153ca7b7c7d77", size=41870},
+        ["plugins/chimeravip_ui/init.lua"] = {hash="40ec1e2c02994442ba90d2e55d8310b069f4c2a6", size=42398},
         ["src/integrations/chimera5.lua"] = {hash="98354d53965b65011847b4cec6575dd430f2ee76", size=2706},
         ["plugins/chimera_vip_bridge/init.lua"] = {hash="fca58a6712376c4ba29843674f11c0e89e4540f0", size=2254},
         ["src/features/tactical_aliases.lua"] = {hash="029c1ae987e52b0bf303c93cf22b480079736b70", size=5545},
         ["loader.lua"] = {hash="1381414d89e55d2fad70beb8f42e48098d4b1802", size=4501},
         ["src/init.lua"] = {hash="9e26ff60fa02eb5d425b460f70e708e08c3cce7a", size=2440},
-        ["src/core/bootstrap.lua"] = {hash="e984459643b5b6c96ad118483571ffec754aa0d2", size=1631},
+        ["src/core/bootstrap.lua"] = {hash="3c0dd810fe4791d875e7bc3c6797cadde399d31f", size=1631},
         ["src/core/util.lua"] = {hash="7561cd9259be9ff0ce74228e9048eef0b5aba280", size=6686},
         ["src/core/hash.lua"] = {hash="362c18bf131c9939d03b59dd50568d66de8f6a5e", size=2118},
         ["src/integrations/runtime.lua"] = {hash="c3b367edc08a8b5a1124dc73b1142e6bda513a50", size=3676},
