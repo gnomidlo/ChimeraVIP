@@ -1,7 +1,7 @@
 # ChimeraVIP
 
 Pastelowa nakladka na **oficjalne skrypty Chimery 5.0** dla Mudleta.
-Serwer: `chimera.co.pl:2300`. Wersja ChimeraVIP: **0.174**.
+Serwer: `chimera.co.pl:2300`. Wersja ChimeraVIP: **0.175**.
 Testowana baza: **5.0.0-beta.13**.
 
 ## Instalacja i aktualizacja
@@ -113,3 +113,32 @@ oraz kolory ON/OFF na podstawie stanu oficjalnej Chimery.
 Aby zobaczyc poprawiony HUD po scaleniu i aktualizacji:
 `/cvip aktualizuj`, `/cvip v5 instaluj`, `/przeladuj`.
 W razie problemow: `/cvhud oficjalny`.
+
+
+## Wlasne bindy: wyjscia i akcje lokacji (0.175)
+
+W edytorze Mudleta otworz **Keys / Klawisze**. W nowym bindzie
+ustaw kombinacje, a jako kod Lua wpisz wybrana funkcje:
+
+| Skrot w Mudlecie | Kod Lua | Przeznaczenie |
+| --- | --- | --- |
+| np. Alt+4 | `chimera_vip.ui.special_exit(1)` | pierwsze niestandardowe przejscie |
+| np. Alt+5 | `chimera_vip.ui.special_exit(2)` | drugie niestandardowe przejscie |
+| np. Alt+6 | `chimera_vip.ui.special_exit(3)` | trzecie niestandardowe przejscie |
+| Alt+1 | `chimera_vip.ui.room_action(1)` | pierwsza akcja kontekstowa |
+| Alt+2 | `chimera_vip.ui.room_action(2)` | druga akcja kontekstowa |
+| Alt+3 | `chimera_vip.ui.room_action(3)` | trzecia akcja kontekstowa |
+
+Indeksy oznaczaja biezaca pozycje na liscie, nie stala komende.
+Wyjscia nietypowe sa alfabetycznie sortowane wedlug aktualnych
+kluczy `Room.Info.exits` — tak samo jak klikane etykiety.
+Po zmianie lokacji bind wykonuje odpowiednia nowa akcje.
+Gdy brak przejscia albo akcji, nie wysyla niczego i zwraca `false`.
+
+Funkcje dostepne sa po zainstalowaniu wtyczki ChimeraVIP 5 oraz
+przeladowaniu `/przeladuj`. Jesli instalujesz poprawke po aktualizacji,
+wykonaj: `/cvip aktualizuj`, `/cvip v5 instaluj`, `/przeladuj`.
+
+Nie zmieniamy domyslnych klawiszy oficjalnej Chimery:
+`Ctrl+Shift+1/2/3` moga dzialac rownolegle z wlasnymi `Alt+1/2/3`.
+`Ctrl+1/2/3` lepiej zostawic dla przelaczania profili Mudleta 5.

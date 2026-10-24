@@ -1,3 +1,18 @@
+## 0.175 — Publiczne bindy dla wyjsc i akcji kontekstowych
+
+- Funkcja chimera_vip.ui.special_exit(n) dla pierwszych trzech wyjsc
+  niestandardowych; zgodna z kliknieciem w odpowiednia pozycje rozy.
+- Funkcja chimera_vip.ui.room_action(n) (1-12) wywoluje oficjalne API
+  locations.run_action(n); umozliwia własne bindy Alt+1, Alt+2, Alt+3.
+- Obie funkcje waliduja numer i zawsze sprawdzaja aktualne dane GMCP
+  / aktualne akcje. Nie wysylaja nieaktualnej komendy po zmianie pokoju.
+- Brak akcji i błedny numer: bezpieczne false, bez wysylania rozkazu.
+- Publiczne wywolania sprzatane na cleanup wtyczki.
+- Wpisanie skryptu w Keys Mudleta pozostaje decyzja uzytkownika;
+  oficjalna Chimera i jej Ctrl+Shift+1-3 sa nietkniete.
+- Regression: klik vs bind, room swap przed renderem, nieprawidlowe
+  indeksy oraz stan po cleanup.
+
 ## 0.174 — Kontrast rozy wiatrow
 
 - Dostepne kierunki i wyjscia gora/dol: mocna mietowa zielen

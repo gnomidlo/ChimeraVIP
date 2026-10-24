@@ -82,6 +82,55 @@ return {
         local S={active=false,built=false,opened=false,pending=false,widgets={},
             marks={members={},enemies={}},signature=nil,root=nil,cached_vitals=nil,
             floating=nil,floating_widgets={},specials={},action_count=0,exp_progress=nil}
+        -- Public keybinding functions are shared with the Geyser click callbacks.
+        -- Always read current GMCP when invoked; a timer-rendered list may
+        -- still contain commands from a previous room.
+        local resolve_exits
+        local function slot_number(index,limit)
+            local n=tonumber(index)
+            if n and n==math.floor(n) and n>=1 and n<=limit then return n end
+            return nil
+        end
+        local function current_special_exits()
+            if not resolve_exits then return {} end
+            local exits=resolve_exits()
+            local normal={gora=true,dol=true}
+            for _,entry in ipairs(EXITS) do normal[entry[1]]=true end
+            local result={}
+            for command in pairs(exits) do
+                if not normal[command] then result[#result+1]=command end
+            end
+            table.sort(result)
+            return result
+        end
+        local function special_exit(index)
+            local slot=slot_number(index,3)
+            if not slot then return false end
+            local command=current_special_exits()[slot]
+            if not command then return false end
+            ctx:send(command,true)
+            return true
+        end
+        local function room_action(index)
+            local slot=slot_number(index,12)
+            if not slot then return false end
+            local actions=locations.room_actions()
+            local action=type(actions)=="table" and actions[slot]
+            if type(action)~="table" or type(action.command)~="string"
+                or action.command=="" then return false end
+            locations.run_action(slot)
+            return true
+        end
+        local vip=rawget(_G,"chimera_vip")
+        if type(vip)~="table" then
+            vip={}
+            _G.chimera_vip=vip
+        end
+        if type(vip.ui)~="table" then vip.ui={} end
+        local public_ui=vip.ui
+        local old_special,old_action=public_ui.special_exit,public_ui.room_action
+        public_ui.special_exit=special_exit
+        public_ui.room_action=room_action
         local function available()
             return type(Geyser)=="table" and type(Geyser.Container)=="table"
                 and type(Geyser.Label)=="table" and type(getMainWindowSize)=="function"
@@ -140,9 +189,7 @@ return {
             end
             for i=1,3 do
                 local slot=i
-                widget("special"..i,function()
-                    if S.specials[slot] then ctx:send(S.specials[slot],true) end
-                end)
+                widget("special"..i,function() special_exit(slot) end)
             end
             -- Separate sibling avoids clipping in the 76px footer.
             S.floating=Geyser.Container:new({name="chimeravip2_floating_"..generation,
@@ -158,11 +205,7 @@ return {
             for i=1,12 do
                 local slot=i
                 floating_widget("action"..i,function()
-                    local all=locations.room_actions() or {}
-                    local entry=all[slot]
-                    if entry and type(entry.command)=="string" and entry.command~="" then
-                        locations.run_action(slot) -- exactly the official key's API
-                    end
+                    room_action(slot) -- same API as user Alt+1...Alt+3
                 end)
             end
             S.floating:hide()
@@ -570,7 +613,7 @@ return {
             number:setStyleSheet("QLabel {background:transparent;border:0;color:#D5C3E7;"
                 .."font-family:'DejaVu Sans Mono';font-size:7pt;}")
         end
-        local function resolve_exits()
+        resolve_exits=function()
             local room=gmcp.room()
             local exits=type(room)=="table" and room.exits
             if type(exits)~="table" or next(exits)==nil then
@@ -656,15 +699,7 @@ return {
                     w:setToolTip(entry[2]..(lit and " (dostępne)" or " (brak wyjścia)"))
                 end
             end
-            local known={}
-            for _,e in ipairs(EXITS) do known[e[1]]=true end
-            known.gora=true
-            known.dol=true
-            local specials={}
-            for command in pairs(exits) do
-                if not known[command] then specials[#specials+1]=command end
-            end
-            table.sort(specials)
+            local specials=current_special_exits()
             S.specials=specials
             local sx=g.nav_x+97
             local sw=math.max(1,g.nav-102)
@@ -862,6 +897,12 @@ return {
         end)
         ctx:timer(1.5,schedule,true)
         ctx:cleanup(function()
+            if public_ui.special_exit==special_exit then
+                public_ui.special_exit=old_special
+            end
+            if public_ui.room_action==room_action then
+                public_ui.room_action=old_action
+            end
             restore()
             if S.root and type(S.root.delete)=="function" then
                 pcall(function() S.root:delete() end)

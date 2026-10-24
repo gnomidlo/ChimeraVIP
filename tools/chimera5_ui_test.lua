@@ -213,8 +213,46 @@ assert(w("control3").tooltip:find("wyłączona",1,true)
 assert(w("control5").tooltip:find("włączone",1,true))
 assert(w("control6").tooltip:find("włączone",1,true))
 assert(not w("action_bg").hidden)
+assert(type(chimera_vip.ui)=="table")
+assert(type(chimera_vip.ui.special_exit)=="function")
+assert(type(chimera_vip.ui.room_action)=="function")
+-- Bind in Mudlet's Keys editor: chimera_vip.ui.special_exit(1)
+assert(chimera_vip.ui.special_exit(1)==true)
+assert(#called==1 and called[1]=="wejdz do piwnicy",
+    "Special exit #1 did not dispatch current GMCP exit")
+w("special1").click()
+assert(#called==2 and called[2]==called[1],
+    "Click and custom keybind must dispatch the same special exit")
+assert(chimera_vip.ui.special_exit(2)==false and
+    chimera_vip.ui.special_exit(0)==false and
+    chimera_vip.ui.special_exit(1.5)==false and
+    chimera_vip.ui.special_exit("abc")==false and
+    chimera_vip.ui.special_exit(nil)==false)
+assert(#called==2,"Missing/invalid special exits must send nothing")
+-- Context actions can also be bound in Keys editor as Alt+1/2/3.
+assert(chimera_vip.ui.room_action(1)==true)
+assert(#called==3 and called[3]==1,"Alt+1 context action wrapper failed")
 w("action1").click()
-assert(#called==1 and called[1]==1,"Floating action did not call official API")
+assert(#called==4 and called[4]==1,
+    "Action mouse click and Alt key should invoke same official API")
+assert(chimera_vip.ui.room_action(2)==false and
+    chimera_vip.ui.room_action(0)==false and
+    chimera_vip.ui.room_action(13)==false and
+    chimera_vip.ui.room_action(2.7)==false)
+assert(#called==4,"Missing/invalid room actions must be inert")
+-- When room changes BEFORE the next render, stale visible exit actions
+-- must never be sent by the user-supplied keybind.
+room={id="next",exits={polnoc="somewhere",gora="up"}}
+assert(chimera_vip.ui.special_exit(1)==false)
+w("special1").click()
+assert(#called==4,"Old room's special exit was sent from stale widget")
+location_actions={}
+assert(chimera_vip.ui.room_action(1)==false)
+w("action1").click()
+assert(#called==4,"Stale context action must be inert")
+room={id="one",exits={polnoc="north",zachod="west",gora=false,
+    ["wejdz do piwnicy"]="inside"}}
+location_actions={{key="Ctrl+Shift+1",command="przejrzyj kufer"}}
 local neutral_color=nil
 for _,line in ipairs(printed) do
     if line.text=="Veith" then neutral_color=line.color end
@@ -249,4 +287,6 @@ flush()
 assert(api.active())
 ctx.cleanup()
 assert(not api.active() and widgets["chimeravip2_floating_1"].hidden)
+assert(chimera_vip.ui.special_exit==nil and chimera_vip.ui.room_action==nil,
+    "Public bind API must be removed on plugin cleanup")
 print("PASS 0.173: approved 76px Geyser layout, colors, compass, needs, EXP, icons, mouseovers")
