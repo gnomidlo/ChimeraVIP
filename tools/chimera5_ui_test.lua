@@ -95,6 +95,7 @@ local lamp={state=function() return {lit=true} end}
 chimera_vip={settings={is_module_enabled=function(self,name)
     return name=="combat_colors"
 end}}
+dofile("src/features/context_action.lua")
 local ctx={state={},settings={mode="vip",kondycje=true,czcionka=7,akcje=true}}
 function ctx:use(n)
     return ({gmcp=gmcp_api,team=team,locations=locations,status_bar=status_bar,lamp=lamp})[n]
@@ -239,6 +240,8 @@ assert(w("action1").text:find("przejrzyj kufer",1,true),
 assert(type(chimera_vip.ui)=="table")
 assert(type(chimera_vip.ui.special_exit)=="function")
 assert(type(chimera_vip.ui.room_action)=="function")
+assert(type(chimera_vip.map_action.run)=="function")
+assert(type(chimera_vip.context_action.run)=="function")
 -- Bind in Mudlet's Keys editor: chimera_vip.ui.special_exit(1)
 assert(chimera_vip.ui.special_exit(1)==true)
 assert(#called==1 and called[1]=="wejdz do piwnicy",
@@ -292,6 +295,10 @@ assert(called[#called]=="otworz ciemna skrzynie","Custom action must send comman
 w("action2").click()
 assert(called[#called]=="otworz ciemna skrzynie",
     "Click should match Alt+2 custom action")
+-- With one custom action, the map bind chooses it automatically.
+assert(chimera_vip.map_action:run()==true and
+    called[#called]=="otworz ciemna skrzynie",
+    "Map bind must use the only local action")
 commands.cvakcja("alias Szybka akcja - naps")
 commands.cvakcja("alias Magia - /wlm")
 handlers["chimera.room.changed"]()
@@ -300,6 +307,12 @@ assert(chimera_vip.ui.room_action(3)==true and aliases[#aliases]=="naps",
     "Alias without a slash was not expanded")
 assert(chimera_vip.ui.room_action(4)==true and aliases[#aliases]=="/wlm",
     "Alias with a slash was not expanded")
+assert(chimera_vip.map_action:run()==false,
+    "Map action must not guess among multiple local actions")
+commands.cvakcja("domyslna Magia")
+assert(chimera_vip.map_action:status()=="Magia")
+assert(chimera_vip.map_action:run()==true and aliases[#aliases]=="/wlm",
+    "Explicit map default alias should execute")
 commands.cvakcja("sekwencja Wielki test - wez klucz, otworz drzwi, wejdz")
 local before=#called
 assert(chimera_vip.ui.room_action(5)==true,"Sequence should be runnable")
@@ -341,15 +354,24 @@ room={id="one",exits={polnoc="north",zachod="west",gora=false,
 -- New room must not contain other room's saved data.
 commands.cvakcja("dodaj Pusty test - cos")
 room={id="somewhere-else",exits={polnoc="there"}}
+assert(chimera_vip.map_action:run()==false,
+    "Map action must not execute previous room's default")
 assert(chimera_vip.ui.room_action(2)==false,
     "An entry added to the previous room leaked into this room")
 room={id="one",exits={polnoc="north",zachod="west",gora=false,
     ["wejdz do piwnicy"]="inside"}}
 commands.cvakcja("usun Pusty test")
+assert(chimera_vip.map_action:run()==true and aliases[#aliases]=="/wlm",
+    "Map action must preserve default on unrelated deletion")
 assert(saved_files["/fake/profile/ChimeraVIP-data/room_actions.lua"].rooms.one[3].name=="Wielki test",
     "Name-based deletion did not work")
 -- Invalid sequence must leave the list intact.
 local n=#saved_files["/fake/profile/ChimeraVIP-data/room_actions.lua"].rooms.one
+commands.cvakcja("domyslna brak")
+assert(chimera_vip.map_action:run()==false,"Unset map default must not guess")
+commands.cvakcja("domyslna Magia")
+assert(chimera_vip.map_action:run()==true and aliases[#aliases]=="/wlm",
+    "Map default should be configurable again")
 commands.cvakcja("sekwencja Bledna - 1, , 3")
 assert(#saved_files["/fake/profile/ChimeraVIP-data/room_actions.lua"].rooms.one==n,
     "Blank sequence step should be rejected")
@@ -389,6 +411,8 @@ flush()
 assert(api.active())
 ctx.cleanup()
 assert(not api.active() and widgets["chimeravip2_floating_1"].hidden)
+assert(chimera_vip.map_action._runner==nil and chimera_vip.map_action._status==nil,
+    "Map action callback must be detached on cleanup")
 assert(chimera_vip.ui.special_exit==nil and chimera_vip.ui.room_action==nil
     and chimera_vip.ui.delete_action==nil,
     "Public APIs must be removed on plugin cleanup")
@@ -400,5 +424,7 @@ assert(type(chimera_vip.ui.room_action)=="function",
     "Public action API not restored on reload")
 assert(chimera_vip.ui.room_action(1)==true and aliases[#aliases]=="naps",
     "Saved local action did not survive a plugin reload")
+assert(chimera_vip.map_action:run()==true and aliases[#aliases]=="/wlm",
+    "Persisted map default should survive plugin reload")
 ctx.cleanup()
 print("PASS 0.176: local persistence, numbered clickable Geyser actions, command/alias/sequence, stale safety")

@@ -1,3 +1,26 @@
+## 0.177 — Dwa niezalezne bindy: sytuacyjny i mapowy
+
+- Przeniesiony do glownej paczki src/features/context_action.lua. Zachowano
+  API triggerow: chimera_vip.context_action:set(), :set_send(),
+  :set_alias(), :run(), :clear(), :status(), TTL (domyslnie 30 s).
+- Przyciski wybierane w Mudlet Keys przez gracza, brak auto-rejestracji:
+  \\ => chimera_vip.context_action:run() (ikonka blyskawicy,
+  brzoskwiniowe [⚡ Kontekst]), Alt+\\ => chimera_vip.map_action:run()
+  (lawendowe [⌖ Mapa]).
+- Akcja sytuacyjna moze wygasac po czasie, a nowy pokoj uniewaznia
+  akcje utworzona w poprzednim. Wolanie :run() zawsze weryfikuje ID.
+- /cvakcja domyslna Nazwa wskazuje wybrana akcje mapowa dla pokoju.
+  /cvakcja domyslna pokazuje wybrana; /cvakcja domyslna brak usuwa
+  przypisanie. Jedna wlasna akcja jest domyslna automatycznie;
+  przy wielu nie zgadujemy.
+- Domyslne akcje zapisane w istniejacej bazie room_actions.lua
+  i wykonywane przez ten sam silnik, co klikany panel Geyser.
+- Brak ingerencji w oficjalne skroty Ctrl+Shift+n;
+  w Quiet HUD numerki juz sa — oficjalny panel moze
+  wyswietlac rzeczywiscie przypisana kombinacje.
+- Regression: wywolania starych triggerow, czas TTL, invalidacja
+  pokojow, mapowe wybory i trwalosc, cleanup mostu.
+
 ## 0.176 — Własne akcje lokacji i numerowane przyciski
 
 - Panel Geyser: klikalne wiersze akcji ze znacznikami 1-12 w lawendowych

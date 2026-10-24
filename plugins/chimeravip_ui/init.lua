@@ -109,7 +109,7 @@ return {
             end
             return type(id)=="string" and id~="" and id or nil
         end
-        local db={version=1,next_id=1,rooms={}}
+        local db={version=2,next_id=1,rooms={},defaults={}}
         local function database_path()
             if type(getMudletHomeDir)~="function" then return nil end
             local home=getMudletHomeDir()
@@ -132,6 +132,7 @@ return {
             local ok=pcall(table.load,actions_path,loaded)
             if ok and type(loaded.rooms)=="table" then
                 db.rooms=loaded.rooms
+                db.defaults=type(loaded.defaults)=="table" and loaded.defaults or {}
                 db.next_id=math.max(1,tonumber(loaded.next_id) or 1)
             end
         end
@@ -209,6 +210,31 @@ return {
             end
             return true
         end
+        -- An explicit default wins; with exactly one custom action, use it
+        -- automatically. Avoid ever guessing among multiple candidates.
+        local function map_default()
+            local rid=current_room_id()
+            if not rid then return nil end
+            local entries=personal_actions()
+            local stored=db.defaults[rid]
+            if stored then
+                for _,entry in ipairs(entries) do
+                    if tonumber(entry.id)==tonumber(stored) then return entry end
+                end
+                return nil
+            end
+            if #entries==1 then return entries[1] end
+            return nil
+        end
+        local function map_default_name()
+            local entry=map_default()
+            return entry and entry.name or nil
+        end
+        local function map_run()
+            local entry=map_default()
+            if not entry then return false end
+            return run_personal(entry)
+        end
         local schedule
         local function delete_action(roomid,id)
             if current_room_id()~=roomid then return false end
@@ -216,6 +242,7 @@ return {
             for i,entry in ipairs(records) do
                 if tonumber(entry.id)==tonumber(id) then
                     table.remove(records,i)
+                    if db.defaults[roomid]==entry.id then db.defaults[roomid]=nil end
                     if #records==0 then db.rooms[roomid]=nil end
                     save_actions()
                     info("Usunieto akcje: "..entry.name)
@@ -265,6 +292,13 @@ return {
         local public_ui=vip.ui
         local old_special,old_action=public_ui.special_exit,public_ui.room_action
         local old_delete=public_ui.delete_action
+        local map_actions=type(vip.map_action)=="table" and vip.map_action or nil
+        local old_map_run=map_actions and map_actions._runner
+        local old_map_status=map_actions and map_actions._status
+        if map_actions then
+            map_actions._runner=map_run
+            map_actions._status=map_default_name
+        end
         public_ui.special_exit=special_exit
         public_ui.room_action=room_action
         public_ui.delete_action=delete_action
@@ -1011,6 +1045,11 @@ return {
             cecho("<light_grey>  /cvakcja alias Nazwa - alias (np. naps lub /wlm)<reset>\n")
             cecho("<light_grey>  /cvakcja sekwencja Nazwa - komenda1, komenda2, ...<reset>\n")
             cecho("<light_grey>  /cvakcja usun Nazwa<reset>\n")
+            cecho("<light_grey>  /cvakcja domyslna Nazwa | brak<reset>\n")
+            local selected=map_default()
+            if selected then
+                cecho("<199,185,232>  [⌖ Mapa]<reset> "..html_escape(selected.name).."\n")
+            end
             local rid=current_room_id()
             if not rid then
                 info("Brak ID lokacji w GMCP — nie moge dodawac akcji.")
@@ -1024,8 +1063,10 @@ return {
             for i,entry in ipairs(records) do
                 local kind=entry.kind=="send" and "komenda" or
                     (entry.kind=="alias" and "alias" or "sekwencja")
-                cecho(string.format("<lavender> %d.<reset> %s <dim_grey>(%s)<reset>",
-                    i,html_escape(entry.name),kind))
+                local chosen=selected and entry.id==selected.id
+                cecho(string.format("<lavender> %d.<reset> %s <dim_grey>(%s)<reset>%s",
+                    i,html_escape(entry.name),kind,
+                    chosen and " <199,185,232>[⌖]<reset>" or ""))
                 if type(echoLink)=="function" then
                     local script="chimera_vip.ui.delete_action("..
                         string.format("%q",rid)..","..tostring(entry.id)..")"
@@ -1036,7 +1077,7 @@ return {
                 cecho("\n")
             end
         end
-        ctx:command{"cvakcja",args="[dodaj|alias|sekwencja|usun] ...",
+        ctx:command{"cvakcja",args="[dodaj|alias|sekwencja|usun|domyslna] ...",
             help="Wlasne akcje przypisane do aktualnej lokacji",fn=function(arg)
                 local input=trim(arg)
                 if input=="" or input=="pomoc" or input=="lista" then
@@ -1044,7 +1085,41 @@ return {
                     return
                 end
                 local op,rest=input:match("^(%S+)%s+(.+)$")
+                if input=="domyslna" then
+                    local selected=map_default()
+                    if selected then
+                        cecho("\n<199,185,232>[⌖ Mapa]<reset> Domyslna: "..html_escape(selected.name).."\n")
+                    else
+                        info("Brak domyslnej akcji mapowej w tym pokoju.")
+                    end
+                    return
+                end
                 if not op then usage(); return end
+                if op=="domyslna" then
+                    local rid=current_room_id()
+                    if not rid then info("Brak ID lokacji GMCP."); return end
+                    local name=trim(rest)
+                    if name:lower()=="brak" then
+                        db.defaults[rid]=nil
+                        save_actions()
+                        info("Usunieto domyslna akcje mapowa.")
+                        if schedule then schedule() end
+                        return
+                    end
+                    for _,entry in ipairs(personal_actions()) do
+                        if entry.name:lower()==name:lower() then
+                            db.defaults[rid]=entry.id
+                            if save_actions() then
+                                cecho("\n<199,185,232>[⌖ Mapa]<reset> Domyslna: "..
+                                    html_escape(entry.name).."\n")
+                            end
+                            if schedule then schedule() end
+                            return
+                        end
+                    end
+                    info("Nie znaleziono takiej wlasnej akcji w pokoju.")
+                    return
+                end
                 if op=="usun" then
                     local rid=current_room_id()
                     if not rid then info("Brak ID lokacji GMCP."); return end
@@ -1150,6 +1225,12 @@ return {
             S.destroyed=true
             if public_ui.delete_action==delete_action then
                 public_ui.delete_action=old_delete
+            end
+            if map_actions and map_actions._runner==map_run then
+                map_actions._runner=old_map_run
+            end
+            if map_actions and map_actions._status==map_default_name then
+                map_actions._status=old_map_status
             end
             if public_ui.special_exit==special_exit then
                 public_ui.special_exit=old_special
