@@ -1,7 +1,7 @@
 # ChimeraVIP
 
 Pastelowa nakladka na **oficjalne skrypty Chimery 5.0** dla Mudleta.
-Serwer: `chimera.co.pl:2300`. Wersja ChimeraVIP: **0.175**.
+Serwer: `chimera.co.pl:2300`. Wersja ChimeraVIP: **0.176**.
 Testowana baza: **5.0.0-beta.13**.
 
 ## Instalacja i aktualizacja
@@ -142,3 +142,40 @@ wykonaj: `/cvip aktualizuj`, `/cvip v5 instaluj`, `/przeladuj`.
 Nie zmieniamy domyslnych klawiszy oficjalnej Chimery:
 `Ctrl+Shift+1/2/3` moga dzialac rownolegle z wlasnymi `Alt+1/2/3`.
 `Ctrl+1/2/3` lepiej zostawic dla przelaczania profili Mudleta 5.
+
+
+## Wlasne akcje lokacji: /cvakcja (0.176)
+
+Wpisz `/cvakcja`, aby zobaczyc pomoc oraz akcje zapisane dla aktualnego
+pokoju, kazda z klikalnym `[usun]`. Dane sa przypisywane do
+`gmcp.Room.Info.id` i zapisywane w `ChimeraVIP-data/room_actions.lua`
+poza plikami aktualizatora, wiec nie znikaja przy aktualizacji.
+
+Przyklady:
+
+```text
+/cvakcja dodaj Pociagnij dzwignie - pociagnij stara dzwignie
+/cvakcja alias Przygotuj sie - naps
+/cvakcja alias Wlacz magie - /wlm
+/cvakcja sekwencja Otworz krypte - wyjmij klucz, otworz wrota, wejdz
+/cvakcja usun Pociagnij dzwignie
+```
+
+Ponowne podanie istniejacej nazwy w danej lokacji zmienia tresc akcji.
+Oficjalne akcje wyswietlane sa najpierw, a wlasne pod nimi. W panelu
+`AKCJE LOKACJI` kazdy wiersz jest klikalny i ma lawendowy numer 1-12.
+Wlasne i oficjalne akcje sa dostepne w bindach:
+
+```lua
+chimera_vip.ui.room_action(1)
+chimera_vip.ui.room_action(2)
+chimera_vip.ui.room_action(3)
+```
+
+Nie przypisujemy automatycznie klawiszy. Gracz moze wybrac np.
+`Alt+1/2/3` w edytorze Keys Mudleta. Numer odnosi sie do aktualnie
+wyswietlanej pozycji. Przy braku akcji funkcja nic nie wysyla.
+Sekwencje wysylaja osobne komendy z odstepem 0.15 s.
+Wymagane jest istnienie ID aktualnej lokacji w GMCP.
+
+Po scaleniu: `/cvip aktualizuj`, `/cvip v5 instaluj`, `/przeladuj`.

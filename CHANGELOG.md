@@ -1,3 +1,24 @@
+## 0.176 — Własne akcje lokacji i numerowane przyciski
+
+- Panel Geyser: klikalne wiersze akcji ze znacznikami 1-12 w lawendowych
+  obramowanych kapsułach (wariant A), bez sztywnych skrotow Ctrl+Shift.
+- Obok oficjalnych room_actions pojawiaja sie wlasne wpisy powiazane z
+  aktualnym GMCP Room.Info.id; zachowana zgodnosc Alt+1-3
+  przez chimera_vip.ui.room_action(n).
+- /cvakcja (bez argumentow): pomoc i lista akcji danego pokoju z
+  klikalnymi linkami [usun]; /cvakcja lista i /cvakcja pomoc.
+- /cvakcja dodaj Nazwa - komenda => polecenie do MUDa.
+- /cvakcja alias Nazwa - alias => expandAlias, bez wymuszania /.
+- /cvakcja sekwencja Nazwa - komenda1, komenda2, ... => osobne polecenia,
+  kolejne kroki co 0.15 sekundy.
+- /cvakcja usun Nazwa; ponowne dodanie tej samej nazwy aktualizuje akcje.
+- Baza użytkownika: ChimeraVIP-data/room_actions.lua (Mudlet table.save).
+  Brak GMCP id blokuje dodawanie, nie zgadujemy tozsamosci lokacji.
+- Aktualne listy sprawdzane ponownie podczas kliku i binda; stare
+  linki usuwania nie dzialaja po opuszczeniu lokacji.
+- Testy: numerki, klikalnosc, trzy typy akcji, oddzielne komendy,
+  trwałość danych, zmiany lokacji, klikalne usuwanie, cleanup.
+
 ## 0.175 — Publiczne bindy dla wyjsc i akcji kontekstowych
 
 - Funkcja chimera_vip.ui.special_exit(n) dla pierwszych trzech wyjsc

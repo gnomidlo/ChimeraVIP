@@ -3,6 +3,21 @@ local handlers,commands,timers,aliases={},{},{},{}
 local widgets,fonts,printed={},{},{}
 local windows,fg,border={},nil,0
 local main_width=1200
+local saved_files,links,log={},{},{}
+function getMudletHomeDir() return "/fake/profile" end
+function createDirectory() return true end
+local function deep_copy(value)
+    if type(value)~="table" then return value end
+    local out={}
+    for k,v in pairs(value) do out[k]=deep_copy(v) end
+    return out
+end
+function table.save(path,value) saved_files[path]=deep_copy(value);return true end
+function table.load(path,out)
+    local input=assert(saved_files[path],"File not found")
+    for k,v in pairs(input) do out[k]=deep_copy(v) end
+    return true
+end
 local function element(name)
     local w={name=name,hidden=false}
     widgets[name]=w
@@ -31,10 +46,13 @@ function setUserWindowTitle() end
 function setFontSize(n,size) fonts[n]=size end
 function saveWindowLayout() end
 function clearWindow() printed={} end
-function cecho() end
+function cecho(v) log[#log+1]=v end
 function setFgColor(n,r,g,b) fg=string.format("%d,%d,%d",r,g,b) end
 function echo(n,t) printed[#printed+1]={text=t,color=fg} end
-function echoLink(n,t) printed[#printed+1]={text=t,color=fg} end
+function echoLink(label,command,hint)
+    links[#links+1]={label=label,command=command,hint=hint}
+    printed[#printed+1]={text=command,color=fg}
+end
 function expandAlias(t) aliases[#aliases+1]=t end
 local room={id="one",exits={polnoc="north",zachod="west",gora=false,
     ["wejdz do piwnicy"]="inside"}}
@@ -126,6 +144,7 @@ local function geometry()
     for name,item in pairs(widgets) do
         if name:match("^chimeravip2_1_") and
             not name:match("^chimeravip2_1_action") and
+            not name:match("^chimeravip2_1_badge") and
             not item.hidden and item.x then
             assert(item.x>=0 and item.y>=0 and item.width>0 and item.height>0
                 and item.x+item.width<=main_width
@@ -213,6 +232,10 @@ assert(w("control3").tooltip:find("wyłączona",1,true)
 assert(w("control5").tooltip:find("włączone",1,true))
 assert(w("control6").tooltip:find("włączone",1,true))
 assert(not w("action_bg").hidden)
+assert(w("badge1").text:find(">1</b>",1,true),"Action badge must show #1")
+assert(w("badge1").css:find("#71658C",1,true),"Lavender badge style missing")
+assert(w("action1").text:find("przejrzyj kufer",1,true),
+    "Action list should show command, not fixed Ctrl+Shift key")
 assert(type(chimera_vip.ui)=="table")
 assert(type(chimera_vip.ui.special_exit)=="function")
 assert(type(chimera_vip.ui.room_action)=="function")
@@ -240,19 +263,97 @@ assert(chimera_vip.ui.room_action(2)==false and
     chimera_vip.ui.room_action(13)==false and
     chimera_vip.ui.room_action(2.7)==false)
 assert(#called==4,"Missing/invalid room actions must be inert")
+w("badge1").click()
+assert(#called==5 and called[5]==1,"Clicking numbered badge did not run action")
 -- When room changes BEFORE the next render, stale visible exit actions
 -- must never be sent by the user-supplied keybind.
 room={id="next",exits={polnoc="somewhere",gora="up"}}
 assert(chimera_vip.ui.special_exit(1)==false)
 w("special1").click()
-assert(#called==4,"Old room's special exit was sent from stale widget")
+assert(#called==5,"Old room's special exit was sent from stale widget")
 location_actions={}
 assert(chimera_vip.ui.room_action(1)==false)
 w("action1").click()
-assert(#called==4,"Stale context action must be inert")
+assert(#called==5,"Stale context action must be inert")
 room={id="one",exits={polnoc="north",zachod="west",gora=false,
     ["wejdz do piwnicy"]="inside"}}
 location_actions={{key="Ctrl+Shift+1",command="przejrzyj kufer"}}
+-- Room-scoped persistent actions: add command, alias, and timed sequence.
+commands.cvakcja("dodaj Otworz skrzynie - otworz ciemna skrzynie")
+assert(#saved_files["/fake/profile/ChimeraVIP-data/room_actions.lua"].rooms.one==1,
+    "Room action was not persisted")
+handlers["chimera.room.changed"]()
+flush()
+assert(w("action2").text:find("Otworz skrzynie",1,true),
+    "Custom room action should appear after the official action")
+assert(w("badge2").text:find(">2</b>",1,true),"Second badge missing")
+assert(chimera_vip.ui.room_action(2)==true)
+assert(called[#called]=="otworz ciemna skrzynie","Custom action must send command")
+w("action2").click()
+assert(called[#called]=="otworz ciemna skrzynie",
+    "Click should match Alt+2 custom action")
+commands.cvakcja("alias Szybka akcja - naps")
+commands.cvakcja("alias Magia - /wlm")
+handlers["chimera.room.changed"]()
+flush()
+assert(chimera_vip.ui.room_action(3)==true and aliases[#aliases]=="naps",
+    "Alias without a slash was not expanded")
+assert(chimera_vip.ui.room_action(4)==true and aliases[#aliases]=="/wlm",
+    "Alias with a slash was not expanded")
+commands.cvakcja("sekwencja Wielki test - wez klucz, otworz drzwi, wejdz")
+local before=#called
+assert(chimera_vip.ui.room_action(5)==true,"Sequence should be runnable")
+assert(#called==before+1 and called[#called]=="wez klucz",
+    "Sequence first step should execute instantly")
+flush()
+assert(called[#called-1]=="otworz drzwi" and called[#called]=="wejdz",
+    "Sequence must send separate ordered commands")
+commands.cvakcja("dodaj Otworz skrzynie - obejrzyj skrzynie")
+assert(#saved_files["/fake/profile/ChimeraVIP-data/room_actions.lua"].rooms.one==4,
+    "Adding same name should update existing action, not duplicate")
+assert(chimera_vip.ui.room_action(2)==true and
+    called[#called]=="obejrzyj skrzynie","Updated action was not applied")
+local link_count=#links
+commands.cvakcja("")
+assert(#links==link_count+4,"Help must present clickable deletion for four actions")
+assert(links[link_count+1].label:find("usun",1,true) and
+    links[link_count+1].command:find("chimera_vip.ui.delete_action",1,true),
+    "Help should have a clickable deletion link")
+local remove_click=assert(loadstring(links[link_count+1].command))
+remove_click()
+assert(#saved_files["/fake/profile/ChimeraVIP-data/room_actions.lua"].rooms.one==3,
+    "Click-to-delete must remove selected action")
+assert(chimera_vip.ui.room_action(2)==true and aliases[#aliases]=="naps",
+    "After deletion, next custom action must occupy slot 2")
+-- Old links must be inert if the player moves to a different room.
+commands.cvakcja("")
+local expired=assert(loadstring(links[#links].command))
+room={id="somewhere-else",exits={polnoc="there"}}
+local last=#called
+expired()
+assert(#saved_files["/fake/profile/ChimeraVIP-data/room_actions.lua"].rooms.one==3,
+    "Old delete link must not modify another room")
+assert(chimera_vip.ui.room_action(2)==false,
+    "Saved actions must be scoped to their GMCP room id")
+assert(chimera_vip.ui.room_action(1)==true,"Official actions still work")
+room={id="one",exits={polnoc="north",zachod="west",gora=false,
+    ["wejdz do piwnicy"]="inside"}}
+-- New room must not contain other room's saved data.
+commands.cvakcja("dodaj Pusty test - cos")
+room={id="somewhere-else",exits={polnoc="there"}}
+assert(chimera_vip.ui.room_action(2)==false,
+    "An entry added to the previous room leaked into this room")
+room={id="one",exits={polnoc="north",zachod="west",gora=false,
+    ["wejdz do piwnicy"]="inside"}}
+commands.cvakcja("usun Pusty test")
+assert(saved_files["/fake/profile/ChimeraVIP-data/room_actions.lua"].rooms.one[3].name=="Wielki test",
+    "Name-based deletion did not work")
+-- Invalid sequence must leave the list intact.
+local n=#saved_files["/fake/profile/ChimeraVIP-data/room_actions.lua"].rooms.one
+commands.cvakcja("sekwencja Bledna - 1, , 3")
+assert(#saved_files["/fake/profile/ChimeraVIP-data/room_actions.lua"].rooms.one==n,
+    "Blank sequence step should be rejected")
+-- Test persistence after plugin reload, retaining action data in memory.
 local neutral_color=nil
 for _,line in ipairs(printed) do
     if line.text=="Veith" then neutral_color=line.color end
@@ -277,6 +378,7 @@ for _,width in ipairs({760,900,1024,1200,1440}) do
     geometry()
 end
 location_actions={}
+room={id="empty",exits={polnoc="north"}}
 handlers["chimera.room.changed"]()
 flush()
 assert(w("action_bg").hidden or widgets["chimeravip2_floating_1"].hidden)
@@ -287,6 +389,16 @@ flush()
 assert(api.active())
 ctx.cleanup()
 assert(not api.active() and widgets["chimeravip2_floating_1"].hidden)
-assert(chimera_vip.ui.special_exit==nil and chimera_vip.ui.room_action==nil,
-    "Public bind API must be removed on plugin cleanup")
-print("PASS 0.173: approved 76px Geyser layout, colors, compass, needs, EXP, icons, mouseovers")
+assert(chimera_vip.ui.special_exit==nil and chimera_vip.ui.room_action==nil
+    and chimera_vip.ui.delete_action==nil,
+    "Public APIs must be removed on plugin cleanup")
+room={id="one",exits={polnoc="north"}}
+ctx.state={}
+ctx.settings.mode="oficjalny"
+local second=plugin.setup(ctx)
+assert(type(chimera_vip.ui.room_action)=="function",
+    "Public action API not restored on reload")
+assert(chimera_vip.ui.room_action(1)==true and aliases[#aliases]=="naps",
+    "Saved local action did not survive a plugin reload")
+ctx.cleanup()
+print("PASS 0.176: local persistence, numbered clickable Geyser actions, command/alias/sequence, stale safety")

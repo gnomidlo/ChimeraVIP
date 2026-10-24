@@ -1,10 +1,12 @@
 return {
     name = "ChimeraVIP",
-    version = "0.175",
+    version = "0.176",
     schema = 2,
     tested_upstream = "5.0.0-beta.13",
     raw_base = "https://raw.githubusercontent.com/gnomidlo/ChimeraVIP/main/",
     changes = {
+        "0.176: /cvakcja dla wlasnych akcji lokacji, aliasow i sekwencji",
+        "Lawendowe numerowane akcje Geyser i klikalne usuwanie",
         "Publiczne bindy chimera_vip.ui.special_exit(n) do nietypowych wyjsc",
         "Publiczne bindy chimera_vip.ui.room_action(n) dla Alt+1-3",
         "Podwojne formatowanie CSS i rich text etykiet kompasu",
@@ -60,13 +62,13 @@ return {
         "src/ui/module_controls.lua"
     },
     file_meta = {
-        ["plugins/chimeravip_ui/init.lua"] = {hash="742db90d85e354cbad825943b509997195473237", size=44118},
+        ["plugins/chimeravip_ui/init.lua"] = {hash="90766b453f75d22f9a3005b27cdabffa00a9f4fb", size=55072},
         ["src/integrations/chimera5.lua"] = {hash="98354d53965b65011847b4cec6575dd430f2ee76", size=2706},
         ["plugins/chimera_vip_bridge/init.lua"] = {hash="fca58a6712376c4ba29843674f11c0e89e4540f0", size=2254},
         ["src/features/tactical_aliases.lua"] = {hash="029c1ae987e52b0bf303c93cf22b480079736b70", size=5545},
         ["loader.lua"] = {hash="1381414d89e55d2fad70beb8f42e48098d4b1802", size=4501},
         ["src/init.lua"] = {hash="9e26ff60fa02eb5d425b460f70e708e08c3cce7a", size=2440},
-        ["src/core/bootstrap.lua"] = {hash="189ffe31520244c16d945985b3e828df4df42941", size=1631},
+        ["src/core/bootstrap.lua"] = {hash="f28fdc145db8b86aa1ded7ab1a57756d9fbd100e", size=1631},
         ["src/core/util.lua"] = {hash="7561cd9259be9ff0ce74228e9048eef0b5aba280", size=6686},
         ["src/core/hash.lua"] = {hash="362c18bf131c9939d03b59dd50568d66de8f6a5e", size=2118},
         ["src/integrations/runtime.lua"] = {hash="c3b367edc08a8b5a1124dc73b1142e6bda513a50", size=3676},

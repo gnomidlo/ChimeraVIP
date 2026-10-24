@@ -91,6 +91,140 @@ return {
             if n and n==math.floor(n) and n>=1 and n<=limit then return n end
             return nil
         end
+
+        local function trim(v)
+            return tostring(v or ""):gsub("^%s+",""):gsub("%s+$","")
+        end
+        local function html_escape(v)
+            return tostring(v or ""):gsub("&","&amp;"):gsub("<","&lt;")
+                :gsub(">","&gt;"):gsub('"',"&quot;")
+        end
+        local function current_room_id()
+            local room=gmcp.room()
+            local id=type(room)=="table" and room.id
+            if not id then
+                local raw=rawget(_G,"gmcp")
+                local fallback=type(raw)=="table" and raw.Room and raw.Room.Info
+                id=type(fallback)=="table" and fallback.id
+            end
+            return type(id)=="string" and id~="" and id or nil
+        end
+        local db={version=1,next_id=1,rooms={}}
+        local function database_path()
+            if type(getMudletHomeDir)~="function" then return nil end
+            local home=getMudletHomeDir()
+            if type(home)~="string" or home=="" then return nil end
+            local dir=home.."/ChimeraVIP-data"
+            local vip=rawget(_G,"chimera_vip")
+            if vip and vip.util and type(vip.util.ensure_dir)=="function" then
+                vip.util.ensure_dir(dir)
+            elseif type(createDirectory)=="function" then
+                createDirectory(dir)
+            elseif type(lfs)=="table" and type(lfs.mkdir)=="function" then
+                lfs.mkdir(dir)
+            end
+            return dir.."/room_actions.lua"
+        end
+        local actions_path=database_path()
+        local function load_actions()
+            if not actions_path or type(table.load)~="function" then return end
+            local loaded={}
+            local ok=pcall(table.load,actions_path,loaded)
+            if ok and type(loaded.rooms)=="table" then
+                db.rooms=loaded.rooms
+                db.next_id=math.max(1,tonumber(loaded.next_id) or 1)
+            end
+        end
+        local function save_actions()
+            if not actions_path or type(table.save)~="function" then
+                info("Nie mozna zapisac akcji: brak table.save lub katalogu profilu.")
+                return false
+            end
+            local ok,result=pcall(table.save,actions_path,db)
+            if not ok or result==false then
+                info("Blad zapisu wlasnych akcji. Sprawdz katalog ChimeraVIP-data.")
+                return false
+            end
+            return true
+        end
+        load_actions()
+        local function room_records(roomid,create)
+            if not roomid then return nil end
+            local list=db.rooms[roomid]
+            if type(list)~="table" then
+                if not create then return {} end
+                list={}
+                db.rooms[roomid]=list
+            end
+            return list
+        end
+        local function personal_actions()
+            local rid=current_room_id()
+            local records=room_records(rid,false) or {}
+            local output={}
+            for _,entry in ipairs(records) do
+                if type(entry)=="table" and type(entry.name)=="string" and
+                    type(entry.value)=="string" and
+                    (entry.kind=="send" or entry.kind=="alias" or entry.kind=="sequence") then
+                    output[#output+1]=entry
+                end
+            end
+            return output
+        end
+        local function combined_actions()
+            local result={}
+            local official=locations.room_actions()
+            if type(official)=="table" then
+                for i,entry in ipairs(official) do
+                    if type(entry)=="table" and type(entry.command)=="string" and
+                        entry.command~="" then
+                        result[#result+1]={source="official",index=i,
+                            title=entry.command,command=entry.command,key=entry.key}
+                    end
+                end
+            end
+            for _,entry in ipairs(personal_actions()) do
+                result[#result+1]={source="vip",entry=entry,
+                    title=entry.name,command=entry.value}
+            end
+            return result
+        end
+        local function run_personal(entry)
+            if entry.kind=="alias" then
+                if type(expandAlias)~="function" then return false end
+                expandAlias(entry.value,false)
+            elseif entry.kind=="sequence" then
+                for i,command in ipairs(entry.steps or {}) do
+                    local step=command
+                    if i==1 then
+                        ctx:send(command,true)
+                    else
+                        ctx:timer((i-1)*0.15,function()
+                            if not S.destroyed then ctx:send(step,true) end
+                        end)
+                    end
+                end
+            else
+                ctx:send(entry.value,true)
+            end
+            return true
+        end
+        local schedule
+        local function delete_action(roomid,id)
+            if current_room_id()~=roomid then return false end
+            local records=room_records(roomid,false)
+            for i,entry in ipairs(records) do
+                if tonumber(entry.id)==tonumber(id) then
+                    table.remove(records,i)
+                    if #records==0 then db.rooms[roomid]=nil end
+                    save_actions()
+                    info("Usunieto akcje: "..entry.name)
+                    if schedule then schedule() end
+                    return true
+                end
+            end
+            return false
+        end
         local function current_special_exits()
             if not resolve_exits then return {} end
             local exits=resolve_exits()
@@ -114,12 +248,13 @@ return {
         local function room_action(index)
             local slot=slot_number(index,12)
             if not slot then return false end
-            local actions=locations.room_actions()
-            local action=type(actions)=="table" and actions[slot]
-            if type(action)~="table" or type(action.command)~="string"
-                or action.command=="" then return false end
-            locations.run_action(slot)
-            return true
+            local action=combined_actions()[slot]
+            if not action then return false end
+            if action.source=="official" then
+                locations.run_action(action.index)
+                return true
+            end
+            return run_personal(action.entry)
         end
         local vip=rawget(_G,"chimera_vip")
         if type(vip)~="table" then
@@ -129,8 +264,10 @@ return {
         if type(vip.ui)~="table" then vip.ui={} end
         local public_ui=vip.ui
         local old_special,old_action=public_ui.special_exit,public_ui.room_action
+        local old_delete=public_ui.delete_action
         public_ui.special_exit=special_exit
         public_ui.room_action=room_action
+        public_ui.delete_action=delete_action
         local function available()
             return type(Geyser)=="table" and type(Geyser.Container)=="table"
                 and type(Geyser.Label)=="table" and type(getMainWindowSize)=="function"
@@ -204,9 +341,11 @@ return {
             floating_widget("action_title")
             for i=1,12 do
                 local slot=i
-                floating_widget("action"..i,function()
-                    room_action(slot) -- same API as user Alt+1...Alt+3
-                end)
+                floating_widget("action"..i,function() room_action(slot) end)
+            end
+            for i=1,12 do
+                local slot=i
+                floating_widget("badge"..i,function() room_action(slot) end)
             end
             S.floating:hide()
             S.built=true
@@ -516,8 +655,7 @@ return {
             else bar:hide() end
         end
         local function float_actions(width)
-            local items=ctx.settings.akcje and locations.room_actions() or {}
-            if type(items)~="table" then items={} end
+            local items=ctx.settings.akcje and combined_actions() or {}
             local count=math.min(#items,12)
             if count==0 then
                 S.floating:hide()
@@ -544,20 +682,35 @@ return {
             title:show()
             for i=1,12 do
                 local row=S.floating_widgets["action"..i]
-                if i<=count and items[i] and items[i].command then
-                    local key=tostring(items[i].key or ("Akcja "..i))
-                    local cmd=tostring(items[i].command)
-                    if #cmd>36 then cmd=cmd:sub(1,33).."..." end
-                    row:move(left+6,top+18+(i-1)*20)
+                local badge=S.floating_widgets["badge"..i]
+                local entry=items[i]
+                if i<=count and entry then
+                    local description=tostring(entry.title)
+                    local short=#description>36 and description:sub(1,33).."..." or description
+                    local y=top+18+(i-1)*20
+                    row:move(left+6,y)
                     row:resize(panel_w-12,20)
-                    row:echo("  <font color='#C7B9E8'>"..clean(key)
-                        .."</font>  "..clean(cmd))
+                    row:echo(string.rep("&nbsp;",7)..html_escape(short))
                     row:setStyleSheet("QLabel {background-color:rgba(37,44,59,55);"
                         .."color:#D4DAE5;border:0;border-bottom:1px solid rgba(160,175,195,25);"
                         .."font-family:'Bitstream Vera Sans Mono';font-size:7pt;}"
                         .."QLabel:hover {background-color:rgba(77,90,115,155);color:#F2F2F5;}")
+                    if type(row.setToolTip)=="function" then
+                        row:setToolTip((entry.source=="vip" and "Wlasna: " or "Chimera: ")
+                            ..description)
+                    end
                     row:show()
-                else row:hide() end
+                    badge:move(left+11,y+2)
+                    badge:resize(21,16)
+                    badge:echo("<center><font color='#D9C5FF'><b>"..i.."</b></font></center>")
+                    badge:setStyleSheet("QLabel {background-color:#373449;"
+                        .."border:1px solid #71658C;border-radius:4px;}"
+                        .."QLabel:hover {background-color:#554967;border-color:#B5A0D5;}")
+                    badge:show()
+                else
+                    row:hide()
+                    badge:hide()
+                end
             end
             S.action_count=count
         end
@@ -810,7 +963,7 @@ return {
                 restore()
             end
         end
-        local function schedule()
+        schedule=function()
             if not S.active or S.pending then return end
             S.pending=true
             ctx:timer(0.10,render)
@@ -850,6 +1003,103 @@ return {
                     info("Interfejs: "..(S.active and "VIP" or "oficjalny")
                         .." | /cvhud vip | /cvhud oficjalny")
                 end
+            end}
+
+        local function usage()
+            info("Akcje bieżącej lokacji:")
+            cecho("<light_grey>  /cvakcja dodaj Nazwa - komenda<reset>\n")
+            cecho("<light_grey>  /cvakcja alias Nazwa - alias (np. naps lub /wlm)<reset>\n")
+            cecho("<light_grey>  /cvakcja sekwencja Nazwa - komenda1, komenda2, ...<reset>\n")
+            cecho("<light_grey>  /cvakcja usun Nazwa<reset>\n")
+            local rid=current_room_id()
+            if not rid then
+                info("Brak ID lokacji w GMCP — nie moge dodawac akcji.")
+                return
+            end
+            local records=room_records(rid,false)
+            if #records==0 then
+                info("Brak wlasnych akcji w tej lokacji.")
+                return
+            end
+            for i,entry in ipairs(records) do
+                local kind=entry.kind=="send" and "komenda" or
+                    (entry.kind=="alias" and "alias" or "sekwencja")
+                cecho(string.format("<lavender> %d.<reset> %s <dim_grey>(%s)<reset>",
+                    i,html_escape(entry.name),kind))
+                if type(echoLink)=="function" then
+                    local script="chimera_vip.ui.delete_action("..
+                        string.format("%q",rid)..","..tostring(entry.id)..")"
+                    echoLink(" [usun]",script,"Usun: "..entry.name,true)
+                else
+                    cecho(" [usun: /cvakcja usun "..entry.name.."]")
+                end
+                cecho("\n")
+            end
+        end
+        ctx:command{"cvakcja",args="[dodaj|alias|sekwencja|usun] ...",
+            help="Wlasne akcje przypisane do aktualnej lokacji",fn=function(arg)
+                local input=trim(arg)
+                if input=="" or input=="pomoc" or input=="lista" then
+                    usage()
+                    return
+                end
+                local op,rest=input:match("^(%S+)%s+(.+)$")
+                if not op then usage(); return end
+                if op=="usun" then
+                    local rid=current_room_id()
+                    if not rid then info("Brak ID lokacji GMCP."); return end
+                    local records=room_records(rid,false)
+                    for _,entry in ipairs(records) do
+                        if entry.name:lower()==trim(rest):lower() then
+                            delete_action(rid,entry.id)
+                            return
+                        end
+                    end
+                    info("Nie znaleziono takiej wlasnej akcji w pokoju.")
+                    return
+                end
+                if op~="dodaj" and op~="alias" and op~="sekwencja" then
+                    usage()
+                    return
+                end
+                local name,value=rest:match("^(.-)%s+%-%s+(.+)$")
+                name,value=trim(name),trim(value)
+                if name=="" or value=="" then
+                    info("Skladnia: /cvakcja "..op.." Nazwa - tresc")
+                    return
+                end
+                local rid=current_room_id()
+                if not rid then info("Brak ID lokacji GMCP."); return end
+                local steps=nil
+                if op=="sekwencja" then
+                    steps={}
+                    for part in (value..","):gmatch("(.-),") do
+                        part=trim(part)
+                        if part=="" then
+                            info("Sekwencja nie moze zawierac pustych krokow.")
+                            return
+                        end
+                        steps[#steps+1]=part
+                    end
+                end
+                local records=room_records(rid,true)
+                local entry=nil
+                for _,item in ipairs(records) do
+                    if item.name:lower()==name:lower() then entry=item; break end
+                end
+                if entry==nil then
+                    entry={id=db.next_id}
+                    db.next_id=db.next_id+1
+                    records[#records+1]=entry
+                end
+                entry.name=name
+                entry.kind=op=="dodaj" and "send" or (op=="sekwencja" and "sequence" or op)
+                entry.value=value
+                entry.steps=steps
+                if save_actions() then
+                    info("Zapisano akcje '"..name.."' dla obecnej lokacji.")
+                end
+                if schedule then schedule() end
             end}
         ctx:on("chimera.team.changed",function()
             S.signature=nil
@@ -897,6 +1147,10 @@ return {
         end)
         ctx:timer(1.5,schedule,true)
         ctx:cleanup(function()
+            S.destroyed=true
+            if public_ui.delete_action==delete_action then
+                public_ui.delete_action=old_delete
+            end
             if public_ui.special_exit==special_exit then
                 public_ui.special_exit=old_special
             end
