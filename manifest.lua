@@ -55,7 +55,7 @@ return {
         "src/ui/module_controls.lua"
     },
     file_meta = {
-        ["plugins/chimeravip_ui/init.lua"] = {hash="d3c46eb52de800eb3515f9f4b31ca414d64c163c", size=34923},
+        ["plugins/chimeravip_ui/init.lua"] = {hash="7dd30935b12a78b5e4de9fad1b650200826ae1eb", size=35082},
         ["src/integrations/chimera5.lua"] = {hash="98354d53965b65011847b4cec6575dd430f2ee76", size=2706},
         ["plugins/chimera_vip_bridge/init.lua"] = {hash="fca58a6712376c4ba29843674f11c0e89e4540f0", size=2254},
         ["src/features/tactical_aliases.lua"] = {hash="029c1ae987e52b0bf303c93cf22b480079736b70", size=5545},
