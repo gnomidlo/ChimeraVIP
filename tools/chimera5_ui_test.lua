@@ -183,14 +183,27 @@ assert(w("need_value4").text:find("96%",1,true))
 assert(w("need_value5").text:find("83%",1,true))
 assert(w("need_value6").text:find("38%",1,true))
 assert(w("need_value7").text:find("0%",1,true))
-assert(w("exit2").css:find("#A4F3D2",1,true),
+assert(w("exit2").css:find("#86E7BC",1,true),
     "Available north should be lit")
-assert(w("exit4").css:find("#A4F3D2",1,true),
+assert(w("exit4").css:find("#86E7BC",1,true),
     "Available west should be lit")
-assert(w("exit6").css:find("#596677",1,true),
+assert(w("exit6").css:find("#4A5363",1,true),
     "Unavailable east should be dimmed")
-assert(w("exit_up").css:find("#A4F3D2",1,true),
+assert(w("exit_up").css:find("#86E7BC",1,true),
     "Existing up exit with false GMCP target must still be lit")
+-- Guard against Mudlet QLabel rich text ignoring only CSS foreground:
+-- active directions must contain green and bold HTML; disabled ones
+-- contain the much dimmer color without bold markup.
+assert(w("exit2").text:find("<font color='#86E7BC'><b>N</b></font>",1,true),
+    "Active direction must have explicit green bold rich text")
+assert(w("exit4").text:find("<font color='#86E7BC'><b>W</b></font>",1,true),
+    "West active direction rich text missing")
+assert(w("exit6").text:find("<font color='#4A5363'>E</font>",1,true),
+    "Disabled direction must be explicitly dim")
+assert(w("exit_up").text:find("<font color='#86E7BC'><b>↑</b></font>",1,true),
+    "Available up arrow must be green and bold")
+assert(w("exit_down").text:find("<font color='#4A5363'>↓</font>",1,true),
+    "Unavailable down arrow must be dim without bold")
 assert(w("special1").text:find("wejdz",1,true))
 assert(w("control1").text:find("⚔",1,true))
 assert(w("control1").tooltip:find("Atak",1,true))

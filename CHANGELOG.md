@@ -1,3 +1,15 @@
+## 0.174 — Kontrast rozy wiatrow
+
+- Dostepne kierunki i wyjscia gora/dol: mocna mietowa zielen
+  #86E7BC oraz pogrubienie.
+- Niedostepne kierunki i strzalki: przygaszony kolor #4A5363,
+  bez pogrubienia, blisko tla panelu.
+- Kolory i pogrubienie wpisane takze w HTML etykiet Geysera
+  (nie tylko w CSS QLabel), by uniknac nadpisywania kolorow przez
+  renderowanie rich text w Mudlecie.
+- Dodatkowe testy potwierdzaja formatowanie HTML kierunkow i strzalek.
+- Reszta Quiet HUD 0.173 bez zmian.
+
 ## 0.173 — Quiet HUD: docelowy uklad i feedback ikon
 
 - Tekstowa roza wiatrow z podswietlaniem kierunkow GMCP, strzalki gora/dol
