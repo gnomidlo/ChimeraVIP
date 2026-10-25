@@ -16,6 +16,9 @@ if UP.handlers.done then pcall(killAnonymousEventHandler, UP.handlers.done) end
 if UP.handlers.error then pcall(killAnonymousEventHandler, UP.handlers.error) end
 if UP.timeout_timer then pcall(killTimer, UP.timeout_timer) end
 UP.mode = nil
+-- On first 0.178 -> 0.179 install the OLD updater just populated this.
+-- Keep the predecessor's manifest for bootstrap detection before resetting.
+local inherited_manifest=UP.remote_manifest
 UP.remote_manifest = nil
 UP.install_plan = nil
 UP.auto_checked = UP.auto_checked or false
@@ -601,8 +604,8 @@ if not UP.activation_pending and type(tempTimer)=="function" then
     -- The previous (0.178) updater only reloaded VIP's src/init.lua.
     -- Detect that in-memory upgrade to 0.179 and restart Chimera ONCE,
     -- even when plugin files happened to be byte-for-byte identical.
-    local first_upgrade=UP.remote_manifest
-        and tostring(UP.remote_manifest.version)==tostring(C.version)
+    local first_upgrade=inherited_manifest
+        and tostring(inherited_manifest.version)==tostring(C.version)
         and not UP.first_activation_done
     tempTimer(1,function()
         if not UP.activation_pending and not UP.mode then

@@ -88,7 +88,7 @@ return {
         ["src/integrations/runtime.lua"] = {hash="c3b367edc08a8b5a1124dc73b1142e6bda513a50", size=3676},
         ["src/core/settings.lua"] = {hash="6ced30f0cf7e4da179db5f93b6f037e6fcd479d3", size=10693},
         ["src/core/help.lua"] = {hash="f846ec5697c42ec0ee88d63a26d311cb00067a16", size=9334},
-        ["src/core/updater.lua"] = {hash="150d1eaab0f0381683f10a9b86d6340713fffec4", size=27673},
+        ["src/core/updater.lua"] = {hash="8864db3f200644a84681146dee68214461ac13ea", size=27866},
         ["src/theme/pastel.lua"] = {hash="8a2a99420ec51a9b4191a03f98bdb452ffdc4a5a", size=6265},
         ["src/ui/quiet_footer.lua"] = {hash="e45f7bdcf4d7142cf5c810e53fda0514a9166cc3", size=18753},
         ["src/ui/settings_apply.lua"] = {hash="e070e54d2df9f142a418ef23188af03e9e450f29", size=1239},
