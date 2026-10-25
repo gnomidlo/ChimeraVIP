@@ -7,12 +7,13 @@ local B=C.chimera5
 local home=getMudletHomeDir()
 local root=C.root_dir or (home.."/ChimeraVIP")
 local plugins={
-    {name="chimera_vip_bridge",marker="ChimeraVIP v5 bridge"},
-    {name="chimeravip_ui",marker="ChimeraVIP 5:"},
+    {name="chimera_vip_bridge",marker="ChimeraVIP v5 bridge",files={"init.lua"}},
+    {name="chimeravip_ui",marker="ChimeraVIP 5:",files={
+        "theme.lua","actions.lua","conditions.lua","footer.lua","layout.lua","init.lua"}},
 }
-local function path(p,source)
+local function path(p,source,relative)
     local base=source and root.."/plugins" or home.."/chimera_wtyczki"
-    return base.."/"..p.name.."/init.lua"
+    return base.."/"..p.name.."/"..(relative or "init.lua")
 end
 local function read(location)
     local file=io.open(location,"rb")
@@ -38,21 +39,25 @@ end
 function B:plan()
     local changed={}
     for _,plugin in ipairs(plugins) do
-        local source=read(path(plugin,true))
-        local target=path(plugin,false)
+      for _,relative in ipairs(plugin.files) do
+        local source=read(path(plugin,true,relative))
+        local target=path(plugin,false,relative)
         if not source then
             return nil,"Brak pliku zrodlowego "..plugin.name
         end
         if not source:find(plugin.marker,1,true) then
             return nil,"Nieznany plik zrodlowy "..plugin.name
         end
+        local chunk,syntax_error=loadstring(source,"@"..path(plugin,true,relative))
+        if not chunk then return nil,"Blad skladni "..relative..": "..tostring(syntax_error) end
         local existing=read(target)
         if existing and not existing:find(plugin.marker,1,true) then
             return nil,"Nie nadpisuje obcej wtyczki: "..plugin.name
         end
         if source~=existing then
-            changed[#changed+1]={name=plugin.name,target=target,data=source}
+            changed[#changed+1]={name=plugin.name.."/"..relative,target=target,data=source}
         end
+      end
     end
     return changed
 end

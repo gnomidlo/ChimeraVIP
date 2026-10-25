@@ -41,6 +41,8 @@ jobs:
         run: lua5.1 tools/chimera5_test.lua
       - name: Test Chimera 5 pastel HUD and switchback
         run: lua5.1 tools/chimera5_ui_test.lua
+      - name: Test repeated restart and native dock lifecycle
+        run: lua5.1 tools/ui_lifecycle_test.lua
       - name: Test XP kill cards
         run: lua5.1 tools/xp_test.lua
       - name: Test transactional plugin installation

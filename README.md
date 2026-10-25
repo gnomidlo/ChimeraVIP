@@ -1,8 +1,12 @@
 # ChimeraVIP
 
 Pastelowa nakladka na **oficjalne skrypty Chimery 5.0** dla Mudleta.
-Serwer: `chimera.co.pl:2300`. Wersja ChimeraVIP: **0.179**.
+Serwer: `chimera.co.pl:2300`. Wersja ChimeraVIP: **0.180**.
 Audyt źródeł oficjalnej Chimery: **5.0.1** (testy integracyjne w Mudlecie nadal potrzebne).
+
+W 0.180 poprawiono zachowanie układu przy restarcie i podzielono HUD na
+moduły. [Audyt cyklu życia i scenariusz testów](docs/ui-lifecycle-0.180.md)
+opisuje zachowanie dockingu, Kondycji i okna pachołków.
 
 ## Instalacja i aktualizacja
 
