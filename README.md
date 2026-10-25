@@ -148,9 +148,9 @@ kluczy `Room.Info.exits` — tak samo jak klikane etykiety.
 Po zmianie lokacji bind wykonuje odpowiednia nowa akcje.
 Gdy brak przejscia albo akcji, nie wysyla niczego i zwraca `false`.
 
-Funkcje dostepne sa po zainstalowaniu wtyczki ChimeraVIP 5 oraz
-przeladowaniu `/przeladuj`. Jesli instalujesz poprawke po aktualizacji,
-wykonaj: `/cvip aktualizuj`.
+Funkcje staja sie dostepne po `/cvip aktualizuj`. Od 0.179
+instalacja wtyczek i odswiezenie oficjalnej Chimery nastepuja
+automatycznie. Nie trzeba osobno uzywac `/przeladuj`.
 
 Nie zmieniamy domyslnych klawiszy oficjalnej Chimery:
 `Ctrl+Shift+1/2/3` moga dzialac rownolegle z wlasnymi `Alt+1/2/3`.
@@ -316,9 +316,8 @@ aktualizatora; w 0.178 nie wykonujemy zadnej migracji danych.
 Oficjalne wydanie 5.0.1 porownano na poziomie zrodel i publicznego
 API wtyczek. Zgodnosc w prawdziwej sesji Mudleta pozostaje do
 potwierdzenia. `/cvip diagnostyka` pokazuje osobno wersje z
-`chimera.app.version` i zakres audytu zrodel. Nastepny etap 0.179
-usunie koniecznosc recznego `/cvip v5 instaluj` oraz `/przeladuj`
-przy zwyklej aktualizacji.
+`chimera.app.version` i zakres audytu zrodel. Wydanie 0.179
+wprowadzilo juz automatyczna instalacje wtyczek i przeladowanie klienta.
 
 
 ## ChimeraVIP 0.179 — jedna aktualizacja
