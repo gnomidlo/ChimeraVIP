@@ -2,6 +2,7 @@
 local handlers,commands,timers,aliases={},{},{},{}
 local widgets,fonts,printed={},{},{}
 local windows,fg,border={},nil,0
+local bg=nil
 local main_width=1200
 local saved_files,links,log={},{},{}
 function getMudletHomeDir() return "/fake/profile" end
@@ -48,10 +49,12 @@ function saveWindowLayout() end
 function clearWindow() printed={} end
 function cecho(v) log[#log+1]=v end
 function setFgColor(n,r,g,b) fg=string.format("%d,%d,%d",r,g,b) end
-function echo(n,t) printed[#printed+1]={text=t,color=fg} end
+function setBgColor(n,r,g,b) bg=string.format("%d,%d,%d",r,g,b) end
+function resetFormat(n) bg=nil;fg=nil end
+function echo(n,t) printed[#printed+1]={text=t,color=fg,bg=bg} end
 function echoLink(label,command,hint)
     links[#links+1]={label=label,command=command,hint=hint}
-    printed[#printed+1]={text=command,color=fg}
+    printed[#printed+1]={text=command,color=fg,bg=bg}
 end
 function expandAlias(t) aliases[#aliases+1]=t end
 local room={id="one",exits={polnoc="north",zachod="west",gora=false,
@@ -222,6 +225,45 @@ end
 assert(table.concat(later):find("  [A] ",1,true),
     "Removing henchman flag must restore neutral alignment")
 view.members[1].henchman=true
+handlers["sysWindowResizeEvent"]()
+flush()
+-- In combat the target/attacker information must not be duplicated
+-- at the end of rows; stunned enemies get ONLY a subtle name background.
+view.self.attacking="enemy"
+view.members[1].attacking="enemy"
+view.enemies[1].attackers={"me","ally"}
+view.enemies[1].stunned=true
+handlers["sysWindowResizeEvent"]()
+flush()
+local segments=printed
+local enemy_name,enemy_mark,enemy_hp,newline=nil,nil,nil,nil
+local visible={}
+for _,segment in ipairs(segments) do
+    visible[#visible+1]=segment.text
+    if segment.text=="Ork" then enemy_name=segment end
+    if segment.text=="[1] " then enemy_mark=segment end
+    if segment.text:find("28%",1,true) then enemy_hp=segment end
+    if segment.text=="\n" then newline=segment end
+end
+local contents=table.concat(visible)
+assert(not contents:find(" ->[",1,true) and not contents:find(" <-[",1,true),
+    "Targets and attackers must not appear as redundant combat suffixes")
+assert(not contents:find("[OGL]",1,true),
+    "Stun must be conveyed solely through styling, never [OGL]")
+assert(enemy_name and enemy_name.bg=="48,54,69",
+    "Only a stunned name must use #303645 background")
+assert(enemy_name.color=="240,168,184",
+    "Stun must not replace hostile enemy text color with lavender")
+assert(enemy_mark and enemy_mark.bg==nil and
+    enemy_mark.color=="240,168,184",
+    "Enemy marker must retain the normal hostile color and background")
+assert(enemy_hp and enemy_hp.bg==nil,
+    "Stun must never color an enemy's HP bar")
+assert(bg==nil,"Stun background formatting must not leak to later lines")
+view.self.attacking=nil
+view.members[1].attacking=nil
+view.enemies[1].attackers={}
+view.enemies[1].stunned=false
 handlers["sysWindowResizeEvent"]()
 flush()
 geometry()

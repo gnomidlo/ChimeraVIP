@@ -459,7 +459,10 @@ return {
         local function row(mark,p,ally,self_row,map,fighting,hostile)
             local id=p.id and tostring(p.id) or nil
             local hp=tonumber(p.hp)
-            local tint=p.stunned and "lavender" or (self_row and "lavender" or (ally and "mint" or (hostile and "rose" or "neutral")))
+            -- Stun is signalled ONLY by a subtle background under the name.
+            -- Keep normal team/enemy tints for the mark and full HP bar.
+            local tint=self_row and "lavender" or
+                (ally and "mint" or (hostile and "rose" or "neutral"))
             if ally and p.here==false then tint="muted" end
             local attack=id and ("zabij "..id) or nil
             local cover=ally and not self_row and id and ("zaslon "..id) or nil
@@ -478,21 +481,19 @@ return {
             print_segment(hp_text,hp and (hp<30 and "rose" or hp<60 and "yellow" or "mint") or "muted",
                 ally and not self_row and id and ("wycofaj sie za "..id) or nil,
                 "Wycofaj sie za")
-            print_segment(self_row and "JA" or clean(p.name),tint,click)
-            if p.stunned then print_segment(" [OGL]","lavender") end
+            if p.stunned and type(setBgColor)=="function"
+                and type(resetFormat)=="function" then
+                -- Mudlet's user-window echo/echoLink inherits the selected
+                -- background. Reset it right after the name to avoid spill.
+                setBgColor(WINDOW,48,54,69) -- #303645, just above #181C26
+                print_segment(self_row and "JA" or clean(p.name),tint,click)
+                resetFormat(WINDOW)
+            else
+                print_segment(self_row and "JA" or clean(p.name),tint,click)
+            end
             if fighting and ally and not p.attacking
                 and (not p.attackers or #p.attackers==0) then
                 print_segment(" [X]","yellow")
-            end
-            if p.attacking then
-                print_segment(" ->["..(map.by_id[tostring(p.attacking)] or "?").."]","peach")
-            end
-            if type(p.attackers)=="table" and #p.attackers>0 then
-                local names={}
-                for _,attacker in ipairs(p.attackers) do
-                    names[#names+1]=map.by_id[tostring(attacker)] or "?"
-                end
-                print_segment(" <-["..table.concat(names,",").."]","rose")
             end
             echo(WINDOW,"\n")
         end

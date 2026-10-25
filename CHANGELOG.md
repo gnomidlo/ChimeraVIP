@@ -1,5 +1,13 @@
 ## 0.177 — Dwa niezalezne bindy: sytuacyjny i mapowy
 
+- Kondycje: usunieto zdublowane strzalki celow i napastnikow (->[...]
+  oraz <-[...]) z koncow wierszy. Zostaja znaczniki postaci i [X].
+- Ogluszenie sygnalizuje delikatne grafitowe podswietlenie samej
+  nazwy postaci (#303645), bez [OGL] i bez zmiany odcieni HP,
+  znacznikow oraz kolorow frakcji. Reset formatu po nazwie
+  zapobiega przeciekaniu tla na sasiednie elementy.
+
+
 - Kondycje VIP: znacznik pacholka [P] zostal zastapiony mala
   szachowa ikonka ♟ w tym samym miejscu co gwiazdka lidera,
   przed znacznikiem [A]/[B]; zajmuje tyle samo miejsca co wciecie.

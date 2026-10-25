@@ -245,3 +245,13 @@ zwykłego wcięcia (jak gwiazdka ★ przy liderze).
 Dawne `[P]` za nazwą oraz `Z:xx%` zostały usunięte.
 Nie zmienia to działania oznaczeń `[A]`, `[X]`,
 ogłuszenia ani kierunków walki.
+
+
+### Kondycje w walce — mniej oznaczen (0.177)
+
+Wszystkie wiersze pozostaja klikalne. Dla przejrzystosci ukrylismy
+informacje o tym, kogo postac atakuje i kto atakuje postac
+(dawne `->[1]`, `<-[A]`, itp.). Znaczniki `[A]`, `[1]`, `[X]`
+oraz paski zdrowia pozostaja bez zmian. Ogluszenie nie dodaje juz
+`[OGL]` i nie zmienia kolorystyki calego wiersza: podswietla tylko
+nazwe postaci subtelnym, jasniejszym grafitem `#303645`.
