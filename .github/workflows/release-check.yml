@@ -31,6 +31,8 @@ jobs:
         run: lua5.1 tools/milestones_test.lua
       - name: Test runtime regressions
         run: lua5.1 tools/runtime_test.lua
+      - name: Test situational and map action bindings
+        run: lua5.1 tools/context_action_test.lua
       - name: Test Chimera 5 API bridge
         run: lua5.1 tools/chimera5_test.lua
       - name: Test Chimera 5 pastel HUD and switchback

@@ -1,7 +1,7 @@
 # ChimeraVIP
 
 Pastelowa nakladka na **oficjalne skrypty Chimery 5.0** dla Mudleta.
-Serwer: `chimera.co.pl:2300`. Wersja ChimeraVIP: **0.176**.
+Serwer: `chimera.co.pl:2300`. Wersja ChimeraVIP: **0.177**.
 Testowana baza: **5.0.0-beta.13**.
 
 ## Instalacja i aktualizacja
@@ -179,3 +179,95 @@ Sekwencje wysylaja osobne komendy z odstepem 0.15 s.
 Wymagane jest istnienie ID aktualnej lokacji w GMCP.
 
 Po scaleniu: `/cvip aktualizuj`, `/cvip v5 instaluj`, `/przeladuj`.
+
+
+## Dwa ulubione bindy (0.177)
+
+Dostepne sa niezalezne funkcje Lua:
+
+```lua
+chimera_vip.context_action:run() -- np. klawisz backslash
+chimera_vip.map_action:run()     -- np. Alt+backslash
+```
+
+**Wazne:** ustaw je samodzielnie w edytorze **Mudlet → Keys**;
+pakiet nie przejmuje klawiszy uzytkownika i nie zmienia skrotow
+oficjalnej Chimery. Jezeli masz w profilu stary, recznie wklejony
+skrypt `context_action.lua`, **wylacz go po aktualizacji**, aby jego
+funkcje i timery nie kolidowaly z nowym modulem ChimeraVIP.
+
+Akcja `\\` reaguje na triggery: poprzednie skrypty pozostaja poprawne.
+
+```lua
+chimera_vip.context_action:set_send("uderz we wrota", false, 30)
+chimera_vip.context_action:set_alias("naps", false, 30)
+chimera_vip.context_action:set_alias("/wlm", false, 0)
+chimera_vip.context_action:set(function() send("pociagnij dzwignie") end, "Dzwignia", 30)
+```
+
+TTl=0 oznacza brak limitu czasu. Akcja z przypisanym pokojem jest
+czyszczona po zmianie lokacji (i ponownie weryfikowana przy wykonaniu).
+Informacje mają styl [⚡ Kontekst] w brzoskwiniowym odcieniu.
+
+Akcja `Alt+\\` korzysta z wlasnych akcji przypisanych do pokoju
+komenda `/cvakcja` (zwykla komenda, alias lub sekwencja).
+Przy jednej akcji jest domyslna od razu; jesli jest ich kilka:
+
+```text
+/cvakcja
+/cvakcja domyslna Otworz wrota
+/cvakcja domyslna
+/cvakcja domyslna brak
+```
+
+Akcja mapowa zawsze sprawdza aktualny `gmcp.Room.Info.id` i nie
+wykonuje automatycznie wszystkich akcji. Komunikaty mapowe korzystaja
+z [⌖ Mapa] w kolorze lawendowym. Wybrana nazwa jest zapamietana
+miedzy sesjami w `ChimeraVIP-data/room_actions.lua`.
+
+Panel Quiet HUD w wersji VIP juz pokazuje same numerki
+1-12 w lawendowych obramowaniach. Jezeli widzisz nadal
+`Ctrl+Shift+1–3`, sprawdz `/cvhud status` i `/cvhud vip`,
+bo moze to byc **oficjalny panel akcji** lub stara kopia wtyczki
+w `chimera_wtyczki/chimeravip_ui/`.
+
+Instalacja po scaleniu: `/cvip aktualizuj`, `/cvip v5 instaluj`,
+`/przeladuj`. Jezeli wczesniej pracowal osobny Script, wylacz go,
+a nastepnie uruchom ponownie profil Mudleta, by zaladowac nowy
+modul `src/features/context_action.lua`.
+
+
+### Kondycje — czytelniejszy znacznik pachołka (0.177)
+
+W oknie Kondycje mała złota ikonka szachowego piona **♟** oznacza
+pachołka i stoi **przed** literą znacznika postaci, w miejscu
+zwykłego wcięcia (jak gwiazdka ★ przy liderze).
+Dawne `[P]` za nazwą oraz `Z:xx%` zostały usunięte.
+Nie zmienia to działania oznaczeń `[A]`, `[X]`,
+ogłuszenia ani kierunków walki.
+
+
+### Kondycje w walce — mniej oznaczen (0.177)
+
+Wszystkie wiersze pozostaja klikalne. Relacje napastnikow
+pokazujemy jednokrotnie, np. `JA - [1]` i `goblin - [@, A]`,
+bez podwojnych strzalek `->` / `<-`. Znaczniki `[A]`,
+`[1]`, `[X]` i paski zdrowia pozostaja bez zmian.
+Ogluszenie nie dodaje `[OGL]` i nie zmienia barw calego wiersza:
+podswietla jedynie nazwe postaci subtelnym grafitem `#303645`.
+
+
+### Kondycje w walce — relacje i szerokosc (korekta PR 0.177)
+
+Wyswietlamy relacje **raz**, po stronie osoby atakowanej:
+`JA - [1]` oznacza, ze przeciwnik [1] atakuje JA;
+`goblin - [@, A]` oznacza, ze goblina atakuja JA i czlonek
+zespolu A. Nie wyswietlamy rownolegle powtornych strzalek
+`->` i `<-`. Oznaczenia [X], HP i wyroznienie
+ogluszonego przeciwnika pozostaja bez zmian.
+
+Dlugie nazwy sa skracane od lewej strony, zachowujac ostatnie slowa
+(np. `… nerwowy goblin`). Liczba dostepnych kolumn pochodzi
+z aktualnej szerokosci okna Kondycje (`getColumnCount`),
+a na koncu rezerwowane jest miejsce na oznaczenia napastnikow.
+Zmiana rozmiaru okna automatycznie odswieza nazwy.

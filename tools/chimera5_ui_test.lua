@@ -2,7 +2,9 @@
 local handlers,commands,timers,aliases={},{},{},{}
 local widgets,fonts,printed={},{},{}
 local windows,fg,border={},nil,0
+local bg=nil
 local main_width=1200
+local kondycje_columns=72
 local saved_files,links,log={},{},{}
 function getMudletHomeDir() return "/fake/profile" end
 function createDirectory() return true end
@@ -37,6 +39,7 @@ Geyser={
     Label={new=function(_,props,parent) assert(parent);return element(props.name) end},
 }
 function getMainWindowSize() return main_width,800 end
+function getColumnCount(name) assert(name=="chimeravip_kondycje"); return kondycje_columns end
 function setBorderBottom(n) border=n end
 function openUserWindow(n) windows[n]="visible" end
 function windowType(n) return windows[n] and "userwindow" or nil end
@@ -48,10 +51,12 @@ function saveWindowLayout() end
 function clearWindow() printed={} end
 function cecho(v) log[#log+1]=v end
 function setFgColor(n,r,g,b) fg=string.format("%d,%d,%d",r,g,b) end
-function echo(n,t) printed[#printed+1]={text=t,color=fg} end
+function setBgColor(n,r,g,b) bg=string.format("%d,%d,%d",r,g,b) end
+function resetFormat(n) bg=nil;fg=nil end
+function echo(n,t) printed[#printed+1]={text=t,color=fg,bg=bg} end
 function echoLink(label,command,hint)
     links[#links+1]={label=label,command=command,hint=hint}
-    printed[#printed+1]={text=command,color=fg}
+    printed[#printed+1]={text=command,color=fg,bg=bg}
 end
 function expandAlias(t) aliases[#aliases+1]=t end
 local room={id="one",exits={polnoc="north",zachod="west",gora=false,
@@ -95,6 +100,7 @@ local lamp={state=function() return {lit=true} end}
 chimera_vip={settings={is_module_enabled=function(self,name)
     return name=="combat_colors"
 end}}
+dofile("src/features/context_action.lua")
 local ctx={state={},settings={mode="vip",kondycje=true,czcionka=7,akcje=true}}
 function ctx:use(n)
     return ({gmcp=gmcp_api,team=team,locations=locations,status_bar=status_bar,lamp=lamp})[n]
@@ -183,6 +189,143 @@ local function geometry()
         "PANIKA is covered by EXP")
 end
 assert(api.active() and fonts.chimeravip_kondycje==7)
+-- Kondycje: small chess pawn icon BEFORE the letter, no [P]/Z:x% suffix.
+-- Changing only henchman must invalidate the cached window signature.
+view.self.leader=true
+view.members[1].henchman=true
+view.members[1].stamina=100  -- old code would print unwanted Z:0%
+local before_links=#links
+handlers["sysWindowResizeEvent"]()
+flush()
+local observed={}
+for i=before_links+1,#links do
+    local item=links[i]
+    if item.label=="chimeravip_kondycje" then
+        observed[#observed+1]=item.command
+    end
+end
+local actual=table.concat(observed)
+assert(actual:find("♟ [A] ",1,true),
+    "Pawn icon must occupy leading slot before [A]")
+assert(actual:find("★ [@] ",1,true),
+    "Team leader star should retain its original leading slot")
+assert(not actual:find("[P]",1,true),
+    "Old pawn [P] label should be removed")
+assert(not actual:find("Z:",1,true),
+    "Stamina Z: percentage should be removed from Kondycje")
+-- Second pass with same name/hp but no henchman verifies signature refresh.
+view.members[1].henchman=false
+before_links=#links
+handlers["sysWindowResizeEvent"]()
+flush()
+local later={}
+for i=before_links+1,#links do
+    if links[i].label=="chimeravip_kondycje" then
+        later[#later+1]=links[i].command
+    end
+end
+assert(table.concat(later):find("  [A] ",1,true),
+    "Removing henchman flag must restore neutral alignment")
+view.members[1].henchman=true
+handlers["sysWindowResizeEvent"]()
+flush()
+-- Restore incoming combat relationships ONCE: who attacks a party
+-- member, and which party members are attacking each enemy.
+view.self.attacking="enemy"
+view.self.attackers={"enemy"}
+view.members[1].attacking="enemy" -- outgoing alone must not add a suffix
+view.enemies[1].attackers={"ally","me","ally"} -- unsorted and duplicated
+view.enemies[1].stunned=true
+handlers["sysWindowResizeEvent"]()
+flush()
+local segments=printed
+local enemy_name,enemy_mark,enemy_hp=nil,nil,nil
+local visible={}
+for _,segment in ipairs(segments) do
+    visible[#visible+1]=segment.text
+    if segment.text=="Ork" then enemy_name=segment end
+    if segment.text=="[1] " then enemy_mark=segment end
+    if segment.text:find("28%",1,true) then enemy_hp=segment end
+end
+local contents=table.concat(visible)
+assert(contents:find("JA - [1]",1,true),
+    "Party row must show the attacking enemy exactly once")
+assert(contents:find("Ork - [@, A]",1,true),
+    "Enemy row must show sorted unique attacking party marks")
+assert(not contents:find("Lisstana - [1]",1,true),
+    "Outgoing attack from an ally must not duplicate the enemy relation")
+assert(not contents:find(" ->[",1,true) and not contents:find(" <-[",1,true),
+    "Old two-sided arrows must not reappear")
+assert(not contents:find("[OGL]",1,true),
+    "Stun must be conveyed solely through styling, never [OGL]")
+assert(enemy_name and enemy_name.bg=="48,54,69",
+    "Only a stunned name must use #303645 background")
+assert(enemy_name.color=="240,168,184",
+    "Stun must not replace hostile enemy text color with lavender")
+assert(enemy_mark and enemy_mark.bg==nil and
+    enemy_mark.color=="240,168,184",
+    "Enemy marker must retain the normal hostile color and background")
+assert(enemy_hp and enemy_hp.bg==nil,
+    "Stun must never color an enemy's HP bar")
+assert(bg==nil,"Stun background formatting must not leak to relation suffix")
+
+-- Real window column count controls tail-preserving name truncation.
+local long_name="Przesadnie bardzo mocno rozgadany opancerzony goblin"
+view.enemies[1].name=long_name
+kondycje_columns=42
+handlers["sysWindowResizeEvent"]()
+flush()
+local name_tail,combat_suffix=nil,nil
+for _,segment in ipairs(printed) do
+    if segment.bg=="48,54,69" then name_tail=segment.text end
+    if segment.text==" - [@, A]" then combat_suffix=segment end
+end
+assert(name_tail and name_tail:sub(1,3)=="…" and
+    name_tail:find("goblin",1,true),
+    "Narrow window should truncate the NAME from the left, preserving its tail")
+assert(not name_tail:find("Przesadnie",1,true),
+    "Narrow window should remove first name words")
+assert(combat_suffix and combat_suffix.bg==nil,
+    "The relation must stay visible and outside the stun background")
+local visual=function(value)
+    local n=0
+    for _ in tostring(value):gmatch("[\1-\127\194-\244][\128-\191]*") do n=n+1 end
+    return n
+end
+local enemy_line="  [1] ".."██░░░░░░  28% "..name_tail.." - [@, A]"
+assert(visual(enemy_line)<=kondycje_columns,
+    "Full rendered enemy row must fit the narrow Kondycje window")
+-- A wider pane should restore full names even without new GMCP updates.
+kondycje_columns=100
+handlers["sysWindowResizeEvent"]()
+flush()
+local wide={}
+for _,segment in ipairs(printed) do wide[#wide+1]=segment.text end
+assert(table.concat(wide):find(long_name.." - [@, A]",1,true),
+    "Resizing larger must restore the full name (column count in signature)")
+-- A single long UTF-8 word must not be chopped into invalid bytes.
+view.enemies[1].name="Arcydługowłosyprzebiegłygoblin"
+-- Enough columns for the six-letter suffix; more narrow panes
+-- necessarily preserve only the last few characters.
+kondycje_columns=39
+handlers["sysWindowResizeEvent"]()
+flush()
+local unicode_tail=nil
+for _,segment in ipairs(printed) do
+    if segment.bg=="48,54,69" then unicode_tail=segment.text end
+end
+assert(unicode_tail and unicode_tail:sub(1,3)=="…" and
+    unicode_tail:find("goblin",1,true),
+    "Long Unicode word must retain a usable UTF-8 suffix")
+view.self.attacking=nil
+view.self.attackers={}
+view.members[1].attacking=nil
+view.enemies[1].attackers={}
+view.enemies[1].stunned=false
+view.enemies[1].name="Ork"
+kondycje_columns=72
+handlers["sysWindowResizeEvent"]()
+flush()
 geometry()
 assert(w("gauge1").text:find("życie",1,true))
 assert(w("gauge2").text:find("mana",1,true))
@@ -239,6 +382,8 @@ assert(w("action1").text:find("przejrzyj kufer",1,true),
 assert(type(chimera_vip.ui)=="table")
 assert(type(chimera_vip.ui.special_exit)=="function")
 assert(type(chimera_vip.ui.room_action)=="function")
+assert(type(chimera_vip.map_action.run)=="function")
+assert(type(chimera_vip.context_action.run)=="function")
 -- Bind in Mudlet's Keys editor: chimera_vip.ui.special_exit(1)
 assert(chimera_vip.ui.special_exit(1)==true)
 assert(#called==1 and called[1]=="wejdz do piwnicy",
@@ -292,6 +437,10 @@ assert(called[#called]=="otworz ciemna skrzynie","Custom action must send comman
 w("action2").click()
 assert(called[#called]=="otworz ciemna skrzynie",
     "Click should match Alt+2 custom action")
+-- With one custom action, the map bind chooses it automatically.
+assert(chimera_vip.map_action:run()==true and
+    called[#called]=="otworz ciemna skrzynie",
+    "Map bind must use the only local action")
 commands.cvakcja("alias Szybka akcja - naps")
 commands.cvakcja("alias Magia - /wlm")
 handlers["chimera.room.changed"]()
@@ -300,6 +449,12 @@ assert(chimera_vip.ui.room_action(3)==true and aliases[#aliases]=="naps",
     "Alias without a slash was not expanded")
 assert(chimera_vip.ui.room_action(4)==true and aliases[#aliases]=="/wlm",
     "Alias with a slash was not expanded")
+assert(chimera_vip.map_action:run()==false,
+    "Map action must not guess among multiple local actions")
+commands.cvakcja("domyslna Magia")
+assert(chimera_vip.map_action:status()=="Magia")
+assert(chimera_vip.map_action:run()==true and aliases[#aliases]=="/wlm",
+    "Explicit map default alias should execute")
 commands.cvakcja("sekwencja Wielki test - wez klucz, otworz drzwi, wejdz")
 local before=#called
 assert(chimera_vip.ui.room_action(5)==true,"Sequence should be runnable")
@@ -341,15 +496,24 @@ room={id="one",exits={polnoc="north",zachod="west",gora=false,
 -- New room must not contain other room's saved data.
 commands.cvakcja("dodaj Pusty test - cos")
 room={id="somewhere-else",exits={polnoc="there"}}
+assert(chimera_vip.map_action:run()==false,
+    "Map action must not execute previous room's default")
 assert(chimera_vip.ui.room_action(2)==false,
     "An entry added to the previous room leaked into this room")
 room={id="one",exits={polnoc="north",zachod="west",gora=false,
     ["wejdz do piwnicy"]="inside"}}
 commands.cvakcja("usun Pusty test")
+assert(chimera_vip.map_action:run()==true and aliases[#aliases]=="/wlm",
+    "Map action must preserve default on unrelated deletion")
 assert(saved_files["/fake/profile/ChimeraVIP-data/room_actions.lua"].rooms.one[3].name=="Wielki test",
     "Name-based deletion did not work")
 -- Invalid sequence must leave the list intact.
 local n=#saved_files["/fake/profile/ChimeraVIP-data/room_actions.lua"].rooms.one
+commands.cvakcja("domyslna brak")
+assert(chimera_vip.map_action:run()==false,"Unset map default must not guess")
+commands.cvakcja("domyslna Magia")
+assert(chimera_vip.map_action:run()==true and aliases[#aliases]=="/wlm",
+    "Map default should be configurable again")
 commands.cvakcja("sekwencja Bledna - 1, , 3")
 assert(#saved_files["/fake/profile/ChimeraVIP-data/room_actions.lua"].rooms.one==n,
     "Blank sequence step should be rejected")
@@ -389,6 +553,8 @@ flush()
 assert(api.active())
 ctx.cleanup()
 assert(not api.active() and widgets["chimeravip2_floating_1"].hidden)
+assert(chimera_vip.map_action._runner==nil and chimera_vip.map_action._status==nil,
+    "Map action callback must be detached on cleanup")
 assert(chimera_vip.ui.special_exit==nil and chimera_vip.ui.room_action==nil
     and chimera_vip.ui.delete_action==nil,
     "Public APIs must be removed on plugin cleanup")
@@ -400,5 +566,7 @@ assert(type(chimera_vip.ui.room_action)=="function",
     "Public action API not restored on reload")
 assert(chimera_vip.ui.room_action(1)==true and aliases[#aliases]=="naps",
     "Saved local action did not survive a plugin reload")
+assert(chimera_vip.map_action:run()==true and aliases[#aliases]=="/wlm",
+    "Persisted map default should survive plugin reload")
 ctx.cleanup()
 print("PASS 0.176: local persistence, numbered clickable Geyser actions, command/alias/sequence, stale safety")

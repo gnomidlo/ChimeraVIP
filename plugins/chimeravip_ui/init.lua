@@ -109,7 +109,7 @@ return {
             end
             return type(id)=="string" and id~="" and id or nil
         end
-        local db={version=1,next_id=1,rooms={}}
+        local db={version=2,next_id=1,rooms={},defaults={}}
         local function database_path()
             if type(getMudletHomeDir)~="function" then return nil end
             local home=getMudletHomeDir()
@@ -132,6 +132,7 @@ return {
             local ok=pcall(table.load,actions_path,loaded)
             if ok and type(loaded.rooms)=="table" then
                 db.rooms=loaded.rooms
+                db.defaults=type(loaded.defaults)=="table" and loaded.defaults or {}
                 db.next_id=math.max(1,tonumber(loaded.next_id) or 1)
             end
         end
@@ -209,6 +210,31 @@ return {
             end
             return true
         end
+        -- An explicit default wins; with exactly one custom action, use it
+        -- automatically. Avoid ever guessing among multiple candidates.
+        local function map_default()
+            local rid=current_room_id()
+            if not rid then return nil end
+            local entries=personal_actions()
+            local stored=db.defaults[rid]
+            if stored then
+                for _,entry in ipairs(entries) do
+                    if tonumber(entry.id)==tonumber(stored) then return entry end
+                end
+                return nil
+            end
+            if #entries==1 then return entries[1] end
+            return nil
+        end
+        local function map_default_name()
+            local entry=map_default()
+            return entry and entry.name or nil
+        end
+        local function map_run()
+            local entry=map_default()
+            if not entry then return false end
+            return run_personal(entry)
+        end
         local schedule
         local function delete_action(roomid,id)
             if current_room_id()~=roomid then return false end
@@ -216,6 +242,7 @@ return {
             for i,entry in ipairs(records) do
                 if tonumber(entry.id)==tonumber(id) then
                     table.remove(records,i)
+                    if db.defaults[roomid]==entry.id then db.defaults[roomid]=nil end
                     if #records==0 then db.rooms[roomid]=nil end
                     save_actions()
                     info("Usunieto akcje: "..entry.name)
@@ -265,6 +292,13 @@ return {
         local public_ui=vip.ui
         local old_special,old_action=public_ui.special_exit,public_ui.room_action
         local old_delete=public_ui.delete_action
+        local map_actions=type(vip.map_action)=="table" and vip.map_action or nil
+        local old_map_run=map_actions and map_actions._runner
+        local old_map_status=map_actions and map_actions._status
+        if map_actions then
+            map_actions._runner=map_run
+            map_actions._status=map_default_name
+        end
         public_ui.special_exit=special_exit
         public_ui.room_action=room_action
         public_ui.delete_action=delete_action
@@ -422,15 +456,82 @@ return {
                 echo(WINDOW,clean(text))
             end
         end
-        local function row(mark,p,ally,self_row,map,fighting,hostile)
+        -- Former tactical_states_view behavior: keep recognizable name tails.
+        -- Count Unicode codepoints, not bytes: ♟ and █ take a single column.
+        local function chars_of(value)
+            local result={}
+            for char in tostring(value or ""):gmatch("[\1-\127\194-\244][\128-\191]*") do
+                result[#result+1]=char
+            end
+            return result
+        end
+        local function visual_width(value) return #chars_of(value) end
+        local function window_columns()
+            if type(getColumnCount)=="function" then
+                local ok,columns=pcall(getColumnCount,WINDOW)
+                columns=ok and tonumber(columns) or nil
+                if columns and columns>0 then return math.floor(columns) end
+            end
+            return 72 -- Original Kondycje fallback when the window is unavailable.
+        end
+        local function fit_tail_words(value,width)
+            local name=tostring(value or "")
+            width=math.max(1,math.floor(tonumber(width) or 1))
+            if visual_width(name)<=width then return name end
+            if width==1 then return "…" end
+            local words={}
+            for word in name:gmatch("%S+") do words[#words+1]=word end
+            local kept,used={},2 -- ellipsis and a space
+            for i=#words,1,-1 do
+                local extra=visual_width(words[i])+(#kept>0 and 1 or 0)
+                if used+extra>width then break end
+                table.insert(kept,1,words[i])
+                used=used+extra
+            end
+            if #kept>0 then return "… "..table.concat(kept," ") end
+            -- A single long word: preserve the Unicode tail without cutting bytes.
+            local chars=chars_of(name)
+            local tail={}
+            for i=math.max(1,#chars-width+2),#chars do
+                tail[#tail+1]=chars[i]
+            end
+            return "…"..table.concat(tail)
+        end
+        local function attacker_relation(p,map)
+            local marks,seen={},{}
+            local incoming=type(p.attackers)=="table" and p.attackers or {}
+            for _,attacker in ipairs(incoming) do
+                local mark=map.by_id[tostring(attacker)]
+                if mark and not seen[mark] then
+                    marks[#marks+1]=mark
+                    seen[mark]=true
+                end
+            end
+            table.sort(marks,function(a,b)
+                if a=="@" then return true end
+                if b=="@" then return false end
+                local an,bn=tonumber(a),tonumber(b)
+                if an and bn then return an<bn end
+                if an then return false end
+                if bn then return true end
+                return a<b
+            end)
+            return #marks>0 and (" - ["..table.concat(marks,", ").."]") or ""
+        end
+        local function row(mark,p,ally,self_row,map,fighting,hostile,columns)
             local id=p.id and tostring(p.id) or nil
             local hp=tonumber(p.hp)
-            local tint=p.stunned and "lavender" or (self_row and "lavender" or (ally and "mint" or (hostile and "rose" or "neutral")))
+            -- Stun highlights ONLY the name, without recoloring the HP/mark.
+            local tint=self_row and "lavender" or
+                (ally and "mint" or (hostile and "rose" or "neutral"))
             if ally and p.here==false then tint="muted" end
             local attack=id and ("zabij "..id) or nil
             local cover=ally and not self_row and id and ("zaslon "..id) or nil
             local click=ally and cover or attack
-            print_segment((p.leader and "★ " or "  ").."["..mark.."] ",tint,click,
+            local prefix=p.henchman and "♟ " or (p.leader and "★ " or "  ")
+            print_segment(prefix,p.henchman and "yellow" or tint,click,
+                ally and "Zaslon" or "Atak")
+            print_segment("["..mark.."] ",tint,click,
                 ally and "Zaslon" or "Atak")
             local blocks=hp and math.floor(math.max(0,math.min(100,hp))/12.5) or 0
             local hp_text=hp and string.format("%s%s %3d%% ",
@@ -439,37 +540,40 @@ return {
             print_segment(hp_text,hp and (hp<30 and "rose" or hp<60 and "yellow" or "mint") or "muted",
                 ally and not self_row and id and ("wycofaj sie za "..id) or nil,
                 "Wycofaj sie za")
-            print_segment(self_row and "JA" or clean(p.name),tint,click)
-            if p.henchman then print_segment(" [P]","yellow") end
-            if p.stunned then print_segment(" [OGL]","lavender") end
-            if fighting and ally and not p.attacking
-                and (not p.attackers or #p.attackers==0) then
+            local idle=fighting and ally and not p.attacking
+                and (not p.attackers or #p.attackers==0)
+            -- Incoming relations only, as in the old Kondycje renderer:
+            -- team members show who attacks them; enemies show their attackers.
+            local relation=idle and " [X]" or attacker_relation(p,map)
+            local fixed=visual_width(prefix.."["..mark.."] "..hp_text)
+            local name=fit_tail_words(self_row and "JA" or clean(p.name),
+                math.max(1,(columns or 72)-fixed-visual_width(relation)-1))
+            if p.stunned and type(setBgColor)=="function"
+                and type(resetFormat)=="function" then
+                setBgColor(WINDOW,48,54,69) -- #303645
+                print_segment(name,tint,click)
+                resetFormat(WINDOW)
+            else
+                print_segment(name,tint,click)
+            end
+            if idle then
                 print_segment(" [X]","yellow")
-            end
-            if p.attacking then
-                print_segment(" ->["..(map.by_id[tostring(p.attacking)] or "?").."]","peach")
-            end
-            if type(p.attackers)=="table" and #p.attackers>0 then
-                local names={}
-                for _,attacker in ipairs(p.attackers) do
-                    names[#names+1]=map.by_id[tostring(attacker)] or "?"
-                end
-                print_segment(" <-["..table.concat(names,",").."]","rose")
-            end
-            if ally and p.stamina then
-                print_segment(" Z:"..math.floor(100-math.min(100,tonumber(p.stamina) or 0)).."%","muted")
+            elseif relation~="" then
+                print_segment(relation,ally and "rose" or (hostile and "lavender" or "muted"))
             end
             echo(WINDOW,"\n")
         end
         local function draw_window(view)
             if not S.opened or not ctx.settings.kondycje then return end
             local map=index_view(view)
-            local signatures={}
+            local columns=window_columns()
+            local signatures={"columns="..columns}
             for _,list in ipairs({{view.self or {}},view.members or {},view.enemies or {},view.others or {}}) do
                 for _,p in ipairs(list) do
                     signatures[#signatures+1]=table.concat({
                         tostring(p.id),tostring(p.hp),tostring(p.attacking),
                         tostring(p.here),tostring(p.stunned),tostring(p.name),
+                        tostring(p.henchman),tostring(p.leader),
                         table.concat(p.attackers or {},","),
                     },":")
                 end
@@ -484,14 +588,14 @@ return {
             for _,p in ipairs(view.members or {}) do
                 if p.attacking or (p.attackers and #p.attackers>0) then fighting=true end
             end
-            row("@",me,true,true,map,fighting,false)
-            for i,p in ipairs(view.members or {}) do row(alpha(i),p,true,false,map,fighting,false) end
+            row("@",me,true,true,map,fighting,false,columns)
+            for i,p in ipairs(view.members or {}) do row(alpha(i),p,true,false,map,fighting,false,columns) end
             for _,part in ipairs({{view.enemies or {},"WROGOWIE",true},
                                    {view.others or {},"POZOSTALI",false}}) do
                 if #part[1]>0 then
                     print_segment("\n  "..part[2].."\n","lavender")
                     for _,p in ipairs(part[1]) do
-                        row(map.by_id[tostring(p.id)] or "?",p,false,false,map,fighting,part[3])
+                        row(map.by_id[tostring(p.id)] or "?",p,false,false,map,fighting,part[3],columns)
                     end
                 end
             end
@@ -1011,6 +1115,11 @@ return {
             cecho("<light_grey>  /cvakcja alias Nazwa - alias (np. naps lub /wlm)<reset>\n")
             cecho("<light_grey>  /cvakcja sekwencja Nazwa - komenda1, komenda2, ...<reset>\n")
             cecho("<light_grey>  /cvakcja usun Nazwa<reset>\n")
+            cecho("<light_grey>  /cvakcja domyslna Nazwa | brak<reset>\n")
+            local selected=map_default()
+            if selected then
+                cecho("<199,185,232>  [⌖ Mapa]<reset> "..html_escape(selected.name).."\n")
+            end
             local rid=current_room_id()
             if not rid then
                 info("Brak ID lokacji w GMCP — nie moge dodawac akcji.")
@@ -1024,8 +1133,10 @@ return {
             for i,entry in ipairs(records) do
                 local kind=entry.kind=="send" and "komenda" or
                     (entry.kind=="alias" and "alias" or "sekwencja")
-                cecho(string.format("<lavender> %d.<reset> %s <dim_grey>(%s)<reset>",
-                    i,html_escape(entry.name),kind))
+                local chosen=selected and entry.id==selected.id
+                cecho(string.format("<lavender> %d.<reset> %s <dim_grey>(%s)<reset>%s",
+                    i,html_escape(entry.name),kind,
+                    chosen and " <199,185,232>[⌖]<reset>" or ""))
                 if type(echoLink)=="function" then
                     local script="chimera_vip.ui.delete_action("..
                         string.format("%q",rid)..","..tostring(entry.id)..")"
@@ -1036,7 +1147,7 @@ return {
                 cecho("\n")
             end
         end
-        ctx:command{"cvakcja",args="[dodaj|alias|sekwencja|usun] ...",
+        ctx:command{"cvakcja",args="[dodaj|alias|sekwencja|usun|domyslna] ...",
             help="Wlasne akcje przypisane do aktualnej lokacji",fn=function(arg)
                 local input=trim(arg)
                 if input=="" or input=="pomoc" or input=="lista" then
@@ -1044,7 +1155,41 @@ return {
                     return
                 end
                 local op,rest=input:match("^(%S+)%s+(.+)$")
+                if input=="domyslna" then
+                    local selected=map_default()
+                    if selected then
+                        cecho("\n<199,185,232>[⌖ Mapa]<reset> Domyslna: "..html_escape(selected.name).."\n")
+                    else
+                        info("Brak domyslnej akcji mapowej w tym pokoju.")
+                    end
+                    return
+                end
                 if not op then usage(); return end
+                if op=="domyslna" then
+                    local rid=current_room_id()
+                    if not rid then info("Brak ID lokacji GMCP."); return end
+                    local name=trim(rest)
+                    if name:lower()=="brak" then
+                        db.defaults[rid]=nil
+                        save_actions()
+                        info("Usunieto domyslna akcje mapowa.")
+                        if schedule then schedule() end
+                        return
+                    end
+                    for _,entry in ipairs(personal_actions()) do
+                        if entry.name:lower()==name:lower() then
+                            db.defaults[rid]=entry.id
+                            if save_actions() then
+                                cecho("\n<199,185,232>[⌖ Mapa]<reset> Domyslna: "..
+                                    html_escape(entry.name).."\n")
+                            end
+                            if schedule then schedule() end
+                            return
+                        end
+                    end
+                    info("Nie znaleziono takiej wlasnej akcji w pokoju.")
+                    return
+                end
                 if op=="usun" then
                     local rid=current_room_id()
                     if not rid then info("Brak ID lokacji GMCP."); return end
@@ -1150,6 +1295,12 @@ return {
             S.destroyed=true
             if public_ui.delete_action==delete_action then
                 public_ui.delete_action=old_delete
+            end
+            if map_actions and map_actions._runner==map_run then
+                map_actions._runner=old_map_run
+            end
+            if map_actions and map_actions._status==map_default_name then
+                map_actions._status=old_map_status
             end
             if public_ui.special_exit==special_exit then
                 public_ui.special_exit=old_special

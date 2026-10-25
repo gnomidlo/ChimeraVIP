@@ -1,3 +1,52 @@
+## 0.177 — Dwa niezalezne bindy: sytuacyjny i mapowy
+
+- Przywrocono zwiezle relacje napastnikow `- [1]` / `- [@, A]`,
+  z czytelnym odstepem po przecinku. Relacje `attacking` na tym samym
+  celu nie sa powielane — jak w dawnym tactical_states_view.
+- Przywrocono `getColumnCount(chimeravip_kondycje)` i przycinanie
+  dlugich nazw OD POCZATKU (`… nerwowy goblin`), bez gubienia
+  relacji na koncu. W razie braku API: 72 kolumny.
+- Dopasowanie nazw liczy znaki Unicode zamiast bajtow, a zmiana
+  szerokosci okna wymusza odswiezenie nawet bez nowych GMCP.
+
+
+- Kondycje: relacje napastnikow uproszczone z dwoch zestawow
+  strzalek do pojedynczego ` - [..]`, bez dublowania.
+- Ogluszenie sygnalizuje delikatne grafitowe podswietlenie samej
+  nazwy postaci (#303645), bez [OGL] i bez zmiany odcieni HP,
+  znacznikow oraz kolorow frakcji. Reset formatu po nazwie
+  zapobiega przeciekaniu tla na sasiednie elementy.
+
+
+- Kondycje VIP: znacznik pacholka [P] zostal zastapiony mala
+  szachowa ikonka ♟ w tym samym miejscu co gwiazdka lidera,
+  przed znacznikiem [A]/[B]; zajmuje tyle samo miejsca co wciecie.
+- Usunieto wyswietlanie 'Z:xx%' przy czlonkach druzyny;
+  bez zmian w GMCP i rzeczywistych danych zmeczenia.
+- Zmiany henchman/leader aktualizuja okno takze bez zmian HP/nazwy.
+
+
+- Przeniesiony do glownej paczki src/features/context_action.lua. Zachowano
+  API triggerow: chimera_vip.context_action:set(), :set_send(),
+  :set_alias(), :run(), :clear(), :status(), TTL (domyslnie 30 s).
+- Przyciski wybierane w Mudlet Keys przez gracza, brak auto-rejestracji:
+  \\ => chimera_vip.context_action:run() (ikonka blyskawicy,
+  brzoskwiniowe [⚡ Kontekst]), Alt+\\ => chimera_vip.map_action:run()
+  (lawendowe [⌖ Mapa]).
+- Akcja sytuacyjna moze wygasac po czasie, a nowy pokoj uniewaznia
+  akcje utworzona w poprzednim. Wolanie :run() zawsze weryfikuje ID.
+- /cvakcja domyslna Nazwa wskazuje wybrana akcje mapowa dla pokoju.
+  /cvakcja domyslna pokazuje wybrana; /cvakcja domyslna brak usuwa
+  przypisanie. Jedna wlasna akcja jest domyslna automatycznie;
+  przy wielu nie zgadujemy.
+- Domyslne akcje zapisane w istniejacej bazie room_actions.lua
+  i wykonywane przez ten sam silnik, co klikany panel Geyser.
+- Brak ingerencji w oficjalne skroty Ctrl+Shift+n;
+  w Quiet HUD numerki juz sa — oficjalny panel moze
+  wyswietlac rzeczywiscie przypisana kombinacje.
+- Regression: wywolania starych triggerow, czas TTL, invalidacja
+  pokojow, mapowe wybory i trwalosc, cleanup mostu.
+
 ## 0.176 — Własne akcje lokacji i numerowane przyciski
 
 - Panel Geyser: klikalne wiersze akcji ze znacznikami 1-12 w lawendowych
