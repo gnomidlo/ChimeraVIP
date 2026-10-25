@@ -25,6 +25,7 @@ load("src/integrations/runtime.lua")
 load("src/core/bootstrap.lua")
 load("src/integrations/chimera5.lua")
 load("src/core/settings.lua")
+load("src/core/safety.lua")
 load("src/core/help.lua")
 load("src/features/context_action.lua")
 -- On Chimera 5 the new UI is a real upstream plugin; old scripts.ui widgets

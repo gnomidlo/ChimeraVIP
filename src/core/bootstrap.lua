@@ -3,8 +3,8 @@ chimera_overlay = chimera_overlay or chimera_vip
 
 local C = chimera_vip
 C.name = "ChimeraVIP"
-C.version = C.version or "0.177"
-C.tested_upstream = "5.0.0-beta.13"
+C.version = C.version or "0.178"
+C.tested_upstream = "5.0.1"
 C.handlers = C.handlers or {}
 C.ready = false
 C.theme_ready = C.theme_ready or false
@@ -12,8 +12,17 @@ C.theme_ready = C.theme_ready or false
 local U = C.util
 
 function C:get_upstream_version()
+    -- Source-audited against Chimera 5.0.1: chimera.app.version is only
+    -- used for display. Never depend on this internal field for game logic.
+    local official=rawget(_G,"chimera")
+    local app=type(official)=="table" and official.app
+    if type(app)=="table" and type(app.version)=="string"
+        and app.version~="" and app.version~="dev" then
+        return app.version
+    end
     if self.runtime and self.runtime:is_chimera5() then
-        return self.runtime:bridge() and "Chimera 5 (API)" or "Chimera 5 (bez mostu)"
+        return self.runtime:bridge() and "Chimera 5 (API; wersja nieznana)"
+            or "Chimera 5 (bez mostu; wersja nieznana)"
     end
     if scripts and scripts.version and type(scripts.version.installed) == "function" then
         local ok, value = pcall(scripts.version.installed)

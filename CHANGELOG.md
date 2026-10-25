@@ -1,3 +1,24 @@
+## 0.178 — Fundament pod architekture rozszerzen Chimery 5
+
+- Etap 1 migracji do modelu "Chimera = dane i silnik; VIP = prezentacja".
+- Audyt kodu oficjalnej Chimery 5.0.1: potwierdzono stabilne API
+  gmcp.room(), team.view(), locations.room_actions(), zdarzenia
+  chimera.killed i chimera.progress. Test sesji Mudleta pozostaje wymagany.
+- Upstream raportowany z chimera.app.version, o ile jest dostepne;
+  brak wersji nie jest traktowany jako niezgodnosc API.
+- /cvip kopia wykonuje migawkę plikow uzytkownika z ChimeraVIP-data
+  do ChimeraVIP-data/backups/cvip-YYYYMMDD-HHMMSS.
+- Przyszle aktualizacje zainstalowanego 0.178 zatrzymaja sie,
+  gdy przed modyfikacja kodu nie uda sie zapisac kopii danych.
+- Kopie katalogow kodu / rollback updatera sa nadal oddzielne od
+  kopii prywatnych danych uzytkownika.
+- Dopisano testy wersji i bezpieczenstwa danych, w tym blad zapisu;
+  testujemy brak ingerencji w stare dane i unikamy nadpisania migawek.
+- Nie usuwamy jeszcze modulow starszego klienta ani nie zmieniamy
+  wygladu HUD, zeby PR byl bezpiecznym, odwracalnym fundamentem.
+- Następny etap: 0.179 — aktualizacja wtyczek i ich przeladowanie
+  jedna komenda /cvip aktualizuj.
+
 ## 0.177 — Dwa niezalezne bindy: sytuacyjny i mapowy
 
 - Przywrocono zwiezle relacje napastnikow `- [1]` / `- [@, A]`,

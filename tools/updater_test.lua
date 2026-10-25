@@ -25,6 +25,13 @@ assert(H.sha1('abc')=='a9993e364706816aba3e25717850c26c9cd0d89d')
 assert(H.sha1('abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq')=='84983e441c3bd26ebaae4aa1f95129e5e54670f1')
 assert(H.blob('hello\n')=='ce013625030ba8dba906f756967f9e9ca394464a')
 print('PASS SHA-1 published vectors and Git blob vector')
+-- The real safety module is tested independently. Here verify updater
+-- invokes it BEFORE any on-disk changes, and blocks on failure.
+local snapshots=0
+chimera_vip.safety={backup=function()
+    snapshots=snapshots+1
+    return true,{files=2,path="/fake/snapshot",skipped=false}
+end}
 dofile('src/core/updater.lua'); local UP=chimera_vip.updater
 local payload='return 123\n'; local corrupt=false; local requests={}
 local sha=string.rep('a',40)
@@ -54,7 +61,19 @@ print('PASS metadata failure restores code, VERSION and installed manifest')
 reset(); UP:update()
 assert(chimera_vip.version=='0.111' and read(root..'/fixture.lua')==payload)
 assert(read(root..'/VERSION')=='0.111\n' and #requests==9)
-assert(UP.mode==nil)
+assert(UP.mode==nil and snapshots==2,
+    "Successful and rollback paths must snapshot profile data")
+-- A failed snapshot must stop before changing a single deployed file.
+reset()
+chimera_vip.safety.backup=function() return false,"blocked snapshot" end
+UP:update()
+assert(UP.mode==nil and read(root..'/fixture.lua')=='return 1\n'
+    and read(root..'/VERSION')=='0.110\n',
+    "Updater must refuse to install when user backup fails")
+chimera_vip.safety.backup=function()
+    snapshots=snapshots+1
+    return true,{files=2,path="/fake/snapshot",skipped=false}
+end
 local meta={hash=H.blob(payload),size=#payload}
 write(root..'/fixture.lua','return 456\n')
 local plan=UP:build_plan({files={'fixture.lua'},file_meta={['fixture.lua']=meta}})
