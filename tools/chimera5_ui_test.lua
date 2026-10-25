@@ -184,6 +184,45 @@ local function geometry()
         "PANIKA is covered by EXP")
 end
 assert(api.active() and fonts.chimeravip_kondycje==7)
+-- Kondycje: small chess pawn icon BEFORE the letter, no [P]/Z:x% suffix.
+-- Changing only henchman must invalidate the cached window signature.
+view.members[1].henchman=true
+view.members[1].stamina=100  -- old code would print unwanted Z:0%
+local before_links=#links
+handlers["sysWindowResizeEvent"]()
+flush()
+local observed={}
+for i=before_links+1,#links do
+    local item=links[i]
+    if item.label=="chimeravip_kondycje" then
+        observed[#observed+1]=item.command
+    end
+end
+local actual=table.concat(observed)
+assert(actual:find("♟ [A] ",1,true),
+    "Pawn icon must occupy leading slot before [A]")
+assert(actual:find("★ [@] ",1,true),
+    "Team leader star should retain its original leading slot")
+assert(not actual:find("[P]",1,true),
+    "Old pawn [P] label should be removed")
+assert(not actual:find("Z:",1,true),
+    "Stamina Z: percentage should be removed from Kondycje")
+-- Second pass with same name/hp but no henchman verifies signature refresh.
+view.members[1].henchman=false
+before_links=#links
+handlers["sysWindowResizeEvent"]()
+flush()
+local later={}
+for i=before_links+1,#links do
+    if links[i].label=="chimeravip_kondycje" then
+        later[#later+1]=links[i].command
+    end
+end
+assert(table.concat(later):find("  [A] ",1,true),
+    "Removing henchman flag must restore neutral alignment")
+view.members[1].henchman=true
+handlers["sysWindowResizeEvent"]()
+flush()
 geometry()
 assert(w("gauge1").text:find("życie",1,true))
 assert(w("gauge2").text:find("mana",1,true))

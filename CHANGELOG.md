@@ -1,5 +1,13 @@
 ## 0.177 — Dwa niezalezne bindy: sytuacyjny i mapowy
 
+- Kondycje VIP: znacznik pacholka [P] zostal zastapiony mala
+  szachowa ikonka ♟ w tym samym miejscu co gwiazdka lidera,
+  przed znacznikiem [A]/[B]; zajmuje tyle samo miejsca co wciecie.
+- Usunieto wyswietlanie 'Z:xx%' przy czlonkach druzyny;
+  bez zmian w GMCP i rzeczywistych danych zmeczenia.
+- Zmiany henchman/leader aktualizuja okno takze bez zmian HP/nazwy.
+
+
 - Przeniesiony do glownej paczki src/features/context_action.lua. Zachowano
   API triggerow: chimera_vip.context_action:set(), :set_send(),
   :set_alias(), :run(), :clear(), :status(), TTL (domyslnie 30 s).

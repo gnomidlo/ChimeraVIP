@@ -464,7 +464,12 @@ return {
             local attack=id and ("zabij "..id) or nil
             local cover=ally and not self_row and id and ("zaslon "..id) or nil
             local click=ally and cover or attack
-            print_segment((p.leader and "★ " or "  ").."["..mark.."] ",tint,click,
+            -- A henchman/pacholek uses the same two-character leading slot
+            -- as the leader star. Preserve alignment without suffix clutter.
+            local prefix=p.henchman and "♟ " or (p.leader and "★ " or "  ")
+            print_segment(prefix,p.henchman and "yellow" or tint,click,
+                ally and "Zaslon" or "Atak")
+            print_segment("["..mark.."] ",tint,click,
                 ally and "Zaslon" or "Atak")
             local blocks=hp and math.floor(math.max(0,math.min(100,hp))/12.5) or 0
             local hp_text=hp and string.format("%s%s %3d%% ",
@@ -474,7 +479,6 @@ return {
                 ally and not self_row and id and ("wycofaj sie za "..id) or nil,
                 "Wycofaj sie za")
             print_segment(self_row and "JA" or clean(p.name),tint,click)
-            if p.henchman then print_segment(" [P]","yellow") end
             if p.stunned then print_segment(" [OGL]","lavender") end
             if fighting and ally and not p.attacking
                 and (not p.attackers or #p.attackers==0) then
@@ -490,9 +494,6 @@ return {
                 end
                 print_segment(" <-["..table.concat(names,",").."]","rose")
             end
-            if ally and p.stamina then
-                print_segment(" Z:"..math.floor(100-math.min(100,tonumber(p.stamina) or 0)).."%","muted")
-            end
             echo(WINDOW,"\n")
         end
         local function draw_window(view)
@@ -504,6 +505,7 @@ return {
                     signatures[#signatures+1]=table.concat({
                         tostring(p.id),tostring(p.hp),tostring(p.attacking),
                         tostring(p.here),tostring(p.stunned),tostring(p.name),
+                        tostring(p.henchman),tostring(p.leader),
                         table.concat(p.attackers or {},","),
                     },":")
                 end

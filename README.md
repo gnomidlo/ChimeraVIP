@@ -235,3 +235,13 @@ Instalacja po scaleniu: `/cvip aktualizuj`, `/cvip v5 instaluj`,
 `/przeladuj`. Jezeli wczesniej pracowal osobny Script, wylacz go,
 a nastepnie uruchom ponownie profil Mudleta, by zaladowac nowy
 modul `src/features/context_action.lua`.
+
+
+### Kondycje — czytelniejszy znacznik pachołka (0.177)
+
+W oknie Kondycje mała złota ikonka szachowego piona **♟** oznacza
+pachołka i stoi **przed** literą znacznika postaci, w miejscu
+zwykłego wcięcia (jak gwiazdka ★ przy liderze).
+Dawne `[P]` za nazwą oraz `Z:xx%` zostały usunięte.
+Nie zmienia to działania oznaczeń `[A]`, `[X]`,
+ogłuszenia ani kierunków walki.
