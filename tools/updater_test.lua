@@ -89,4 +89,37 @@ UP:check(false); assert(paths[1]~=paths[2])
 emit('sysDownloadDone',paths[1]); assert(UP.mode=='resolve','late callback consumed by retry')
 UP:cleanup_handlers(); UP.mode=nil; downloadFile=original
 print('PASS timeout and stale response isolation')
+-- Same release version should repair stale plugin copies and restart Chimera.
+-- Neither a fresh download of all files nor another manual command is needed.
+downloadFile=original
+chimera_vip.version='0.111'
+write(root..'/VERSION','0.111\n')
+local restarts=0
+chimera={restart=function() restarts=restarts+1; return {ok=true} end}
+local previous_requests=#requests
+local plugin_syncs=0
+chimera_vip.chimera5={sync=function()
+    plugin_syncs=plugin_syncs+1
+    return true,2
+end}
+UP:update()
+assert(plugin_syncs==1 and #requests==previous_requests+2,
+    "Same-version /cvip aktualizuj should sync only stale plugins")
+local last_timer=seq
+assert(type(timers[last_timer])=="function","Official reload was not scheduled")
+timers[last_timer]()
+assert(restarts==1 and UP.activation_pending==false,
+    "One successful plugin repair should trigger one official restart")
+chimera_vip.chimera5.sync=function() return true,0 end
+previous_requests=#requests
+UP:update()
+assert(#requests==previous_requests+2 and restarts==1,
+    "Synchronized plugin deployment must not restart Chimera")
+chimera_vip.chimera5.sync=function() return false,"simulated plugin failure" end
+UP:update()
+assert(restarts==1 and UP.mode==nil,
+    "Failed plugin synchronization must not restart Chimera")
+chimera=nil
+assert(not UP:restart_official(),"Missing Chimera restart API must fail honestly")
+print('PASS 0.179 same-version plugin repair, restart, no-op and failure handling')
 assert(os.execute('rm -rf '..string.format('%q',root))==0)

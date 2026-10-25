@@ -1,3 +1,22 @@
+## 0.179 — /cvip aktualizuj: jeden krok
+
+- /cvip aktualizuj pobiera nowy kod, wykonuje kopie danych (0.178),
+  wdraza obie wtyczki VIP i restartuje oficjalna Chimere 5.0.1.
+- Instalator wtyczek jest transakcyjny: weryfikuje oba pliki przed
+  podmiana, przygotowuje kopie i odtwarza poprzednia wersje, jezeli
+  instalacja drugiego pliku zakonczy sie niepowodzeniem.
+- Blad synchronizacji wtyczek wycofuje rowniez aktualizacje kodu,
+  VERSION i installed_manifest.lua.
+- Aktualizator w wersji 0.179 naprawia tez niezainstalowane/nieaktualne
+  wtyczki przy tym samym numerze wersji, bez nowej aktualizacji kodu.
+- Pierwszy upgrade z 0.178 ma specjalna sciezke: po pobraniu kodu
+  0.179 automatycznie konczy synchronizacje i pelny restart
+  oficjalnego runtime. Bez koniecznosci dopisywania /przeladuj.
+- Nie restartujemy dzialajacego HUD, jesli nic sie nie zmienilo.
+- Testy: instalacja obu wtyczek, idempotencja, obce pliki,
+  awaria drugiego pliku, naprawa przy tej samej wersji i restart.
+- Brak zmian HUD, Kondycji, danych gry czy bazy /cvakcja.
+
 ## 0.178 — Fundament pod architekture rozszerzen Chimery 5
 
 - Etap 1 migracji do modelu "Chimera = dane i silnik; VIP = prezentacja".

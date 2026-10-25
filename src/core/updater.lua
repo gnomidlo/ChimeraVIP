@@ -19,6 +19,7 @@ UP.mode = nil
 UP.remote_manifest = nil
 UP.install_plan = nil
 UP.auto_checked = UP.auto_checked or false
+UP.activation_pending = UP.activation_pending or false
 
 local function out(text, color)
     cecho("\n<" .. (color or "light_grey") .. ">[ChimeraVIP]<reset> " .. tostring(text) .. "\n")
@@ -181,6 +182,10 @@ function UP:fetch_manifest(install,quiet)
             if U.version_gt(manifest.version,C.version) then
                 if install then UP:start_files()
                 else out("Dostepna wersja "..tostring(manifest.version).." (masz "..tostring(C.version)..").","aquamarine"); show_changes(manifest.changes) end
+            elseif install then
+                -- Same version is not necessarily a fully deployed installation:
+                -- 0.178 -> 0.179 uses the old updater for its first install.
+                UP:sync_plugins(true)
             elseif not quiet then out("Masz aktualna wersje "..tostring(C.version)..".","aquamarine") end
         end
     end)
@@ -316,6 +321,79 @@ function UP:rollback(plan)
     end
 end
 
+-- Chimera 5 reloads the official app with the same semantics as /przeladuj.
+-- Never invoke restart from inside a running Chimera command/loader cycle.
+function UP:restart_official()
+    local official=rawget(_G,"chimera")
+    if type(official)~="table" or type(official.restart)~="function" then
+        out("Wtyczki zapisano, ale oficjalna Chimera nie udostepnia restart(). "..
+            "Uruchom /przeladuj po zaladowaniu oficjalnej paczki.","yellow")
+        return false
+    end
+    local ok,result=pcall(official.restart)
+    if not ok or not result then
+        out("Restart oficjalnej Chimery nie powiodl sie: "..tostring(result)..
+            ". Mozesz uzyc /przeladuj.","orange")
+        return false
+    end
+    out("Oficjalna Chimera i wtyczki VIP zostaly przeladowane.","aquamarine")
+    return true
+end
+
+-- Synchronize only ChimeraVIP-owned plugin files. The installation module
+-- preflights BOTH targets and rolls the first one back if the second fails.
+function UP:deploy_plugins()
+    if not C.chimera5 or type(C.chimera5.sync)~="function" then
+        if C.runtime and C.runtime:is_chimera5() then
+            return false,"Brak instalatora wtyczek Chimery 5."
+        end
+        return true,0
+    end
+    local ok,changed=C.chimera5:sync()
+    if not ok then return false,changed end
+    return true,changed
+end
+
+-- For same-version repair and the first 0.178 -> 0.179 upgrade.
+function UP:sync_plugins(quiet)
+    if self.activation_pending or self.mode then return false end
+    local ok,changed=self:deploy_plugins()
+    if not ok then
+        out("Instalacja wtyczek przerwana: "..tostring(changed),"orange")
+        return false
+    end
+    if changed>0 then
+        out("Wtyczki VIP: zsynchronizowano "..changed.." pliki.","aquamarine")
+        self.activation_pending=true
+        tempTimer(0.2,function()
+            UP.activation_pending=false
+            UP:restart_official()
+        end)
+    elseif not quiet then
+        out("ChimeraVIP "..tostring(C.version).." i wtyczki sa aktualne.","aquamarine")
+    end
+    return true
+end
+
+-- Called after installing a new code version. The new init.lua gets its
+-- own chance to register handlers before restarting the official runtime.
+function UP:activate_updated_code()
+    if self.activation_pending then return end
+    self.activation_pending=true
+    tempTimer(0.2,function()
+        local ok,err=pcall(dofile,UP.root_dir.."/src/init.lua")
+        if not ok then
+            UP.activation_pending=false
+            out("Pliki zaktualizowane, ale start VIP nie powiodl sie: "..tostring(err),"orange")
+            return
+        end
+        tempTimer(0.2,function()
+            UP.activation_pending=false
+            UP:restart_official()
+        end)
+    end)
+end
+
 function UP:finish_update()
     self:cleanup_handlers()
     local manifest = self.remote_manifest
@@ -396,15 +474,26 @@ function UP:finish_update()
         return
     end
 
-    C.version = tostring(manifest.version)
-    self.mode = nil
-    self.install_plan = nil
-    out("Zaktualizowano ChimeraVIP do " .. C.version .. " (" .. tostring(#plan.changed) .. " plikow zmienionych). Przeladowuje moduly...", "aquamarine")
-    raiseEvent("chimeraVipUpdated", C.version)
-    tempTimer(0.2, function()
-        local ok, err = pcall(dofile, UP.root_dir .. "/src/init.lua")
-        if not ok then out("Aktualizacja zapisana, ale przeladowanie nie powiodlo sie: " .. tostring(err), "orange") end
-    end)
+    -- Plugins are part of the release transaction. On failure restore
+    -- old code and metadata as well; the plugin deployer reverts itself.
+    local plugin_ok,plugin_count=self:deploy_plugins()
+    if not plugin_ok then
+        local previous=C.version
+        self:rollback(plan)
+        C.version=previous
+        self.mode=nil
+        self.install_plan=nil
+        out("Aktualizacja wycofana. Wtyczki: "..tostring(plugin_count),"orange")
+        return
+    end
+
+    C.version=tostring(manifest.version)
+    self.mode=nil
+    self.install_plan=nil
+    out("Zaktualizowano ChimeraVIP do "..C.version.." ("..tostring(#plan.changed)..
+        " plikow; wtyczki: "..tostring(plugin_count)..").","aquamarine")
+    raiseEvent("chimeraVipUpdated",C.version)
+    self:activate_updated_code()
 end
 
 function UP:reload()
@@ -504,6 +593,36 @@ end
 
 if UP.alias_id then pcall(killAlias, UP.alias_id) end
 UP.alias_id = tempAlias("^/cvip(?:\\s+(.*))?$", function() UP:command(matches[2]) end)
+
+-- On 0.178 -> 0.179, the old updater installs code but not the plugin
+-- copies. The new bootstrap performs the one-time missing deployment.
+-- Also repairs plugin files that were manually removed or not installed.
+if not UP.activation_pending and type(tempTimer)=="function" then
+    -- The previous (0.178) updater only reloaded VIP's src/init.lua.
+    -- Detect that in-memory upgrade to 0.179 and restart Chimera ONCE,
+    -- even when plugin files happened to be byte-for-byte identical.
+    local first_upgrade=UP.remote_manifest
+        and tostring(UP.remote_manifest.version)==tostring(C.version)
+        and not UP.first_activation_done
+    tempTimer(1,function()
+        if not UP.activation_pending and not UP.mode then
+            local official=rawget(_G,"chimera")
+            if type(official)=="table" and type(official.restart)=="function"
+                and C.chimera5 and type(C.chimera5.needs_install)=="function" then
+                local needed,err=C.chimera5:needs_install()
+                if needed==true then
+                    UP.first_activation_done=true
+                    UP:sync_plugins(true)
+                elseif needed==nil and err then
+                    out("Wtyczki: "..tostring(err),"orange")
+                elseif first_upgrade and not UP.first_activation_done then
+                    UP.first_activation_done=true
+                    UP:restart_official()
+                end
+            end
+        end
+    end)
+end
 
 if not UP.auto_checked then
     UP.auto_checked = true

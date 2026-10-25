@@ -1,6 +1,6 @@
 # ChimeraVIP — migracja do rozszerzen oficjalnej Chimery 5
 
-## Stan 0.178 (etap I: przygotowanie i zabezpieczenia)
+## Stan 0.179 (etap II: jedna komenda aktualizacji)
 
 Architektura docelowa: **Chimera 5 jest autorytatywnym silnikiem** dla
 GMCP, druzyny, mapy, chodzika, akcji i danych statystycznych. VIP ma
@@ -11,7 +11,7 @@ pliku `docs/API.md` i implementacji. To nie jest jeszcze wykonany
 test gry w prawdziwej sesji Mudleta. `tested_upstream = 5.0.1`
 oznacza zakres audytu zrodel, nie certyfikat integracyjny.
 
-W wydaniu 0.178 nie przepisujemy ani nie kasujemy poprzedniego
+W wydaniach 0.178–0.179 nie przepisujemy ani nie kasujemy poprzedniego
 kodu HUD, starszych integracji czy parserow. Te zadania beda osobnymi
 PR-ami z testami regresyjnymi.
 
@@ -65,3 +65,36 @@ Pytanie o stabilizacje tych powierzchni poslano tworcy upstream.
 
 Trzy pierwsze czynnosci nie sa jeszcze scalone w jeden przeplyw.
 To jest zadanie 0.179, nie nalezy obiecywac go w 0.178.
+
+
+## Wdrozone w 0.179: automatyczna instalacja wtyczek
+
+Po scaleniu 0.179 do aktualizacji wystarcza `/cvip aktualizuj`.
+Nowa wersja nadal jest pobierana z przypietego commita i poddawana
+weryfikacji `file_meta`. Kopia danych gracza z 0.178 odbywa sie
+zanim updater zmieni kod.
+
+Po zapisaniu plikow wydania instalator `src/integrations/chimera5.lua`
+sprawdza, czy zrodla sa oryginalnymi wtyczkami VIP i czy cele nie
+naleza do innego pakietu. Przygotowuje oba pliki tymczasowe i
+przechowuje rezerwowe pliki `.cvip-backup-...` na wypadek bledu
+instalacji. Jesli druga wtyczka nie moze zostac zainstalowana,
+odwraca pierwsza zmiane, a updater przywraca tez kod i manifest.
+Wtyczki sa przechowywane tylko w `chimera_wtyczki`, bez
+modyfikowania katalogu oficjalnej Chimery.
+
+Dopiero po pomyslnym zapisie kodu i wtyczek nastepuje
+`chimera.restart()`. Runtime oficjalnej 5.0.1 ponownie wykrywa
+zainstalowane wtyczki, tak jak po `/przeladuj`. Wywolanie
+nastepuje w timerze poza kontekstem aktualnie wykonywanej komendy.
+Brak funkcji restartu jest komunikowany uzytkownikowi;
+nie twierdzimy wtedy, ze wszystko przeladowano.
+
+Przejscie 0.178 -> 0.179 wymaga wyjatku: stary updater nie
+synchronizuje wtyczek po aktualizacji. Nowy bootstrap wykrywa
+takie przejscie i konczy instalacje samodzielnie.
+Jesli aktualizacja kodu nie jest potrzebna, ale pliki wtyczek sa
+nieaktualne, `/cvip aktualizuj` naprawia je bez nowego wydania.
+
+Uwaga: oficjalna wersja 5.0.1 jest zweryfikowana zrodlowo;
+testy Mudleta na zywo wciaz sa osobnym krokiem.
