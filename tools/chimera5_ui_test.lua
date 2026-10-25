@@ -186,6 +186,7 @@ end
 assert(api.active() and fonts.chimeravip_kondycje==7)
 -- Kondycje: small chess pawn icon BEFORE the letter, no [P]/Z:x% suffix.
 -- Changing only henchman must invalidate the cached window signature.
+view.self.leader=true
 view.members[1].henchman=true
 view.members[1].stamina=100  -- old code would print unwanted Z:0%
 local before_links=#links
