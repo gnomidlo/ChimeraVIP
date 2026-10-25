@@ -305,7 +305,9 @@ assert(table.concat(wide):find(long_name.." - [@, A]",1,true),
     "Resizing larger must restore the full name (column count in signature)")
 -- A single long UTF-8 word must not be chopped into invalid bytes.
 view.enemies[1].name="Arcydługowłosyprzebiegłygoblin"
-kondycje_columns=36
+-- Enough columns for the six-letter suffix; more narrow panes
+-- necessarily preserve only the last few characters.
+kondycje_columns=39
 handlers["sysWindowResizeEvent"]()
 flush()
 local unicode_tail=nil
