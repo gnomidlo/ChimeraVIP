@@ -249,12 +249,12 @@ ogłuszenia ani kierunków walki.
 
 ### Kondycje w walce — mniej oznaczen (0.177)
 
-Wszystkie wiersze pozostaja klikalne. Dla przejrzystosci ukrylismy
-informacje o tym, kogo postac atakuje i kto atakuje postac
-(dawne `->[1]`, `<-[A]`, itp.). Znaczniki `[A]`, `[1]`, `[X]`
-oraz paski zdrowia pozostaja bez zmian. Ogluszenie nie dodaje juz
-`[OGL]` i nie zmienia kolorystyki calego wiersza: podswietla tylko
-nazwe postaci subtelnym, jasniejszym grafitem `#303645`.
+Wszystkie wiersze pozostaja klikalne. Relacje napastnikow
+pokazujemy jednokrotnie, np. `JA - [1]` i `goblin - [@, A]`,
+bez podwojnych strzalek `->` / `<-`. Znaczniki `[A]`,
+`[1]`, `[X]` i paski zdrowia pozostaja bez zmian.
+Ogluszenie nie dodaje `[OGL]` i nie zmienia barw calego wiersza:
+podswietla jedynie nazwe postaci subtelnym grafitem `#303645`.
 
 
 ### Kondycje w walce — relacje i szerokosc (korekta PR 0.177)

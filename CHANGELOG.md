@@ -10,8 +10,8 @@
   szerokosci okna wymusza odswiezenie nawet bez nowych GMCP.
 
 
-- Kondycje: usunieto zdublowane strzalki celow i napastnikow (->[...]
-  oraz <-[...]) z koncow wierszy. Zostaja znaczniki postaci i [X].
+- Kondycje: relacje napastnikow uproszczone z dwoch zestawow
+  strzalek do pojedynczego ` - [..]`, bez dublowania.
 - Ogluszenie sygnalizuje delikatne grafitowe podswietlenie samej
   nazwy postaci (#303645), bez [OGL] i bez zmiany odcieni HP,
   znacznikow oraz kolorow frakcji. Reset formatu po nazwie
