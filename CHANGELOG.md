@@ -1,5 +1,15 @@
 ## 0.177 — Dwa niezalezne bindy: sytuacyjny i mapowy
 
+- Przywrocono zwiezle relacje napastnikow `- [1]` / `- [@, A]`,
+  z czytelnym odstepem po przecinku. Relacje `attacking` na tym samym
+  celu nie sa powielane — jak w dawnym tactical_states_view.
+- Przywrocono `getColumnCount(chimeravip_kondycje)` i przycinanie
+  dlugich nazw OD POCZATKU (`… nerwowy goblin`), bez gubienia
+  relacji na koncu. W razie braku API: 72 kolumny.
+- Dopasowanie nazw liczy znaki Unicode zamiast bajtow, a zmiana
+  szerokosci okna wymusza odswiezenie nawet bez nowych GMCP.
+
+
 - Kondycje: usunieto zdublowane strzalki celow i napastnikow (->[...]
   oraz <-[...]) z koncow wierszy. Zostaja znaczniki postaci i [X].
 - Ogluszenie sygnalizuje delikatne grafitowe podswietlenie samej

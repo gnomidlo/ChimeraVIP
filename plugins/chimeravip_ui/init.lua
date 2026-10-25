@@ -456,19 +456,78 @@ return {
                 echo(WINDOW,clean(text))
             end
         end
-        local function row(mark,p,ally,self_row,map,fighting,hostile)
+        -- Former tactical_states_view behavior: keep recognizable name tails.
+        -- Count Unicode codepoints, not bytes: ♟ and █ take a single column.
+        local function chars_of(value)
+            local result={}
+            for char in tostring(value or ""):gmatch("[\1-\127\194-\244][\128-\191]*") do
+                result[#result+1]=char
+            end
+            return result
+        end
+        local function visual_width(value) return #chars_of(value) end
+        local function window_columns()
+            if type(getColumnCount)=="function" then
+                local ok,columns=pcall(getColumnCount,WINDOW)
+                columns=ok and tonumber(columns) or nil
+                if columns and columns>0 then return math.floor(columns) end
+            end
+            return 72 -- Original Kondycje fallback when the window is unavailable.
+        end
+        local function fit_tail_words(value,width)
+            local name=tostring(value or "")
+            width=math.max(1,math.floor(tonumber(width) or 1))
+            if visual_width(name)<=width then return name end
+            if width==1 then return "…" end
+            local words={}
+            for word in name:gmatch("%S+") do words[#words+1]=word end
+            local kept,used={},2 -- ellipsis and a space
+            for i=#words,1,-1 do
+                local extra=visual_width(words[i])+(#kept>0 and 1 or 0)
+                if used+extra>width then break end
+                table.insert(kept,1,words[i])
+                used=used+extra
+            end
+            if #kept>0 then return "… "..table.concat(kept," ") end
+            -- A single long word: preserve the Unicode tail without cutting bytes.
+            local chars=chars_of(name)
+            local tail={}
+            for i=math.max(1,#chars-width+2),#chars do
+                tail[#tail+1]=chars[i]
+            end
+            return "…"..table.concat(tail)
+        end
+        local function attacker_relation(p,map)
+            local marks,seen={},{}
+            local incoming=type(p.attackers)=="table" and p.attackers or {}
+            for _,attacker in ipairs(incoming) do
+                local mark=map.by_id[tostring(attacker)]
+                if mark and not seen[mark] then
+                    marks[#marks+1]=mark
+                    seen[mark]=true
+                end
+            end
+            table.sort(marks,function(a,b)
+                if a=="@" then return true end
+                if b=="@" then return false end
+                local an,bn=tonumber(a),tonumber(b)
+                if an and bn then return an<bn end
+                if an then return false end
+                if bn then return true end
+                return a<b
+            end)
+            return #marks>0 and (" - ["..table.concat(marks,", ").."]") or ""
+        end
+        local function row(mark,p,ally,self_row,map,fighting,hostile,columns)
             local id=p.id and tostring(p.id) or nil
             local hp=tonumber(p.hp)
-            -- Stun is signalled ONLY by a subtle background under the name.
-            -- Keep normal team/enemy tints for the mark and full HP bar.
+            -- Stun highlights ONLY the name, without recoloring the HP/mark.
             local tint=self_row and "lavender" or
                 (ally and "mint" or (hostile and "rose" or "neutral"))
             if ally and p.here==false then tint="muted" end
             local attack=id and ("zabij "..id) or nil
             local cover=ally and not self_row and id and ("zaslon "..id) or nil
             local click=ally and cover or attack
-            -- A henchman/pacholek uses the same two-character leading slot
-            -- as the leader star. Preserve alignment without suffix clutter.
             local prefix=p.henchman and "♟ " or (p.leader and "★ " or "  ")
             print_segment(prefix,p.henchman and "yellow" or tint,click,
                 ally and "Zaslon" or "Atak")
@@ -481,26 +540,34 @@ return {
             print_segment(hp_text,hp and (hp<30 and "rose" or hp<60 and "yellow" or "mint") or "muted",
                 ally and not self_row and id and ("wycofaj sie za "..id) or nil,
                 "Wycofaj sie za")
+            local idle=fighting and ally and not p.attacking
+                and (not p.attackers or #p.attackers==0)
+            -- Incoming relations only, as in the old Kondycje renderer:
+            -- team members show who attacks them; enemies show their attackers.
+            local relation=idle and " [X]" or attacker_relation(p,map)
+            local fixed=visual_width(prefix.."["..mark.."] "..hp_text)
+            local name=fit_tail_words(self_row and "JA" or clean(p.name),
+                math.max(1,(columns or 72)-fixed-visual_width(relation)-1))
             if p.stunned and type(setBgColor)=="function"
                 and type(resetFormat)=="function" then
-                -- Mudlet's user-window echo/echoLink inherits the selected
-                -- background. Reset it right after the name to avoid spill.
-                setBgColor(WINDOW,48,54,69) -- #303645, just above #181C26
-                print_segment(self_row and "JA" or clean(p.name),tint,click)
+                setBgColor(WINDOW,48,54,69) -- #303645
+                print_segment(name,tint,click)
                 resetFormat(WINDOW)
             else
-                print_segment(self_row and "JA" or clean(p.name),tint,click)
+                print_segment(name,tint,click)
             end
-            if fighting and ally and not p.attacking
-                and (not p.attackers or #p.attackers==0) then
+            if idle then
                 print_segment(" [X]","yellow")
+            elseif relation~="" then
+                print_segment(relation,ally and "rose" or (hostile and "lavender" or "muted"))
             end
             echo(WINDOW,"\n")
         end
         local function draw_window(view)
             if not S.opened or not ctx.settings.kondycje then return end
             local map=index_view(view)
-            local signatures={}
+            local columns=window_columns()
+            local signatures={"columns="..columns}
             for _,list in ipairs({{view.self or {}},view.members or {},view.enemies or {},view.others or {}}) do
                 for _,p in ipairs(list) do
                     signatures[#signatures+1]=table.concat({
@@ -521,14 +588,14 @@ return {
             for _,p in ipairs(view.members or {}) do
                 if p.attacking or (p.attackers and #p.attackers>0) then fighting=true end
             end
-            row("@",me,true,true,map,fighting,false)
-            for i,p in ipairs(view.members or {}) do row(alpha(i),p,true,false,map,fighting,false) end
+            row("@",me,true,true,map,fighting,false,columns)
+            for i,p in ipairs(view.members or {}) do row(alpha(i),p,true,false,map,fighting,false,columns) end
             for _,part in ipairs({{view.enemies or {},"WROGOWIE",true},
                                    {view.others or {},"POZOSTALI",false}}) do
                 if #part[1]>0 then
                     print_segment("\n  "..part[2].."\n","lavender")
                     for _,p in ipairs(part[1]) do
-                        row(map.by_id[tostring(p.id)] or "?",p,false,false,map,fighting,part[3])
+                        row(map.by_id[tostring(p.id)] or "?",p,false,false,map,fighting,part[3],columns)
                     end
                 end
             end

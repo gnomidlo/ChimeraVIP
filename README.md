@@ -255,3 +255,19 @@ informacje o tym, kogo postac atakuje i kto atakuje postac
 oraz paski zdrowia pozostaja bez zmian. Ogluszenie nie dodaje juz
 `[OGL]` i nie zmienia kolorystyki calego wiersza: podswietla tylko
 nazwe postaci subtelnym, jasniejszym grafitem `#303645`.
+
+
+### Kondycje w walce — relacje i szerokosc (korekta PR 0.177)
+
+Wyswietlamy relacje **raz**, po stronie osoby atakowanej:
+`JA - [1]` oznacza, ze przeciwnik [1] atakuje JA;
+`goblin - [@, A]` oznacza, ze goblina atakuja JA i czlonek
+zespolu A. Nie wyswietlamy rownolegle powtornych strzalek
+`->` i `<-`. Oznaczenia [X], HP i wyroznienie
+ogluszonego przeciwnika pozostaja bez zmian.
+
+Dlugie nazwy sa skracane od lewej strony, zachowujac ostatnie slowa
+(np. `… nerwowy goblin`). Liczba dostepnych kolumn pochodzi
+z aktualnej szerokosci okna Kondycje (`getColumnCount`),
+a na koncu rezerwowane jest miejsce na oznaczenia napastnikow.
+Zmiana rozmiaru okna automatycznie odswieza nazwy.

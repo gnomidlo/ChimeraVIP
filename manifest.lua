@@ -6,7 +6,7 @@ return {
     raw_base = "https://raw.githubusercontent.com/gnomidlo/ChimeraVIP/main/",
     changes = {
         "Kondycje: pionek ♟ zamiast [P] i usuniecie Z:xx%",
-        "Kondycje: brak zdublowanych celow walki i dyskretne tlo pod ogluszona nazwa",
+        "Kondycje: jednokrotne relacje napastnikow i przycinanie nazw od lewej",
         "0.177: dwa niezalezne bindy Kontekst i Mapa",
         "Domyslna akcja lokacji, zapis i pastelowe oznaczenia",
         "0.176: /cvakcja dla wlasnych akcji lokacji, aliasow i sekwencji",
@@ -68,7 +68,7 @@ return {
     },
     file_meta = {
         ["src/features/context_action.lua"] = {hash="88d4af9563e3874443dc8f8835632ad1c7041481", size=5663},
-        ["plugins/chimeravip_ui/init.lua"] = {hash="ff7b4453517e2b5b5a409b8a988afe0171317aa1", size=59084},
+        ["plugins/chimeravip_ui/init.lua"] = {hash="29b79060cfb60eba735999bf86fe74c13d6c7c82", size=62153},
         ["src/integrations/chimera5.lua"] = {hash="98354d53965b65011847b4cec6575dd430f2ee76", size=2706},
         ["plugins/chimera_vip_bridge/init.lua"] = {hash="fca58a6712376c4ba29843674f11c0e89e4540f0", size=2254},
         ["src/features/tactical_aliases.lua"] = {hash="029c1ae987e52b0bf303c93cf22b480079736b70", size=5545},

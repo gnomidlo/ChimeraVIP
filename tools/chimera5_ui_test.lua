@@ -4,6 +4,7 @@ local widgets,fonts,printed={},{},{}
 local windows,fg,border={},nil,0
 local bg=nil
 local main_width=1200
+local kondycje_columns=72
 local saved_files,links,log={},{},{}
 function getMudletHomeDir() return "/fake/profile" end
 function createDirectory() return true end
@@ -38,6 +39,7 @@ Geyser={
     Label={new=function(_,props,parent) assert(parent);return element(props.name) end},
 }
 function getMainWindowSize() return main_width,800 end
+function getColumnCount(name) assert(name=="chimeravip_kondycje"); return kondycje_columns end
 function setBorderBottom(n) border=n end
 function openUserWindow(n) windows[n]="visible" end
 function windowType(n) return windows[n] and "userwindow" or nil end
@@ -227,27 +229,33 @@ assert(table.concat(later):find("  [A] ",1,true),
 view.members[1].henchman=true
 handlers["sysWindowResizeEvent"]()
 flush()
--- In combat the target/attacker information must not be duplicated
--- at the end of rows; stunned enemies get ONLY a subtle name background.
+-- Restore incoming combat relationships ONCE: who attacks a party
+-- member, and which party members are attacking each enemy.
 view.self.attacking="enemy"
-view.members[1].attacking="enemy"
-view.enemies[1].attackers={"me","ally"}
+view.self.attackers={"enemy"}
+view.members[1].attacking="enemy" -- outgoing alone must not add a suffix
+view.enemies[1].attackers={"ally","me","ally"} -- unsorted and duplicated
 view.enemies[1].stunned=true
 handlers["sysWindowResizeEvent"]()
 flush()
 local segments=printed
-local enemy_name,enemy_mark,enemy_hp,newline=nil,nil,nil,nil
+local enemy_name,enemy_mark,enemy_hp=nil,nil,nil
 local visible={}
 for _,segment in ipairs(segments) do
     visible[#visible+1]=segment.text
     if segment.text=="Ork" then enemy_name=segment end
     if segment.text=="[1] " then enemy_mark=segment end
     if segment.text:find("28%",1,true) then enemy_hp=segment end
-    if segment.text=="\n" then newline=segment end
 end
 local contents=table.concat(visible)
+assert(contents:find("JA - [1]",1,true),
+    "Party row must show the attacking enemy exactly once")
+assert(contents:find("Ork - [@, A]",1,true),
+    "Enemy row must show sorted unique attacking party marks")
+assert(not contents:find("Lisstana - [1]",1,true),
+    "Outgoing attack from an ally must not duplicate the enemy relation")
 assert(not contents:find(" ->[",1,true) and not contents:find(" <-[",1,true),
-    "Targets and attackers must not appear as redundant combat suffixes")
+    "Old two-sided arrows must not reappear")
 assert(not contents:find("[OGL]",1,true),
     "Stun must be conveyed solely through styling, never [OGL]")
 assert(enemy_name and enemy_name.bg=="48,54,69",
@@ -259,11 +267,61 @@ assert(enemy_mark and enemy_mark.bg==nil and
     "Enemy marker must retain the normal hostile color and background")
 assert(enemy_hp and enemy_hp.bg==nil,
     "Stun must never color an enemy's HP bar")
-assert(bg==nil,"Stun background formatting must not leak to later lines")
+assert(bg==nil,"Stun background formatting must not leak to relation suffix")
+
+-- Real window column count controls tail-preserving name truncation.
+local long_name="Przesadnie bardzo mocno rozgadany opancerzony goblin"
+view.enemies[1].name=long_name
+kondycje_columns=42
+handlers["sysWindowResizeEvent"]()
+flush()
+local name_tail,combat_suffix=nil,nil
+for _,segment in ipairs(printed) do
+    if segment.bg=="48,54,69" then name_tail=segment.text end
+    if segment.text==" - [@, A]" then combat_suffix=segment end
+end
+assert(name_tail and name_tail:sub(1,3)=="…" and
+    name_tail:find("goblin",1,true),
+    "Narrow window should truncate the NAME from the left, preserving its tail")
+assert(not name_tail:find("Przesadnie",1,true),
+    "Narrow window should remove first name words")
+assert(combat_suffix and combat_suffix.bg==nil,
+    "The relation must stay visible and outside the stun background")
+local visual=function(value)
+    local n=0
+    for _ in tostring(value):gmatch("[\1-\127\194-\244][\128-\191]*") do n=n+1 end
+    return n
+end
+local enemy_line="  [1] ".."██░░░░░░  28% "..name_tail.." - [@, A]"
+assert(visual(enemy_line)<=kondycje_columns,
+    "Full rendered enemy row must fit the narrow Kondycje window")
+-- A wider pane should restore full names even without new GMCP updates.
+kondycje_columns=100
+handlers["sysWindowResizeEvent"]()
+flush()
+local wide={}
+for _,segment in ipairs(printed) do wide[#wide+1]=segment.text end
+assert(table.concat(wide):find(long_name.." - [@, A]",1,true),
+    "Resizing larger must restore the full name (column count in signature)")
+-- A single long UTF-8 word must not be chopped into invalid bytes.
+view.enemies[1].name="Arcydługowłosyprzebiegłygoblin"
+kondycje_columns=36
+handlers["sysWindowResizeEvent"]()
+flush()
+local unicode_tail=nil
+for _,segment in ipairs(printed) do
+    if segment.bg=="48,54,69" then unicode_tail=segment.text end
+end
+assert(unicode_tail and unicode_tail:sub(1,3)=="…" and
+    unicode_tail:find("goblin",1,true),
+    "Long Unicode word must retain a usable UTF-8 suffix")
 view.self.attacking=nil
+view.self.attackers={}
 view.members[1].attacking=nil
 view.enemies[1].attackers={}
 view.enemies[1].stunned=false
+view.enemies[1].name="Ork"
+kondycje_columns=72
 handlers["sysWindowResizeEvent"]()
 flush()
 geometry()
