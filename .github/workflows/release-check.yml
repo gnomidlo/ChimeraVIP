@@ -31,6 +31,10 @@ jobs:
         run: lua5.1 tools/milestones_test.lua
       - name: Test runtime regressions
         run: lua5.1 tools/runtime_test.lua
+      - name: Test backup snapshots and migration safety
+        run: lua5.1 tools/safety_test.lua
+      - name: Test audited Chimera 5.0.1 version reporting
+        run: lua5.1 tools/chimera501_contract_test.lua
       - name: Test situational and map action bindings
         run: lua5.1 tools/context_action_test.lua
       - name: Test Chimera 5 API bridge

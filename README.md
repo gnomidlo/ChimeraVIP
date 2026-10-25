@@ -1,7 +1,7 @@
 # ChimeraVIP
 
 Pastelowa nakladka na **oficjalne skrypty Chimery 5.0** dla Mudleta.
-Serwer: `chimera.co.pl:2300`. Wersja ChimeraVIP: **0.177**.
+Serwer: `chimera.co.pl:2300`. Wersja ChimeraVIP: **0.178**.
 Testowana baza: **5.0.0-beta.13**.
 
 ## Instalacja i aktualizacja
@@ -271,3 +271,39 @@ Dlugie nazwy sa skracane od lewej strony, zachowujac ostatnie slowa
 z aktualnej szerokosci okna Kondycje (`getColumnCount`),
 a na koncu rezerwowane jest miejsce na oznaczenia napastnikow.
 Zmiana rozmiaru okna automatycznie odswieza nazwy.
+
+
+## ChimeraVIP 0.178 — bezpieczna migracja na Chimere 5
+
+ChimeraVIP staje sie **warstwa prezentacji i lekkich rozszerzen**.
+Oficjalna Chimera pozostaje zrodlem GMCP, druzyny, mapy, akcji i
+statystyk gry. Stary silnik VIP pozostaje tymczasowo w repozytorium;
+nie usuwamy go przed wydzieleniem i przetestowaniem zamiennikow.
+
+**Kopia danych:**
+
+```text
+/cvip kopia
+/cvip diagnostyka
+```
+
+Zabezpieczane sa wszystkie pliki `.lua`, `.json`, `.db` i `.txt`
+bezposrednio w katalogu profilu `ChimeraVIP-data`, m.in. ustawienia,
+`room_actions.lua`, historia cech i kolory walki. Nie kopiujemy
+podkatalogow, kopii archiwalnych, oficjalnej bazy `Database_*.db`
+ani ustawien Mudleta. Kazda migawka trafia do osobnego katalogu
+`ChimeraVIP-data/backups/cvip-YYYYMMDD-HHMMSS[-N]`. Nie ma
+automatycznego przywracania ani usuwania starych kopii.
+
+Po instalacji 0.178 aktualizator wykona taka kopie automatycznie
+PRZED kazda kolejna aktualizacja VIP, przed pierwsza zmiana pliku.
+Gdy kopia nie powiedzie sie, aktualizacja zostanie przerwana.
+Pierwsza aktualizacja z 0.177 do 0.178 uzywa jeszcze starego
+aktualizatora; w 0.178 nie wykonujemy zadnej migracji danych.
+
+Oficjalne wydanie 5.0.1 porownano na poziomie zrodel i publicznego
+API wtyczek. Zgodnosc w prawdziwej sesji Mudleta pozostaje do
+potwierdzenia. `/cvip diagnostyka` pokazuje osobno wersje z
+`chimera.app.version` i zakres audytu zrodel. Nastepny etap 0.179
+usunie koniecznosc recznego `/cvip v5 instaluj` oraz `/przeladuj`
+przy zwyklej aktualizacji.

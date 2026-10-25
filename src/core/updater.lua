@@ -324,6 +324,24 @@ function UP:finish_update()
     plan.backup_dir = plan.version_dir .. "/backup"
     U.ensure_dir(plan.backup_dir)
 
+    -- A snapshot of profile data is separate from the code rollback.
+    -- Never start modifying the installation if this safety step fails.
+    if not C.safety or type(C.safety.backup)~="function" then
+        self.mode=nil
+        out("Brak mechanizmu bezpiecznej kopii danych. Aktualizacja przerwana.","orange")
+        return
+    end
+    local backed,snapshot=C.safety:backup()
+    if not backed then
+        self.mode=nil
+        out("Aktualizacja przerwana: "..tostring(snapshot),"orange")
+        return
+    end
+    if snapshot and not snapshot.skipped then
+        out("Kopia danych: "..tostring(snapshot.files).." plikow w "..
+            tostring(snapshot.path)..".","light_grey")
+    end
+
     plan.metadata={"VERSION","installed_manifest.lua"}
     for _,rel in ipairs(plan.metadata) do
         local target=self.root_dir.."/"..rel
@@ -395,6 +413,22 @@ function UP:reload()
     else out("Blad przeladowania: " .. tostring(err), "orange") end
 end
 
+function UP:backup_data()
+    if not C.safety or type(C.safety.backup)~="function" then
+        out("Modul kopii danych jest niedostepny.","orange")
+        return false
+    end
+    local ok,snapshot=C.safety:backup()
+    if not ok then out("Kopia danych nie powiodla sie: "..tostring(snapshot),"orange"); return false end
+    if snapshot.skipped then
+        out("Brak plikow danych do zabezpieczenia.","light_grey")
+    else
+        out("Kopia danych: "..tostring(snapshot.files).." plikow w "..
+            tostring(snapshot.path)..".","aquamarine")
+    end
+    return true
+end
+
 function UP:show_status()
     out("Wersja " .. tostring(C.version) .. " | upstream " .. tostring(C:get_upstream_version()) .. ".", "light_grey")
 end
@@ -420,6 +454,8 @@ function UP:show_diagnostics()
         .. "\n" .. P.separator .. "------------------------------------------"
         .. "\n" .. P.text_muted .. "Wersja       " .. P.text .. tostring(C.version or "?")
         .. "\n" .. P.text_muted .. "Upstream     " .. P.text .. tostring(C:get_upstream_version())
+        .. "\n" .. P.text_muted .. "API zrodlo   " .. P.text .. tostring(C.tested_upstream or "?") ..
+            " (audyt kodu; test Mudletu wymagany)"
         .. "\n" .. P.text_muted .. "Manifest     " .. (schema and P.mint or P.rose) .. (schema and ("v" .. tostring(schema)) or "brak")
         .. "\n" .. P.text_muted .. "Pliki        " .. P.text .. tostring(files)
         .. "\n" .. P.text_muted .. "Updater      " .. (differential and P.mint or P.yellow) .. (differential and "differential" or "pelny / brak stanu")
@@ -457,6 +493,7 @@ function UP:command(argument)
         if C.chimera5 then C.chimera5:status() end
     elseif arg == "v5 instaluj" or arg == "v5 install" then
         if C.chimera5 then C.chimera5:install() end
+    elseif arg == "kopia" or arg == "backup" then self:backup_data()
     elseif arg == "status" or arg == "wersja" or arg == "version" then self:show_status()
     elseif arg == "diagnostyka" or arg == "diag" or arg == "diagnostics" then self:show_diagnostics()
     elseif arg == "sprawdz" or arg == "check" then self:check(false)
