@@ -94,6 +94,9 @@ print('PASS timeout and stale response isolation')
 downloadFile=original
 chimera_vip.version='0.111'
 write(root..'/VERSION','0.111\n')
+-- Previous fixture's code update queued a reload that is intentionally
+-- never run in this unit test; model its completion before retrying.
+UP.activation_pending=false
 local restarts=0
 chimera={restart=function() restarts=restarts+1; return {ok=true} end}
 local previous_requests=#requests
