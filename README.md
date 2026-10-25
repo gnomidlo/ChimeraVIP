@@ -1,8 +1,8 @@
 # ChimeraVIP
 
 Pastelowa nakladka na **oficjalne skrypty Chimery 5.0** dla Mudleta.
-Serwer: `chimera.co.pl:2300`. Wersja ChimeraVIP: **0.178**.
-Testowana baza: **5.0.0-beta.13**.
+Serwer: `chimera.co.pl:2300`. Wersja ChimeraVIP: **0.179**.
+Audyt źródeł oficjalnej Chimery: **5.0.1** (testy integracyjne w Mudlecie nadal potrzebne).
 
 ## Instalacja i aktualizacja
 
@@ -13,9 +13,24 @@ W Mudlecie:
 lua installPackage("https://raw.githubusercontent.com/gnomidlo/ChimeraVIP/main/packages/ChimeraVIP.xml")
 ```
 
-Po aktualizacji `/cvip aktualizuj` wykonaj `/cvip v5 instaluj`
-i oficjalne `/przeladuj`. Instaluje to most API i wtyczke HUD do
-`chimera_wtyczki/`; nie modyfikuje plikow oficjalnej paczki.
+Od 0.179 **wystarczy jedna komenda**:
+
+```text
+/cvip aktualizuj
+```
+
+Aktualizator zabezpiecza dane, pobiera i weryfikuje kod, synchronizuje
+most API i HUD w `chimera_wtyczki/` oraz automatycznie uruchamia
+`chimera.restart()` z oficjalnej 5.0.1. Nie zmienia plików Chimery.
+Przy błędzie instalacji wtyczek przywraca poprzednie pliki; przy braku
+oficjalnego restartu informuje wprost, że potrzeba ręcznego `/przeladuj`.
+Gdy kod jest aktualny, ale wtyczki nie — ta sama komenda naprawia je
+bez ponownego pobierania całej paczki.
+
+**Przejście z 0.178:** pierwszy raz stary updater dostarcza nowy kod,
+a 0.179 automatycznie synchronizuje wtyczki i kończy restart.
+Możesz nadal sprawdzić ich stan przez `/cvip v5`; ręczne
+`/cvip v5 instaluj` pozostaje wyłącznie opcją awaryjną.
 
 ## Interfejs i powrot do oryginalu
 
@@ -60,8 +75,7 @@ pokazuje kolorowe paski procentowe. Dane pobiera z cache GMCP Chimery
 oraz z `gmcp.Char.Vitals` Mudleta (rowniez po przeladowaniu pluginu).
 Okno Kondycje uzywa fizycznych kolorow i czcionki 8 pt.
 
-Po scaleniu aktualizacji: `/cvip aktualizuj`, `/cvip v5 instaluj`,
-oficjalne `/przeladuj`. W razie problemow: `/cvhud oficjalny`.
+Po scaleniu aktualizacji: `/cvip aktualizuj`. W razie problemow: `/cvhud oficjalny`.
 Gdy serwer nie przeslal jeszcze `Char.Vitals`, brak wartosci
 pozostanie jako `--`; nie zmyslamy procentow.
 
@@ -82,8 +96,7 @@ pozostanie jako `--`; nie zmyslamy procentow.
   (domyslnie 7 pt, regulacja 6-12), neutralne nazwy w POZOSTALI.
 - Powrot do oryginalu: `/cvhud oficjalny`.
 
-Po scaleniu: `/cvip aktualizuj`, `/cvip v5 instaluj`,
-oficjalne `/przeladuj`.
+Po scaleniu: `/cvip aktualizuj`.
 
 
 ## Kolorystyczny Quiet HUD 0.171
@@ -111,7 +124,7 @@ rzeczywistych danych >100%. Ikony maja podpowiedzi po najechaniu
 oraz kolory ON/OFF na podstawie stanu oficjalnej Chimery.
 
 Aby zobaczyc poprawiony HUD po scaleniu i aktualizacji:
-`/cvip aktualizuj`, `/cvip v5 instaluj`, `/przeladuj`.
+`/cvip aktualizuj`.
 W razie problemow: `/cvhud oficjalny`.
 
 
@@ -135,9 +148,9 @@ kluczy `Room.Info.exits` — tak samo jak klikane etykiety.
 Po zmianie lokacji bind wykonuje odpowiednia nowa akcje.
 Gdy brak przejscia albo akcji, nie wysyla niczego i zwraca `false`.
 
-Funkcje dostepne sa po zainstalowaniu wtyczki ChimeraVIP 5 oraz
-przeladowaniu `/przeladuj`. Jesli instalujesz poprawke po aktualizacji,
-wykonaj: `/cvip aktualizuj`, `/cvip v5 instaluj`, `/przeladuj`.
+Funkcje staja sie dostepne po `/cvip aktualizuj`. Od 0.179
+instalacja wtyczek i odswiezenie oficjalnej Chimery nastepuja
+automatycznie. Nie trzeba osobno uzywac `/przeladuj`.
 
 Nie zmieniamy domyslnych klawiszy oficjalnej Chimery:
 `Ctrl+Shift+1/2/3` moga dzialac rownolegle z wlasnymi `Alt+1/2/3`.
@@ -178,7 +191,7 @@ wyswietlanej pozycji. Przy braku akcji funkcja nic nie wysyla.
 Sekwencje wysylaja osobne komendy z odstepem 0.15 s.
 Wymagane jest istnienie ID aktualnej lokacji w GMCP.
 
-Po scaleniu: `/cvip aktualizuj`, `/cvip v5 instaluj`, `/przeladuj`.
+Po scaleniu: `/cvip aktualizuj`.
 
 
 ## Dwa ulubione bindy (0.177)
@@ -231,8 +244,7 @@ Panel Quiet HUD w wersji VIP juz pokazuje same numerki
 bo moze to byc **oficjalny panel akcji** lub stara kopia wtyczki
 w `chimera_wtyczki/chimeravip_ui/`.
 
-Instalacja po scaleniu: `/cvip aktualizuj`, `/cvip v5 instaluj`,
-`/przeladuj`. Jezeli wczesniej pracowal osobny Script, wylacz go,
+Instalacja po scaleniu: `/cvip aktualizuj`. Jezeli wczesniej pracowal osobny Script, wylacz go,
 a nastepnie uruchom ponownie profil Mudleta, by zaladowac nowy
 modul `src/features/context_action.lua`.
 
@@ -304,6 +316,14 @@ aktualizatora; w 0.178 nie wykonujemy zadnej migracji danych.
 Oficjalne wydanie 5.0.1 porownano na poziomie zrodel i publicznego
 API wtyczek. Zgodnosc w prawdziwej sesji Mudleta pozostaje do
 potwierdzenia. `/cvip diagnostyka` pokazuje osobno wersje z
-`chimera.app.version` i zakres audytu zrodel. Nastepny etap 0.179
-usunie koniecznosc recznego `/cvip v5 instaluj` oraz `/przeladuj`
-przy zwyklej aktualizacji.
+`chimera.app.version` i zakres audytu zrodel. Wydanie 0.179
+wprowadzilo juz automatyczna instalacje wtyczek i przeladowanie klienta.
+
+
+## ChimeraVIP 0.179 — jedna aktualizacja
+
+`/cvip aktualizuj` zarządza już instalacją i odświeżeniem wtyczek.
+Nie trzeba dopisywać `/cvip v5 instaluj` ani `/przeladuj`.
+Jeśli nic się nie zmieniło, nie wymusza niepotrzebnego restartu.
+W razie błędu lub braku `chimera.restart()` pokaże instrukcję.
+Szczegółowy opis przejścia oraz zabezpieczeń: `docs/CHIMERA5_MIGRATION.md`.

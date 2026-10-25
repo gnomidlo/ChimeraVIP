@@ -89,4 +89,61 @@ UP:check(false); assert(paths[1]~=paths[2])
 emit('sysDownloadDone',paths[1]); assert(UP.mode=='resolve','late callback consumed by retry')
 UP:cleanup_handlers(); UP.mode=nil; downloadFile=original
 print('PASS timeout and stale response isolation')
+-- Same release version should repair stale plugin copies and restart Chimera.
+-- Neither a fresh download of all files nor another manual command is needed.
+downloadFile=original
+chimera_vip.version='0.111'
+write(root..'/VERSION','0.111\n')
+-- Previous fixture's code update queued a reload that is intentionally
+-- never run in this unit test; model its completion before retrying.
+UP.activation_pending=false
+local restarts=0
+chimera={restart=function() restarts=restarts+1; return {ok=true} end}
+local previous_requests=#requests
+local plugin_syncs=0
+chimera_vip.chimera5={sync=function()
+    plugin_syncs=plugin_syncs+1
+    return true,2
+end}
+UP:update()
+assert(plugin_syncs==1 and #requests==previous_requests+2,
+    "Same-version /cvip aktualizuj should sync only stale plugins")
+local last_timer=seq
+assert(type(timers[last_timer])=="function","Official reload was not scheduled")
+timers[last_timer]()
+assert(restarts==1 and UP.activation_pending==false,
+    "One successful plugin repair should trigger one official restart")
+chimera_vip.chimera5.sync=function() return true,0 end
+previous_requests=#requests
+UP:update()
+assert(#requests==previous_requests+2 and restarts==1,
+    "Synchronized plugin deployment must not restart Chimera")
+chimera_vip.chimera5.sync=function() return false,"simulated plugin failure" end
+UP:update()
+assert(restarts==1 and UP.mode==nil,
+    "Failed plugin synchronization must not restart Chimera")
+-- Simulate first upgrade from 0.178: previous updater had an in-memory
+-- manifest for 0.179, then reloaded the new src/core/updater.lua.
+chimera_vip.version='0.179'
+UP.remote_manifest={version='0.179'}
+UP.first_activation_done=nil
+UP.activation_pending=false
+chimera_vip.chimera5.needs_install=function() return false end
+chimera_vip.chimera5.sync=function() return true,0 end
+local before_bootstrap=restarts
+dofile('src/core/updater.lua')
+local bootstrap_timer=seq
+assert(type(timers[bootstrap_timer])=="function",
+    "Upgrade from 0.178 did not schedule first-run installation completion")
+timers[bootstrap_timer]()
+assert(restarts==before_bootstrap+1 and UP.first_activation_done==true,
+    "First 0.178 to 0.179 upgrade must restart official Chimera once")
+dofile('src/core/updater.lua')
+local second_timer=seq
+timers[second_timer]()
+assert(restarts==before_bootstrap+1,
+    "Hot reload of an already activated 0.179 must not restart again")
+chimera=nil
+assert(not UP:restart_official(),"Missing Chimera restart API must fail honestly")
+print('PASS 0.179 same-version plugin repair, restart, no-op and failure handling')
 assert(os.execute('rm -rf '..string.format('%q',root))==0)

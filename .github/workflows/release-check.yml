@@ -43,6 +43,8 @@ jobs:
         run: lua5.1 tools/chimera5_ui_test.lua
       - name: Test XP kill cards
         run: lua5.1 tools/xp_test.lua
+      - name: Test transactional plugin installation
+        run: lua5.1 tools/plugin_deployment_test.lua
       - name: Test updater integrity and rollback
         run: lua5.1 tools/updater_test.lua
       - name: Test equipment appraisal grammar and durability

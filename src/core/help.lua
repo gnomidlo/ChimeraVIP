@@ -82,7 +82,7 @@ function H:register_defaults()
     self:register("system", {
         title="SYSTEM I AKTUALIZACJE",
         description={"ChimeraVIP jest nakladka na oficjalna Chimere 5 i nie edytuje jej kodu.","Kod nakładki jest aktualizowany z GitHuba, a dane użytkownika pozostają w ChimeraVIP-data."},
-        commands={{"/cvip", "główne informacje i lista modułów"},{"/cvip status", "wersja ChimeraVIP i upstreamu"},{"/cvip diagnostyka", "lokalny stan manifestu i updatera"},{"/cvip sprawdz", "sprawdź aktualizację"},{"/cvip aktualizuj", "pobierz aktualizację"},{"/cvip przeladuj", "przeładuj lokalne moduły"}},
+        commands={{"/cvip", "główne informacje i lista modułów"},{"/cvip status", "wersja ChimeraVIP i upstreamu"},{"/cvip diagnostyka", "lokalny stan manifestu i updatera"},{"/cvip sprawdz", "sprawdź aktualizację"},{"/cvip aktualizuj", "pobierz, zainstaluj wtyczki i przeładuj"},{"/cvip przeladuj", "przeładuj lokalne moduły"}},
     })
 end
 
@@ -137,7 +137,7 @@ function H:show_summary()
         {"/cvip ustawienia", "panel ustawień"},
         {"/cvip diagnostyka", "lokalny stan updatera"},
         {"/cvip sprawdz", "sprawdź aktualizację"},
-        {"/cvip aktualizuj", "pobierz nową wersję"},
+        {"/cvip aktualizuj", "zaktualizuj kod i wtyczki automatycznie"},
         {"/cvip status", "wersje ChimeraVIP i Chimery"},
     }
     local system_width = 0
