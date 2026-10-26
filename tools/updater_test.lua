@@ -33,6 +33,12 @@ chimera_vip.safety={backup=function()
     return true,{files=2,path="/fake/snapshot",skipped=false}
 end}
 dofile('src/core/updater.lua'); local UP=chimera_vip.updater
+local selected={}
+chimera_vip.ui={set_size=function(size) selected[#selected+1]=size; return true end}
+UP:command(" XL "); UP:command("m"); UP:command("s")
+assert(table.concat(selected,",")=="xl,m,s","/cvip size routing failed")
+chimera_vip.ui=nil
+UP:command("xl") -- Missing plugin reports a useful message, without crashing.
 local payload='return 123\n'; local corrupt=false; local requests={}
 local sha=string.rep('a',40)
 yajl={to_value=function(text) assert(text=='commit-fixture'); return {sha=sha} end}

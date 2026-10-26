@@ -416,6 +416,66 @@ room={id="next",exits={polnoc="somewhere",gora="up"}}
 assert(chimera_vip.ui.special_exit(1)==false)
 w("special1").click()
 assert(#called==5,"Old room's special exit was sent from stale widget")
+-- 0.181: presets change presentation in place, never reconstruct the HUD.
+local theme=dofile("plugins/chimeravip_ui/theme.lua")
+assert(theme.upper("żółć ąęśźń") == "ŻÓŁĆ ĄĘŚŹŃ")
+local original_root=widgets.chimeravip2_footer_1
+local original_special=chimera_vip.ui.special_exit
+for _,size in ipairs({"m","xl","s","xl","m"}) do
+    assert(chimera_vip.ui.set_size(size))
+    flush()
+    assert(fonts.chimeravip_kondycje==theme.profiles[size].font)
+    assert(api.active() and border==theme.profiles[size].height)
+    assert(widgets.chimeravip2_footer_1==original_root and chimera_vip.ui.special_exit==original_special)
+    for _,width in ipairs({640,760,900,1200,1440}) do
+        main_width=width
+        handlers.sysWindowResizeEvent(); flush()
+        assert(api.active(),"Preset failed on resize: "..size)
+        if size~="s" then
+            local panels={"section_exits","section_stats","section_needs","section_controls"}
+            for i=1,#panels do
+                for j=i+1,#panels do assert(not overlap(w(panels[i]),w(panels[j])),"Preset panels overlap") end
+            end
+            for i=1,3 do
+                local track,fill=w("track"..i),w("fill"..i)
+                assert(track.height==theme.profiles[size].bar)
+                assert(fill.height==(size=="xl" and track.height or track.height/2))
+                assert(fill.y==(size=="xl" and track.y or track.y+track.height/2))
+                assert(fill.width<=track.width)
+                local text={w("gauge"..i),w("value"..i),w("points"..i)}
+                for a=1,3 do
+                    local item=text[a]
+                    assert(item.x>=track.x and item.x+item.width<=track.x+track.width)
+                    assert(item.y>=track.y and item.y+item.height<=track.y+track.height)
+                    for b=a+1,3 do assert(not overlap(item,text[b]),"Preset text overlaps") end
+                end
+            end
+            assert(w("gauge1").text:find("ŻYCIE",1,true))
+            assert(w("points1").text:find("969 / 969",1,true))
+            assert(w("points3").text:find("PKT: —",1,true),"No invented energy points")
+            assert(w("exp_track").y==border-11)
+            assert(original_root.y==-border and original_root.height==border)
+            assert(widgets.chimeravip2_floating_1.y==-border-280)
+        end
+    end
+end
+-- Uppercase is presentation-only; links retain the original game IDs.
+view.members[1].name="Żółta Lisstana"
+kondycje_columns=28
+handlers["chimera.team.changed"](); flush()
+local uppercase=false
+for _,entry in ipairs(links) do
+    if entry.command:find("ŻÓŁTA LISSTANA",1,true) then
+        uppercase=true
+        assert(entry.hint:find("ally",1,true),"Uppercase changed the command target")
+    end
+end
+assert(uppercase,"M did not uppercase the Polish display name")
+assert(not chimera_vip.ui.set_size("invalid"))
+chimera_vip.ui.set_size("s"); flush()
+main_width=1200; kondycje_columns=72
+handlers.sysWindowResizeEvent(); flush(); geometry()
+assert(w("points1").hidden and fonts.chimeravip_kondycje==7,"S did not restore legacy presentation")
 location_actions={}
 assert(chimera_vip.ui.room_action(1)==false)
 w("action1").click()

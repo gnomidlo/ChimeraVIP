@@ -584,7 +584,13 @@ function UP:command(argument)
     end
 
     local help_section = arg:match("^pomoc%s+(.+)$") or arg:match("^help%s+(.+)$")
-    if arg == "pomoc" or arg == "help" then
+    if arg == "s" or arg == "m" or arg == "xl" then
+        if C.ui and type(C.ui.set_size)=="function" then
+            C.ui.set_size(arg)
+        else
+            out("HUD ChimeraVIP nie jest gotowy. Uzyj /przeladuj i sprobuj ponownie.","yellow")
+        end
+    elseif arg == "pomoc" or arg == "help" then
         if C.help and type(C.help.show) == "function" then C.help:show() else self:show_status() end
     elseif help_section then
         if C.help and type(C.help.show) == "function" then C.help:show(help_section) else self:show_status() end

@@ -1,3 +1,16 @@
+## 0.181 — rozmiary HUD S, M i XL
+
+- `/cvip s`, `/cvip m`, `/cvip xl`: trwały wybór prezentacji bez restartu.
+- S zachowuje dotychczasowy footer i czcionkę Kondycji 7 pt.
+- M: wartości nad paskami zajmującymi dolną połowę pól, polskie wielkie
+  litery i Kondycje 11 pt. XL: pełne pola z wartościami na tle, Kondycje 16 pt.
+- Większe warianty mają osobny szeroki rząd zasobów, aby liczby nie ściskały
+  się między kompasem a przyciskami. Footer M: 148 px; XL: 164 px.
+- Wąskie Kondycje przenoszą HP do osobnej linii, zachowując klikalne akcje.
+- Czcionka ustawiana ręcznie może mieć 6–24 pt. Wybranie presetu resetuje ją
+  do 7/11/16 pt. Nie zmieniamy dockingu ani widoczności wyłączonych Kondycji.
+- Testy geometrii 640–1440 px, przełączeń, polskich liter, komend i restartu.
+
 ## 0.180 — stabilny układ okien po restarcie
 
 - Zapis układu przed restartem i odtworzenie po utworzeniu okien.

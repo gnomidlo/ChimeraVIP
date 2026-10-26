@@ -1,7 +1,7 @@
 # ChimeraVIP
 
 Pastelowa nakladka na **oficjalne skrypty Chimery 5.0** dla Mudleta.
-Serwer: `chimera.co.pl:2300`. Wersja ChimeraVIP: **0.180**.
+Serwer: `chimera.co.pl:2300`. Wersja ChimeraVIP: **0.181**.
 Audyt źródeł oficjalnej Chimery: **5.0.1** (testy integracyjne w Mudlecie nadal potrzebne).
 
 W 0.180 poprawiono zachowanie układu przy restarcie i podzielono HUD na
@@ -37,6 +37,24 @@ Możesz nadal sprawdzić ich stan przez `/cvip v5`; ręczne
 `/cvip v5 instaluj` pozostaje wyłącznie opcją awaryjną.
 
 ## Interfejs i powrot do oryginalu
+
+Od **0.181** wybierz rozmiar przez `/cvip s`, `/cvip m` lub `/cvip xl`.
+Wybór jest zapisywany i pozostaje po restarcie:
+
+| Komenda | Footer | Kondycje |
+| --- | --- | --- |
+| `/cvip s` | Dotychczasowy kompaktowy układ | 7 pt |
+| `/cvip m` | Paski w dolnej połowie pola, wartości nad nimi, tekst WIELKIMI LITERAMI | 11 pt |
+| `/cvip xl` | Paski wypełniające pola, procent i punkty na ich tle | 16 pt |
+
+M i XL mają szeroki rząd trzech zasobów nad kompasem, potrzebami i przyciskami;
+footer zajmuje odpowiednio 148 i 164 px (S: 76 px). W wąskich Kondycjach
+pasek HP trafia do osobnej linii. Komendy nie przestawiają natywnych okien,
+nie włączają wyłączonych Kondycji, ale wybierają tryb HUD VIP.
+Własna czcionka pozostaje dostępna w ustawieniach (6–24 pt); ponowne wybranie
+S/M/XL przywraca czcionkę danego wariantu. Punkty HP i many pochodzą z gry;
+siły to `100 − zmęczenie`, bez wymyślonych punktów (pokazujemy `PKT: —`).
+
 
 - `/cvhud vip` — pastelowy pasek i dokowalne okno Kondycje.
 - `/cvhud oficjalny` — przywraca oficjalny pasek i Kondycje.
