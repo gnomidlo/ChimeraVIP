@@ -97,8 +97,14 @@ write(root..'/VERSION','0.111\n')
 -- Previous fixture's code update queued a reload that is intentionally
 -- never run in this unit test; model its completion before retrying.
 UP.activation_pending=false
-local restarts=0
-chimera={restart=function() restarts=restarts+1; return {ok=true} end}
+local restarts,saves,loads=0,0,0
+function saveWindowLayout() saves=saves+1; return true end
+function loadWindowLayout() loads=loads+1 end
+chimera={restart=function()
+    assert(saves>restarts and chimera_vip._pending_ui_layout,
+        "Layout must be saved before old plugin cleanup")
+    restarts=restarts+1; return {ok=true}
+end}
 local previous_requests=#requests
 local plugin_syncs=0
 chimera_vip.chimera5={sync=function()
@@ -145,5 +151,18 @@ assert(restarts==before_bootstrap+1,
     "Hot reload of an already activated 0.179 must not restart again")
 chimera=nil
 assert(not UP:restart_official(),"Missing Chimera restart API must fail honestly")
+chimera={restart=function() error("simulated boot failure") end}
+assert(not UP:restart_official() and loads==1 and not chimera_vip._pending_ui_layout,
+    "Failed restart must restore layout and discard pending snapshot")
+local prepared=false
+chimera_vip.chimera5.sync=function() prepared=true; return true,5 end
+chimera={restart=function()
+    assert(prepared,"0.179 entry-only deployment must receive helpers before restart")
+    return {}
+end}
+assert(UP:restart_official())
+prepared=false
+chimera_vip.chimera5.sync=function() return false,"missing helper" end
+assert(not UP:restart_official() and not prepared,"incomplete deployment restarted")
 print('PASS 0.179 same-version plugin repair, restart, no-op and failure handling')
 assert(os.execute('rm -rf '..string.format('%q',root))==0)

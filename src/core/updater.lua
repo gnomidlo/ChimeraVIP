@@ -333,8 +333,25 @@ function UP:restart_official()
             "Uruchom /przeladuj po zaladowaniu oficjalnej paczki.","yellow")
         return false
     end
+    -- The 0.179 installer only knows init.lua. After src/init.lua loads this
+    -- release's installer, deploy its complete file set before restarting.
+    local deployed,deploy_error=self:deploy_plugins()
+    if not deployed then
+        out("Restart wstrzymany: "..tostring(deploy_error),"orange")
+        return false
+    end
+    -- Save before OLD plugin teardown (0.179 re-enables official docks).
+    -- The new UI consumes this snapshot after creating its native window.
+    if type(saveWindowLayout)=="function" then
+        local saved,result=pcall(saveWindowLayout)
+        if saved and result~=false then C._pending_ui_layout=true end
+    end
     local ok,result=pcall(official.restart)
     if not ok or not result then
+        if C._pending_ui_layout and type(loadWindowLayout)=="function" then
+            pcall(loadWindowLayout)
+        end
+        C._pending_ui_layout=nil
         out("Restart oficjalnej Chimery nie powiodl sie: "..tostring(result)..
             ". Mozesz uzyc /przeladuj.","orange")
         return false

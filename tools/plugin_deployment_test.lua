@@ -33,6 +33,10 @@ for _,p in ipairs(plugins) do
     write(source.."/"..p[1].."/init.lua","-- "..p[2].."\nreturn 'new'")
     write(target.."/"..p[1].."/init.lua","-- "..p[2].."\nreturn 'old'")
 end
+local helpers={"theme","actions","conditions","footer","layout"}
+for _,name in ipairs(helpers) do
+    write(source.."/chimeravip_ui/"..name..".lua","-- ChimeraVIP 5:\nreturn 'new helper'")
+end
 local bridge=dofile("src/integrations/chimera5.lua")
 local needed=assert(bridge:needs_install())
 assert(needed==true)
@@ -55,8 +59,12 @@ for _,p in ipairs(plugins) do
     assert(read(file..".cvip-new")==nil,"Staged file was left behind")
 end
 break_second=false
+for _,name in ipairs(helpers) do
+    assert(read(target.."/chimeravip_ui/"..name..".lua")==nil,
+        "New helper left behind after entry-point failure")
+end
 local installed,count=bridge:sync()
-assert(installed and count==2)
+assert(installed and count==7)
 for _,p in ipairs(plugins) do
     assert(read(target.."/"..p[1].."/init.lua")==
         "-- "..p[2].."\nreturn 'new'")
@@ -64,6 +72,16 @@ end
 local again,changed=bridge:sync()
 assert(again and changed==0 and bridge:needs_install()==false,
     "Repeated updates must be safe no-ops")
+-- Missing or invalid helpers must fail preflight before any entry changes.
+local helper=source.."/chimeravip_ui/layout.lua"
+os.remove(helper)
+assert(not bridge:sync(),"incomplete multi-file source accepted")
+write(helper,"-- ChimeraVIP 5:\nreturn )")
+assert(not bridge:sync(),"invalid helper syntax accepted")
+write(helper,"-- ChimeraVIP 5:\nreturn 'new helper'")
+write(target.."/chimeravip_ui/layout.lua","-- foreign helper")
+assert(not bridge:sync(),"foreign helper overwritten")
+write(target.."/chimeravip_ui/layout.lua","-- ChimeraVIP 5:\nreturn 'new helper'")
 write(target.."/chimeravip_ui/init.lua","-- another person's plugin")
 local blocked,explanation=bridge:sync()
 assert(not blocked and tostring(explanation):find("obcej wtyczki",1,true),
@@ -80,6 +98,21 @@ os.remove(target.."/chimeravip_ui/init.lua")
 installed,count=bridge:sync()
 assert(installed and count==2)
 assert(read(target.."/chimeravip_ui/init.lua"):find("return 'new'",1,true))
+-- Load a real deployed multi-file entry outside the repository package.path.
+local manifest=dofile("manifest.lua")
+for _,rel in ipairs(manifest.files) do
+    local plugin_file=rel:match("^plugins/(.+)$")
+    if plugin_file then write(source.."/"..plugin_file,assert(read(rel))) end
+end
+assert(bridge:sync())
+package.loaded["chimeravip_ui.theme"]={WINDOW="stale"}
+local spec=assert(dofile(target.."/chimeravip_ui/init.lua"))
+assert(spec.name=="chimeravip_ui" and type(spec.setup)=="function")
+-- Helpers are loaded afresh even when require caches and the entry persist.
+local real_theme=assert(read(source.."/chimeravip_ui/theme.lua"))
+write(source.."/chimeravip_ui/theme.lua",real_theme.."\n-- next release\n")
+local synced,changed_helpers=bridge:sync()
+assert(synced and changed_helpers==1 and dofile(target.."/chimeravip_ui/init.lua").name==spec.name)
 os.rename=original_rename
 assert(os.execute('rm -rf '..string.format('%q',root))==0)
 print("PASS 0.179 plugin deployment, rollback, foreign-file protection, idempotence")

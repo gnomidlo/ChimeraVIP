@@ -11,7 +11,7 @@ chimera_vip={
 }
 dofile("src/core/bootstrap.lua")
 local C=chimera_vip
-assert(C.version=="0.179" and C.tested_upstream=="5.0.1",
+assert(C.version=="0.180" and C.tested_upstream=="5.0.1",
     "Fallback release version and source-audited upstream drifted")
 chimera={app={version="5.0.1"}}
 assert(C:get_upstream_version()=="5.0.1",
@@ -32,4 +32,4 @@ chimera_pkg={version="5.0.1"}
 assert(C:get_upstream_version()=="5.0.1")
 chimera_pkg=nil
 assert(C:get_upstream_version()=="?")
-print("PASS 0.179 Chimera 5.0.1 version reporting and safe fallbacks")
+print("PASS 0.180 Chimera 5.0.1 version reporting and safe fallbacks")

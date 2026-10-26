@@ -1,3 +1,17 @@
+## 0.180 — stabilny układ okien po restarcie
+
+- Zapis układu przed restartem i odtworzenie po utworzeniu okien.
+- Sprzątanie VIP nie włącza oficjalnych Kondycji. Okno pachołków jest
+  wyłączone w VIP, a świadomy powrót do oficjalnego HUD przywraca jego
+  wcześniejsze ustawienie.
+- Kondycje mają minimum 260×160 px; większe rozmiary i docking zostają.
+- Podział HUD na moduły bez zmiany palety, stopki, komend i API.
+- Transakcyjna instalacja wszystkich modułów, także przy aktualizacji
+  ze starego instalatora 0.179.
+- Testy powtórnego restartu, dockingu, rozmiarów, mappera, widoczności
+  i rollbacku. Audyt oraz scenariusz testów Mudleta w
+  `docs/ui-lifecycle-0.180.md`.
+
 ## 0.179 — /cvip aktualizuj: jeden krok
 
 - /cvip aktualizuj pobiera nowy kod, wykonuje kopie danych (0.178),
