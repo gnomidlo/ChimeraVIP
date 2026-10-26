@@ -31,6 +31,7 @@ local function widget(id,onClick)
     return w
 end
 local function place(w,x,y,width,height,text,tint)
+    if ctx.settings.rozmiar=="m" then text=T.upper(text) end
     w:move(math.floor(x),math.floor(y))
     w:resize(math.max(1,math.floor(width)),math.max(1,math.floor(height)))
     w:setStyleSheet(style(tint))
@@ -54,6 +55,7 @@ local function build()
     for i=1,#GAUGES do widget("fill"..i) end
     for i=1,#GAUGES do widget("gauge"..i) end
     for i=1,3 do widget("value"..i) end
+    for i=1,3 do widget("points"..i) end
     for i=4,7 do widget("need_value"..i) end
     for i,button in ipairs(BUTTONS) do
         local command=button[2]
@@ -190,6 +192,45 @@ local function draw_primary(i,x,y,width,height,reading,view)
     local label=pct and (math.floor(pct+0.5).."%") or "--"
     -- Only display actual x/y when the official model exposes it.
     local now,max=exact(GAUGES[i][1],view)
+    local points=S.widgets["points"..i]
+    local large=ctx.settings.rozmiar=="m" or ctx.settings.rozmiar=="xl"
+    if large then
+        local xl=ctx.settings.rozmiar=="xl"
+        local rail_y=xl and y or y+height/2
+        local rail_h=xl and height or height/2
+        local amount=pct and math.floor(width*math.max(0,math.min(1,pct/100))) or 0
+        if amount>0 then
+            fill:move(math.floor(x),math.floor(rail_y))
+            fill:resize(amount,math.floor(rail_h))
+            -- Dark fills keep pale overlay text readable at every percentage.
+            local tint=primary_tint(i,pct)
+            if xl then
+                local health=pct and pct<40 and "#773E49" or pct and pct<70 and "#77633D" or "#345F50"
+                tint=({health,"#345779","#6C5C35"})[i]
+            end
+            fill:setStyleSheet("QLabel {background-color:"..tint..";border:0;border-radius:3px;}")
+            fill:show()
+        else fill:hide() end
+        local font=xl and 16 or 11
+        local title_h=xl and 26 or 18
+        local value_y=xl and y+27 or y+1
+        local value_h=xl and 26 or 18
+        local point_y=xl and y+55 or y+19
+        local point_h=xl and 22 or 13
+        local point_font=xl and 12 or 8
+        local title_width=xl and width-12 or width*0.45-6
+        place(title,x+6,y+(xl and 0 or 1),title_width,title_h,T.upper(name),"text")
+        place(value,x+(xl and 6 or width*0.45),value_y,
+            xl and width-12 or width*0.55-6,value_h,label,"text")
+        place(points,x+6,point_y,width-12,point_h,
+            i~=3 and now and max and string.format("%d / %d",now,max) or "PKT: —","text")
+        for _,w in ipairs({title,value,points}) do
+            w:setStyleSheet("QLabel {background:transparent;border:0;color:#F1F3F8;"
+                .."font-family:'DejaVu Sans Mono';font-size:"..(w==points and point_font or font).."pt;}")
+        end
+        return
+    end
+    points:hide()
     if i~=3 and now and max and width>=166 then
         label=string.format("%d/%d %s",now,max,label)
     end
@@ -283,7 +324,7 @@ local function float_actions(width)
             local y=top+18+(i-1)*20
             row:move(left+6,y)
             row:resize(panel_w-12,20)
-            row:echo(string.rep("&nbsp;",7)..html_escape(short))
+            row:echo(string.rep("&nbsp;",7)..html_escape(ctx.settings.rozmiar=="m" and T.upper(short) or short))
             row:setStyleSheet("QLabel {background-color:rgba(37,44,59,55);"
                 .."color:#D4DAE5;border:0;border-bottom:1px solid rgba(160,175,195,25);"
                 .."font-family:'Bitstream Vera Sans Mono';font-size:7pt;}"
@@ -323,12 +364,12 @@ local function draw_experience(width,vitals)
     local overflow=p and math.max(0,p-100) or 0
     local rail_x=46
     local rail_w=math.max(30,math.floor(width-150))
-    background:move(rail_x,65)
+    background:move(rail_x,HEIGHT-11)
     background:resize(rail_w,7)
     background:setStyleSheet("QLabel {background-color:#343C4D;border:0;border-radius:2px;}")
     background:show()
     if capped>0 then
-        base:move(rail_x,65)
+        base:move(rail_x,HEIGHT-11)
         base:resize(math.max(1,math.floor(rail_w*capped/100)),4)
         base:setStyleSheet("QLabel {background-color:#AC97D4;border:0;border-radius:2px;}")
         base:show()
@@ -337,11 +378,11 @@ local function draw_experience(width,vitals)
         local tier=math.floor((overflow-1)/100)
         local part=((overflow-1)%100+1)/100
         local shades={"#DFB779","#E6B56E","#EDB05C","#F3BC51"}
-        over_bg:move(rail_x,70)
+        over_bg:move(rail_x,HEIGHT-6)
         over_bg:resize(rail_w,2)
         over_bg:setStyleSheet("QLabel {background-color:#343C4D;border:0;}")
         over_bg:show()
-        extra:move(rail_x,70)
+        extra:move(rail_x,HEIGHT-6)
         extra:resize(math.max(1,math.floor(rail_w*part)),2)
         extra:setStyleSheet("QLabel {background-color:"..shades[math.min(tier+1,#shades)]
             ..";border:0;}")
@@ -350,12 +391,12 @@ local function draw_experience(width,vitals)
         over_bg:hide()
         extra:hide()
     end
-    place(title,7,62,33,11,"EXP","lavender")
+    place(title,7,HEIGHT-14,33,11,"EXP","lavender")
     title:setStyleSheet("QLabel {background:transparent;border:0;color:#C7B9E8;"
         .."font-family:'DejaVu Sans Mono';font-size:7pt;}")
     local display=not p and "--" or (p>100 and
         ("100% +"..math.floor(p-100+0.5).."%") or math.floor(p+0.5).."%")
-    place(number,width-97,62,87,11,display,"lavender")
+    place(number,width-97,HEIGHT-14,87,11,display,"lavender")
     number:setStyleSheet("QLabel {background:transparent;border:0;color:#D5C3E7;"
         .."font-family:'DejaVu Sans Mono';font-size:7pt;}")
 end
@@ -392,6 +433,13 @@ local function geometry(width)
     local stats_x=nav_x+nav+gap
     local needs_x=stats_x+stats+gap
     local controls_x=needs_x+needs+gap
+    if ctx.settings.rozmiar=="m" or ctx.settings.rozmiar=="xl" then
+        return {nav_x=edge,nav=nav,stats_x=edge,stats=width-2*edge,
+            stats_y=4,stats_h=T.profile(ctx.settings).bar+8,
+            needs_x=edge+nav+gap,needs=width-2*edge-2*gap-nav-controls,
+            controls_x=width-edge-controls,controls=controls,
+            top_y=T.profile(ctx.settings).bar+14,top_h=53}
+    end
     return {
         nav_x=nav_x,nav=nav,stats_x=stats_x,stats=stats,
         needs_x=needs_x,needs=needs,controls_x=controls_x,
@@ -400,10 +448,18 @@ local function geometry(width)
 end
 local function draw_footer(view)
     if not S.built then return end
+    HEIGHT=T.profile(ctx.settings).height
     local width=tonumber((getMainWindowSize())) or 1200
     -- Client window widths below 640 cannot fit four panels
     -- with readable labels; the supported laptop range is 760+.
     width=math.max(640,width)
+    if S.footer_height~=HEIGHT or S.footer_width~=width then
+        S.root:move(0,-HEIGHT)
+        S.root:resize("100%",HEIGHT)
+        S.floating:move(0,-HEIGHT-280)
+        if S.footer_height~=HEIGHT then setBorderBottom(HEIGHT) end
+        S.footer_height,S.footer_width=HEIGHT,width
+    end
     local g=geometry(width)
     local exits=resolve_exits()
     local vitals=current_vitals()
@@ -414,7 +470,7 @@ local function draw_footer(view)
         .."border-top:2px solid #535E77;}")
     bg:show()
     panel(S.widgets.section_exits,g.nav_x,g.top_y,g.nav,g.top_h)
-    panel(S.widgets.section_stats,g.stats_x,g.top_y,g.stats,g.top_h)
+    panel(S.widgets.section_stats,g.stats_x,g.stats_y or g.top_y,g.stats,g.stats_h or g.top_h)
     panel(S.widgets.section_needs,g.needs_x,g.top_y,g.needs,g.top_h)
     panel(S.widgets.section_controls,g.controls_x,g.top_y,g.controls,g.top_h)
     -- Compass: 3x3 directions, arrows to its right and a narrow
@@ -466,8 +522,8 @@ local function draw_footer(view)
     local pad=7
     local cell=(g.stats-2*pad)/3
     for i=1,3 do
-        draw_primary(i,g.stats_x+pad+(i-1)*cell,g.top_y+6,
-            cell-6,41,vitals[GAUGES[i][1]],view)
+        draw_primary(i,g.stats_x+pad+(i-1)*cell,(g.stats_y or g.top_y)+6,
+            cell-6,T.profile(ctx.settings).bar,vitals[GAUGES[i][1]],view)
     end
     -- Four identically sized, *stacked* need indicators.
     local need_pad=4

@@ -76,7 +76,10 @@ function H:register_defaults()
     self:register("settings", {
         title="USTAWIENIA",
         description={"Trwałe ustawienia VIP i przełączniki modułów; UI w /cvhud ustawienia."},
-        commands={{"/ustawienia pomoc", "ta pomoc"},{"/cvip ustawienia", "otwórz panel"},{"/cvip moduly", "lista stanów modułów"}},
+        commands={{"/ustawienia pomoc", "ta pomoc"},{"/cvip ustawienia", "otwórz panel"},{"/cvip moduly", "lista stanów modułów"},
+            {"/cvip s", "kompaktowy HUD, Kondycje 7 pt"},
+            {"/cvip m", "pół wysokości pasków, kapitaliki, Kondycje 11 pt"},
+            {"/cvip xl", "pełne paski z wartościami, Kondycje 16 pt"}},
     })
 
     self:register("system", {
@@ -135,6 +138,7 @@ function H:show_summary()
     print_line("SYSTEM", P.lavender)
     local system_rows = {
         {"/cvip ustawienia", "panel ustawień"},
+        {"/cvip s | m | xl", "rozmiar HUD i Kondycji, zapamiętany po restarcie"},
         {"/cvip diagnostyka", "lokalny stan updatera"},
         {"/cvip sprawdz", "sprawdź aktualizację"},
         {"/cvip aktualizuj", "zaktualizuj kod i wtyczki automatycznie"},

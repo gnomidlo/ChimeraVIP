@@ -35,6 +35,7 @@ local function set_window_color(tint)
 end
 local function print_segment(text,tint,command,hint)
     set_window_color(tint)
+    if ctx.settings.rozmiar=="m" then text=T.upper(text) end
     if command and type(echoLink)=="function" then
         echoLink(WINDOW,clean(text),
             "send("..string.format("%q",command)..", false)",
@@ -124,15 +125,19 @@ local function row(mark,p,ally,self_row,map,fighting,hostile,columns)
     local hp_text=hp and string.format("%s%s %3d%% ",
         string.rep("█",blocks),string.rep("░",8-blocks),math.floor(hp))
         or "────────  --  "
-    print_segment(hp_text,hp and (hp<30 and "rose" or hp<60 and "yellow" or "mint") or "muted",
-        ally and not self_row and id and ("wycofaj sie za "..id) or nil,
-        "Wycofaj sie za")
+    local stacked=(ctx.settings.rozmiar=="m" or ctx.settings.rozmiar=="xl") and (columns or 72)<40
+    local function health_line()
+        print_segment(hp_text,hp and (hp<30 and "rose" or hp<60 and "yellow" or "mint") or "muted",
+            ally and not self_row and id and ("wycofaj sie za "..id) or nil,
+            "Wycofaj sie za")
+    end
+    if not stacked then health_line() end
     local idle=fighting and ally and not p.attacking
         and (not p.attackers or #p.attackers==0)
     -- Incoming relations only, as in the old Kondycje renderer:
     -- team members show who attacks them; enemies show their attackers.
     local relation=idle and " [X]" or attacker_relation(p,map)
-    local fixed=visual_width(prefix.."["..mark.."] "..hp_text)
+    local fixed=visual_width(prefix.."["..mark.."] "..(stacked and "" or hp_text))
     local name=fit_tail_words(self_row and "JA" or clean(p.name),
         math.max(1,(columns or 72)-fixed-visual_width(relation)-1))
     if p.stunned and type(setBgColor)=="function"
@@ -149,12 +154,17 @@ local function row(mark,p,ally,self_row,map,fighting,hostile,columns)
         print_segment(relation,ally and "rose" or (hostile and "lavender" or "muted"))
     end
     echo(WINDOW,"\n")
+    if stacked then
+        health_line()
+        echo(WINDOW,"\n")
+    end
 end
 local function draw_window(view)
     if not S.opened or not ctx.settings.kondycje then return end
     local map=index_view(view)
     local columns=window_columns()
-    local signatures={"columns="..columns}
+    local signatures={"columns="..columns,"size="..tostring(ctx.settings.rozmiar),
+        "font="..tostring(ctx.settings.czcionka)}
     for _,list in ipairs({{view.self or {}},view.members or {},view.enemies or {},view.others or {}}) do
         for _,p in ipairs(list) do
             signatures[#signatures+1]=table.concat({

@@ -16,7 +16,8 @@ return {
     settings={
         mode={type="enum",values={"vip","oficjalny"},default="vip",label="Interfejs",order=1},
         kondycje={type="boolean",default=true,label="VIP Kondycje",order=2},
-        czcionka={type="number",default=7,min=6,max=12,label="Czcionka Kondycji (pt)",order=3},
+        czcionka={type="number",default=7,min=6,max=24,label="Czcionka Kondycji (pt)",order=3},
+        rozmiar={type="enum",values={"s","m","xl"},default="s",label="Rozmiar HUD",order=5},
         akcje={type="boolean",default=true,label="Plywajace akcje lokacji",order=4},
         pacholek_before={type="enum",values={"unknown","on","off"},default="unknown",hidden=true},
     },
@@ -72,7 +73,7 @@ return {
             end
             S.active=true
             S.root:show()
-            setBorderBottom(HEIGHT)
+            setBorderBottom(T.profile(ctx.settings).height)
             S.signature=nil
             render()
             ctx:timer(0,function()
@@ -86,6 +87,19 @@ return {
             official(true)
             return true
         end
+        local old_size=vip.ui.set_size
+        local function select_size(size)
+            if S.destroyed or not T.profiles[size] then return false end
+            ctx:set("rozmiar",size)
+            -- Explicitly reselecting a preset resets a manual font override.
+            ctx:set("czcionka",T.profiles[size].font)
+            if ctx.settings.mode~="vip" then ctx:set("mode","vip") end
+            S.signature=nil
+            schedule()
+            info("Rozmiar "..size:upper().." | Kondycje "..T.profiles[size].font.." pt")
+            return true
+        end
+        vip.ui.set_size=select_size
         ctx:command{"cvhud",args="[vip|oficjalny|status|ustawienia]",
             help="Przelacz HUD ChimeraVIP",fn=function(arg)
                 local mode=tostring(arg or "status"):lower():gsub("^%s+",""):gsub("%s+$","")
@@ -126,10 +140,16 @@ return {
         ctx:on("chimera.config.changed",function(module_name,key,value)
             if module_name=="chimeravip_ui" then
                 if key=="mode" then switch(value)
+                elseif key=="rozmiar" then
+                    ctx:set("czcionka",T.profile(ctx.settings).font)
+                    S.signature=nil
+                    schedule()
                 elseif key=="czcionka" then
                     if S.opened and type(setFontSize)=="function" then
                         setFontSize(WINDOW,tonumber(value) or 7)
                     end
+                    S.signature=nil
+                    schedule()
                 elseif key=="kondycje" then
                     if value and S.active then open_window()
                     elseif S.opened and type(hideWindow)=="function" then
@@ -146,6 +166,7 @@ return {
         ctx:timer(1.5,schedule,true)
         ctx:cleanup(function()
             S.destroyed=true
+            if vip.ui.set_size==select_size then vip.ui.set_size=old_size end
             actions.cleanup()
             layout.dispose()
             if S.root and type(S.root.delete)=="function" then

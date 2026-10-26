@@ -66,5 +66,15 @@ local function html_escape(v)
     return tostring(v or ""):gsub("&","&amp;"):gsub("<","&lt;")
         :gsub(">","&gt;"):gsub('"',"&quot;")
 end
-return {html_escape=html_escape, WINDOW=WINDOW, HEIGHT=HEIGHT, P=P, EXITS=EXITS, GAUGES=GAUGES, BUTTONS=BUTTONS,
+local PROFILES={s={font=7,height=76,bar=41},m={font=11,height=148,bar=64},xl={font=16,height=164,bar=80}}
+local function profile(settings) return PROFILES[settings.rozmiar] or PROFILES.s end
+local function upper(value)
+    local text=tostring(value)
+    for from,to in pairs({["ą"]="Ą",["ć"]="Ć",["ę"]="Ę",["ł"]="Ł",["ń"]="Ń",["ó"]="Ó",["ś"]="Ś",["ź"]="Ź",["ż"]="Ż"}) do
+        text=text:gsub(from,to)
+    end
+    -- Do not run locale-dependent string.upper over UTF-8 continuation bytes.
+    return (text:gsub("[a-z]",function(c) return string.char(c:byte()-32) end))
+end
+return {profile=profile, profiles=PROFILES, upper=upper, html_escape=html_escape, WINDOW=WINDOW, HEIGHT=HEIGHT, P=P, EXITS=EXITS, GAUGES=GAUGES, BUTTONS=BUTTONS,
  clean=clean, alpha=alpha, color=color, compass_html=compass_html, style=style, alias=alias, info=info}

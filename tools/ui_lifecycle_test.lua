@@ -61,7 +61,7 @@ function moveWindow() error("moving a native dock detaches it") end
 function resizeWindow() error("resizing a native dock detaches it") end
 function setBorderBottom(n) _G.border=n end
 function setUserWindowTitle() end
-function setFontSize() end
+function setFontSize(name,size) if windows[name] then windows[name].font=size end end
 function getMainWindowSize() return 1200,800 end
 function getColumnCount() return 72 end
 function clearWindow() end
@@ -221,6 +221,17 @@ ctx:set("kondycje",false)
 stop(ctx); ctx,api=start()
 assert(not windows[W].visible,"disabled VIP window resurrected on restart")
 ctx:set("kondycje",true)
+-- Saved preset/font survives a fresh plugin context, without reopening docks.
+for _,size in ipairs({"xl","m","s"}) do
+    local before=copy(windows[W]); local opened=opens[W]
+    assert(chimera_vip.ui.set_size(size)); flush()
+    local expected=({xl=16,m=11,s=7})[size]
+    assert(windows[W].font==expected)
+    assert(windows[W].width==before.width and windows[W].height==before.height and windows[W].dock==before.dock)
+    stop(ctx); ctx,api=start()
+    assert(config:get("chimeravip_ui","rozmiar")==size and windows[W].font==expected)
+    assert(opens[W]==opened and not windows.chimera_pacholek.visible)
+end
 -- Queued startup/render callbacks from a disposed instance cannot revive it.
 stop(ctx)
 local spec=dofile("plugins/chimeravip_ui/init.lua")
