@@ -36,7 +36,10 @@ return function(ctx,S,T)
                 local ok,width=pcall(getUserWindowSize,WINDOW)
                 exists=ok and type(width)=="number"
             end
-            if not exists then openUserWindow(WINDOW,true,true,"right") end
+            -- Mudlet creates new docks on the right before restoring layout.
+            -- An explicit area is applied AFTER restore and would discard the
+            -- saved docking/floating placement on every fresh profile start.
+            if not exists then openUserWindow(WINDOW,true,true) end
             if type(setUserWindowTitle)=="function" then
                 setUserWindowTitle(WINDOW,"Kondycje — ChimeraVIP")
             end

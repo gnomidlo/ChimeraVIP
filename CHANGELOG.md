@@ -1,3 +1,9 @@
+## 0.182 — Kondycje po ponownym otwarciu Mudleta
+
+- Nie przypinaj ponownie Kondycji po odczytaniu zapisanego ukladu.
+- Test zimnego startu: okno plywajace i przypiete, rozmiary, mapper,
+  reczna czcionka oraz preset XL.
+
 ## 0.181 — rozmiary HUD S, M i XL
 
 - `/cvip s`, `/cvip m`, `/cvip xl`: trwały wybór prezentacji bez restartu.
