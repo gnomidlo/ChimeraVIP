@@ -34,8 +34,10 @@ function openUserWindow(n,restore,autoDock,area)
     opens[n]=(opens[n] or 0)+1
     -- Reopening an existing window re-docks it; deliberately model the
     -- dangerous behaviour that a boolean visible/hidden stub would miss.
-    windows[n]={x=900,y=400,width=340,height=25,dock=area,visible=true}
+    windows[n]={x=900,y=400,width=340,height=25,dock="right",visible=true}
     if restore and saved and saved[n] then windows[n]=copy(saved[n]) end
+    -- Host::openWindow applies the explicit area AFTER loading Qt layout.
+    if area then windows[n].dock=area end
 end
 function showWindow(n) if windows[n] then windows[n].visible=true end end
 function hideWindow(n) if windows[n] then windows[n].visible=false end end
@@ -231,6 +233,28 @@ for _,size in ipairs({"xl","m","s"}) do
     stop(ctx); ctx,api=start()
     assert(config:get("chimeravip_ui","rozmiar")==size and windows[W].font==expected)
     assert(opens[W]==opened and not windows.chimera_pacholek.visible)
+end
+-- A cold profile start has no native windows or VIP globals left in memory.
+-- Only persisted settings and the exit layout survive. Test both floating
+-- and docked windows, plus a custom font independent of the footer preset.
+for _,dock in ipairs({"floating","left","right"}) do
+    chimera_vip.ui.set_size("xl"); ctx:set("czcionka",19); flush()
+    windows[W].dock=dock; windows[W].width=510; windows[W].height=370
+    windows[W].x=170; windows[W].y=210
+    emit("sysExitEvent")
+    local expected=copy(saved[W]); local persisted=copy(config.values)
+    stop(ctx)
+    windows={}; widgets={}; timers={}; contexts={}; chimera_vip={}
+    config.values=persisted
+    -- The mapper is created before the deferred VIP activation.
+    windows.mapper=copy(saved.mapper)
+    ctx,api=start()
+    for _,key in ipairs({"x","y","width","height","dock"}) do
+        assert(windows[W][key]==expected[key],"cold start lost "..key.." for "..dock)
+        assert(windows.mapper[key]==mapper[key],"cold start moved mapper: "..key)
+    end
+    assert(windows[W].font==19 and border==164,"cold start lost custom font/preset")
+    assert(not windows.chimera_pacholek or not windows.chimera_pacholek.visible)
 end
 -- Queued startup/render callbacks from a disposed instance cannot revive it.
 stop(ctx)
