@@ -37,7 +37,12 @@ return {
             function() return footer.resolve_exits() end,
             function() if schedule then schedule() end end)
         footer=modules.footer(ctx,S,T,gmcp,actions,generation)
-        local conditions=modules.conditions(ctx,S,T)
+        local conditions=modules.conditions(ctx,S,T,team)
+        -- Public resolver shared by the visible Kondycje and /vz /vza /vrza.
+        -- It always consults official team.view(), including in official HUD mode.
+        vip.ui=vip.ui or {}
+        local previous_resolver=vip.ui.resolve_target
+        vip.ui.resolve_target=conditions.resolve_target
         local layout=modules.layout(ctx,S,T)
         local open_window,official,restore=layout.open,layout.official,layout.restore
         local function render()
@@ -60,6 +65,7 @@ return {
         end
         local function activate()
             if S.destroyed then return false end
+            S.footer_signature=nil
             if not footer.available() then
                 info("Brak Geyser lub API okien. Pozostawiam oficjalny HUD.")
                 official(true); layout.finish()
@@ -167,6 +173,9 @@ return {
         ctx:cleanup(function()
             S.destroyed=true
             if vip.ui.set_size==select_size then vip.ui.set_size=old_size end
+            if vip.ui.resolve_target==conditions.resolve_target then
+                vip.ui.resolve_target=previous_resolver
+            end
             actions.cleanup()
             layout.dispose()
             if S.root and type(S.root.delete)=="function" then
