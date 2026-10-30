@@ -1,11 +1,14 @@
 -- ChimeraVIP 5: conditions module.
-return function(ctx,S,T)
+return function(ctx,S,T,team)
 local WINDOW,HEIGHT,P,EXITS,GAUGES,BUTTONS=T.WINDOW,T.HEIGHT,T.P,T.EXITS,T.GAUGES,T.BUTTONS
 local clean,alpha,color,compass_html,style,alias,info=T.clean,T.alpha,T.color,T.compass_html,T.style,T.alias,T.info
 local function index_view(view)
     local m={members={},enemies={},by_id={}}
     local own=view.self or {}
-    if own.id then m.by_id[tostring(own.id)]="@" end
+    if own.id then
+        m.by_id[tostring(own.id)]="@"
+        m.members["@"]=tostring(own.id)
+    end
     -- Dense VIP letters even when upstream marks have holes.
     for i,member in ipairs(view.members or {}) do
         local letter=alpha(i)
@@ -198,5 +201,24 @@ local function draw_window(view)
     end
 end
 
-return {draw=draw_window}
+-- Resolve only against the same fresh, official team.view() used to draw
+-- Kondycje. Never trust the last rendered/global mark cache during GMCP churn.
+local function resolve_target(kind,mark)
+    if type(team)~="table" or type(team.view)~="function" then return nil end
+    local ok,view=pcall(team.view)
+    if not ok or type(view)~="table" then return nil end
+    local map=index_view(view)
+    -- When a keybind races the scheduled redraw, update visible marks first.
+    -- This keeps the ID sent by the alias consistent with the letters shown.
+    if S.active and S.opened and ctx.settings.kondycje then
+        local drawn=pcall(draw_window,view)
+        if not drawn then return nil end
+    end
+    mark=tostring(mark or "")
+    if kind=="member" then return map.members[mark:upper()] end
+    if kind=="enemy" then return map.enemies[mark] end
+    return nil
+end
+
+return {draw=draw_window,resolve_target=resolve_target}
 end
