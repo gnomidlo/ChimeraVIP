@@ -3,6 +3,7 @@ local handlers,commands,timers,aliases={},{},{},{}
 local widgets,fonts,printed={},{},{}
 local windows,fg,border={},nil,0
 local bg=nil
+local paint_calls=0
 local main_width=1200
 local kondycje_columns=72
 local saved_files,links,log={},{},{}
@@ -23,12 +24,12 @@ end
 local function element(name)
     local w={name=name,hidden=false}
     widgets[name]=w
-    function w:setStyleSheet(css) self.css=css end
+    function w:setStyleSheet(css) paint_calls=paint_calls+1; self.css=css end
     function w:setClickCallback(fn) self.click=fn end
     function w:setToolTip(tip) self.tooltip=tip end
-    function w:move(x,y) self.x,self.y=x,y end
-    function w:resize(width,height) self.width,self.height=width,height end
-    function w:echo(text) self.text=text end
+    function w:move(x,y) paint_calls=paint_calls+1; self.x,self.y=x,y end
+    function w:resize(width,height) paint_calls=paint_calls+1; self.width,self.height=width,height end
+    function w:echo(text) paint_calls=paint_calls+1; self.text=text end
     function w:hide() self.hidden=true end
     function w:show() self.hidden=false end
     function w:delete() self.deleted=true end
@@ -189,6 +190,33 @@ local function geometry()
         "PANIKA is covered by EXP")
 end
 assert(api.active() and fonts.chimeravip_kondycje==7)
+-- A no-op room notification (and the status fallback poll) must not
+-- repaint Geyser when the official model/GMCP are unchanged.
+local idle_paints=paint_calls
+handlers["chimera.room.changed"]()
+flush()
+assert(paint_calls==idle_paints,"Unchanged HUD unnecessarily repainted Geyser")
+-- The same cache must not hide real changes in official toggle state.
+support=false
+handlers["chimera.room.changed"]()
+flush()
+assert(paint_calls>idle_paints and w("control2").tooltip:find("wyłączone",1,true),
+    "Status change was hidden by the footer render cache")
+support=true
+handlers["chimera.room.changed"]()
+flush()
+-- One authoritative fresh team.view() mapping for the drawing and aliases.
+assert(chimera_vip.ui.resolve_target("member","A")=="ally")
+assert(chimera_vip.ui.resolve_target("member","@")=="me")
+assert(chimera_vip.ui.resolve_target("enemy","1")=="enemy")
+assert(chimera_vip.ui.resolve_target("enemy","2")=="neutral")
+local previous_ally=view.members[1]
+view.members[1]={id="new-ally",name="Zmieniona",hp=91,attackers={}}
+assert(chimera_vip.ui.resolve_target("member","A")=="new-ally",
+    "Resolver used a stale rendered mark after a team update")
+assert(chimera_vip_ui_targets.members.A=="new-ally")
+view.members[1]=previous_ally
+assert(chimera_vip.ui.resolve_target("member","A")=="ally")
 -- Kondycje: small chess pawn icon BEFORE the letter, no [P]/Z:x% suffix.
 -- Changing only henchman must invalidate the cached window signature.
 view.self.leader=true
@@ -616,7 +644,7 @@ assert(not api.active() and widgets["chimeravip2_floating_1"].hidden)
 assert(chimera_vip.map_action._runner==nil and chimera_vip.map_action._status==nil,
     "Map action callback must be detached on cleanup")
 assert(chimera_vip.ui.special_exit==nil and chimera_vip.ui.room_action==nil
-    and chimera_vip.ui.delete_action==nil,
+    and chimera_vip.ui.delete_action==nil and chimera_vip.ui.resolve_target==nil,
     "Public APIs must be removed on plugin cleanup")
 room={id="one",exits={polnoc="north"}}
 ctx.state={}
