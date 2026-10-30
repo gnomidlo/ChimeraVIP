@@ -9,8 +9,12 @@ function R:bridge()
     return type(b)=="table" and b.api==5 and b or nil
 end
 function R:is_chimera5()
-    return self:bridge() ~= nil or (package and type(package.loaded)=="table"
-        and package.loaded["chimera.team"] ~= nil) or false
+    local official=rawget(_G,"chimera")
+    return self:bridge() ~= nil
+        or (type(official)=="table" and
+            (type(official.app)=="table" or type(official.restart)=="function"))
+        or (package and type(package.loaded)=="table"
+            and package.loaded["chimera.team"] ~= nil) or false
 end
 local function bridge_call(name, ...)
     local b=R:bridge()

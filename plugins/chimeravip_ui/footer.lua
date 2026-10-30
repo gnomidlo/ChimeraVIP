@@ -89,6 +89,7 @@ local function build()
         floating_widget("badge"..i,function() room_action(slot) end)
     end
     S.floating:hide()
+    S.footer_signature=nil
     S.built=true
 end
 -- Use the official GMCP cache, the latest event payload, and only
@@ -446,6 +447,61 @@ local function geometry(width)
         controls=controls,top_y=4,top_h=53,
     }
 end
+-- Build a deterministic frame key before touching Qt widgets. The
+-- 1.5s official-status fallback still checks state, but no longer repaints
+-- the entire Geyser footer on every tick when nothing visible changed.
+local function stable_key(value,depth,seen)
+    local kind=type(value)
+    if kind~="table" then
+        if kind=="function" or kind=="userdata" or kind=="thread" then return "-" end
+        return kind..":"..tostring(value)
+    end
+    if depth==0 or seen[value] then return "*" end
+    seen[value]=true
+    local keys={}
+    for k,v in pairs(value) do
+        local t=type(v)
+        if t~="function" and t~="userdata" and t~="thread" then
+            keys[#keys+1]=k
+        end
+    end
+    table.sort(keys,function(a,b) return tostring(a)<tostring(b) end)
+    local out={}
+    for _,key in ipairs(keys) do
+        out[#out+1]=tostring(key).."="..stable_key(value[key],depth-1,seen)
+    end
+    seen[value]=nil
+    return "{"..table.concat(out,",").."}"
+end
+local function frame_signature(width,view,exits,vitals)
+    local status=ctx:use("status_bar")
+    local model=nil
+    if status and type(status.model)=="function" then
+        local ok,value=pcall(status.model)
+        if ok then model=value end
+    end
+    local lamp=ctx:use("lamp")
+    local lamp_state=nil
+    if lamp and type(lamp.state)=="function" then
+        local ok,value=pcall(lamp.state)
+        if ok then lamp_state=value end
+    end
+    local vip=rawget(_G,"chimera_vip")
+    local combat_colors=nil
+    if vip and vip.settings and type(vip.settings.is_module_enabled)=="function" then
+        local ok,value=pcall(vip.settings.is_module_enabled,vip.settings,"combat_colors",true)
+        if ok then combat_colors=value end
+    end
+    local snapshot={
+        width=width,height=HEIGHT,size=ctx.settings.rozmiar,
+        actions_visible=ctx.settings.akcje,
+        room=gmcp.room(),group=gmcp.group(),view=view,
+        exits=exits,vitals=vitals,progress=S.exp_progress,
+        actions=ctx.settings.akcje and combined_actions() or {},
+        status=model,lamp=lamp_state,combat_colors=combat_colors,
+    }
+    return stable_key(snapshot,7,{})
+end
 local function draw_footer(view)
     if not S.built then return end
     HEIGHT=T.profile(ctx.settings).height
@@ -453,6 +509,11 @@ local function draw_footer(view)
     -- Client window widths below 640 cannot fit four panels
     -- with readable labels; the supported laptop range is 760+.
     width=math.max(640,width)
+    local exits=resolve_exits()
+    local vitals=current_vitals()
+    local signature=frame_signature(width,view,exits,vitals)
+    if S.footer_signature==signature then return end
+    S.footer_signature=signature
     if S.footer_height~=HEIGHT or S.footer_width~=width then
         S.root:move(0,-HEIGHT)
         S.root:resize("100%",HEIGHT)
@@ -461,8 +522,6 @@ local function draw_footer(view)
         S.footer_height,S.footer_width=HEIGHT,width
     end
     local g=geometry(width)
-    local exits=resolve_exits()
-    local vitals=current_vitals()
     local bg=S.widgets.hud_background
     bg:move(0,0)
     bg:resize(width,HEIGHT)
