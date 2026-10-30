@@ -41,8 +41,12 @@ load("src/features/combat_colors.lua")
 if not (chimera_vip.runtime and chimera_vip.runtime:is_chimera5()) then
     load("src/features/auto_support.lua")
 end
-load("src/features/tactical_states.lua")
-if not upstream_v5 then load("src/features/tactical_states_view.lua") end
+-- Legacy tactical snapshots and renderer belong only to Chimera 4.x.
+-- Chimera 5 exposes the same targets through the VIP UI plugin/team.view().
+if not upstream_v5 then
+    load("src/features/tactical_states.lua")
+    load("src/features/tactical_states_view.lua")
+end
 load("src/features/tactical_aliases.lua")
 load("src/features/xp_tracker.lua")
 load("src/features/xp_kill_card_view.lua")
