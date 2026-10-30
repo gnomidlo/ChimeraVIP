@@ -8,8 +8,8 @@ local C = chimera_vip
 local U = C.util
 local T = C.tactical_states
 
-if not T then
-    error("tactical_states musi byc zaladowany przed tactical_aliases")
+if not T and not (C.runtime and C.runtime:is_chimera5()) then
+    error("tactical_states musi byc zaladowany przed tactical_aliases w Chimera 4")
 end
 
 C.tactical_aliases = C.tactical_aliases or {}
@@ -39,18 +39,33 @@ local function refresh_snapshot()
     return snapshot
 end
 
+-- Chimera 5 uses a single mark table built on demand by the VIP UI plugin.
+-- Never fall back to an old GMCP snapshot when the plugin is absent.
+local function official_target(kind, mark)
+    local resolver=C.ui and C.ui.resolve_target
+    if type(resolver)~="function" then
+        note("Wtyczka Kondycji VIP nie jest gotowa.",P().rose)
+        return nil
+    end
+    local ok,id=pcall(resolver,kind,mark)
+    if not ok or not id then
+        note("Nie ma aktualnego celu dla ["..mark.."].",P().rose)
+        return nil
+    end
+    return tostring(id)
+end
+
 local function group_target(mark, allow_self)
     mark = tostring(mark or ""):upper()
     if mark == "" then return nil end
-    local targets=rawget(_G,"chimera_vip_ui_targets")
-    if targets and targets.members and targets.members[mark] then
-        return tostring(targets.members[mark])
-    end
-    if not refresh_snapshot() then return nil end
     if mark == "@" and not allow_self then
         note("Znacznik @ oznacza ciebie i nie jest dozwolony w tej komendzie.", P().yellow)
         return nil
     end
+    if C.runtime and C.runtime:is_chimera5() then
+        return official_target("member",mark)
+    end
+    if not refresh_snapshot() then return nil end
     local id = T:get_group_target(mark)
     if not id then
         note("Nie ma czlonka druzyny oznaczonego [" .. mark .. "].", P().rose)
@@ -62,9 +77,8 @@ end
 local function enemy_target(mark)
     mark = tostring(mark or "")
     if mark == "" then return nil end
-    local targets=rawget(_G,"chimera_vip_ui_targets")
-    if targets and targets.enemies and targets.enemies[mark] then
-        return tostring(targets.enemies[mark])
+    if C.runtime and C.runtime:is_chimera5() then
+        return official_target("enemy",mark)
     end
     if not refresh_snapshot() then return nil end
     local id = T:get_enemy_target(mark)
