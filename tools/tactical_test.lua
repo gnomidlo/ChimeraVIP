@@ -163,4 +163,25 @@ s=T:build_snapshot(); eq(T:mark_column_width(s),2)
 local P=chimera_vip.util.palette()
 assert(T:row_text(s.others[1],s,'other',P):find('[ 1]',1,true))
 assert(T:row_text(s.others[10],s,'other',P):find('[10]',1,true))
+-- Chimera 5: do not load tactical_states at all. Resolve every command
+-- through the very same plugin target mapping as the visible Kondycje.
+chimera_vip.runtime.is_chimera5=function() return true end
+chimera_vip.tactical_states=nil
+local live={member={A="team-fresh",["@"]="self-fresh"},enemy={["1"]="foe-fresh"}}
+chimera_vip.ui={resolve_target=function(kind,mark) return live[kind] and live[kind][mark] end}
+local v5=dofile("src/features/tactical_aliases.lua")
+assert(v5.v5_mode and chimera_vip.tactical_states==nil)
+assert(v5:command("za","a")); eq(sent[#sent],"zaslon team-fresh")
+assert(v5:command("z","1")); eq(sent[#sent],"zabij foe-fresh")
+assert(v5:command("rza","A @")); eq(sent[#sent],"parozkaz team-fresh zaslon self-fresh")
+live.member.A="team-new"
+assert(v5:command("za","A")); eq(sent[#sent],"zaslon team-new")
+live.member.A=nil
+local before=#sent
+assert(not v5:command("za","A"))
+eq(#sent,before)
+-- Missing/unloaded plugin must fail closed: never use a cached mark.
+chimera_vip.ui.resolve_target=nil
+assert(not v5:command("z","1"))
+eq(#sent,before)
 print('Tactical GMCP and alias regressions: PASS')
