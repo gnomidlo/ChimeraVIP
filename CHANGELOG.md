@@ -1,3 +1,16 @@
+## 0.183 — Lżejszy HUD i wspólne znaczniki Chimery 5
+
+- Wyłączono ładowanie starego renderera i jego GMCP listenerów w Chimerze 5,
+  łącznie ze sprzątaniem handlerów pozostawionych przez 0.182.
+- HUD porównuje stan danych gry, akcji lokacji i przełączników przed
+  kosztownymi operacjami Geysera; zachowuje okresowy odczyt oficjalnych stanów,
+  ale nie rysuje ponownie niezmienionych elementów.
+- /vz, /vza i /vrza pobierają znaczniki ze wspólnego resolvera wtyczki
+  chimeravip_ui, bez odwoływania się do starych snapshotów GMCP.
+- Przy zmianie drużyny wywołanie aliasu odczytuje świeże team.view()
+  i przed wysłaniem komendy wyrównuje widoczne oznaczenia Kondycji.
+- Zachowano UI S/M/XL, tryb oficjalny, zapis układu okien i dane gracza.
+
 ## 0.182 — Kondycje po ponownym otwarciu Mudleta
 
 - Nie przypinaj ponownie Kondycji po odczytaniu zapisanego ukladu.
