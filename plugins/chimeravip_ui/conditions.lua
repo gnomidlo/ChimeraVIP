@@ -9,18 +9,23 @@ local function index_view(view)
         m.by_id[tostring(own.id)]="@"
         m.members["@"]=tostring(own.id)
     end
-    -- Dense VIP letters even when upstream marks have holes.
-    for i,member in ipairs(view.members or {}) do
-        local letter=alpha(i)
-        m.members[letter]=tostring(member.id)
-        m.by_id[tostring(member.id)]=letter
+    -- The official marks are independent of display grouping. In particular,
+    -- a neutral NPC can be 1 while the first hostile NPC is 2. Team letters
+    -- may have gaps. Never invent a mark when upstream has none.
+    for _,member in ipairs(view.members or {}) do
+        local letter=member.letter
+        if member.id and type(letter)=="string" and letter:match("^[A-Z]$") then
+            m.members[letter]=tostring(member.id)
+            m.by_id[tostring(member.id)]=letter
+        end
     end
-    local n=0
     for _,list in ipairs({view.enemies or {},view.others or {}}) do
         for _,person in ipairs(list) do
-            n=n+1
-            m.enemies[tostring(n)]=tostring(person.id)
-            m.by_id[tostring(person.id)]=tostring(n)
+            local n=tonumber(person.number)
+            if person.id and n and n>0 and n==math.floor(n) then
+                m.enemies[tostring(n)]=tostring(person.id)
+                m.by_id[tostring(person.id)]=tostring(n)
+            end
         end
     end
     S.marks=m
@@ -173,7 +178,7 @@ local function draw_window(view)
             signatures[#signatures+1]=table.concat({
                 tostring(p.id),tostring(p.hp),tostring(p.attacking),
                 tostring(p.here),tostring(p.stunned),tostring(p.name),
-                tostring(p.henchman),tostring(p.leader),
+                tostring(p.henchman),tostring(p.leader),tostring(p.letter),tostring(p.number),
                 table.concat(p.attackers or {},","),
             },":")
         end
@@ -189,7 +194,9 @@ local function draw_window(view)
         if p.attacking or (p.attackers and #p.attackers>0) then fighting=true end
     end
     row("@",me,true,true,map,fighting,false,columns)
-    for i,p in ipairs(view.members or {}) do row(alpha(i),p,true,false,map,fighting,false,columns) end
+    for _,p in ipairs(view.members or {}) do
+        row(map.by_id[tostring(p.id)] or "?",p,true,false,map,fighting,false,columns)
+    end
     for _,part in ipairs({{view.enemies or {},"WROGOWIE",true},
                            {view.others or {},"POZOSTALI",false}}) do
         if #part[1]>0 then
@@ -215,8 +222,12 @@ local function resolve_target(kind,mark)
         if not drawn then return nil end
     end
     mark=tostring(mark or "")
-    if kind=="member" then return map.members[mark:upper()] end
-    if kind=="enemy" then return map.enemies[mark] end
+    local id
+    if kind=="member" then id=map.members[mark:upper()]
+    elseif kind=="enemy" then id=map.enemies[mark] end
+    if not id or type(team.resolve)~="function" then return nil end
+    local resolved,target=pcall(team.resolve,mark)
+    if resolved and target and tostring(target)==id then return id end
     return nil
 end
 

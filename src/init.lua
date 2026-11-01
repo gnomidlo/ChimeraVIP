@@ -66,6 +66,7 @@ else
     load("src/features/tactical_states_view.lua")
 end
 load("src/features/tactical_aliases.lua")
+load("src/features/friends.lua")
 load("src/features/xp_tracker.lua")
 load("src/features/xp_kill_card_view.lua")
 load("src/features/stats.lua")
