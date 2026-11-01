@@ -72,11 +72,17 @@ local gmcp_api={
 }
 local view={
     self={id="me",name="JA",hp=100,hp_now=969,hp_max=969,attackers={}},
-    members={{id="ally",name="Lisstana",hp=74,attackers={}}},
-    enemies={{id="enemy",name="Ork",hp=28,attackers={}}},
-    others={{id="neutral",name="Veith",hp=100,attackers={}}},
+    members={{id="ally",letter="A",name="Lisstana",hp=74,attackers={}}},
+    enemies={{id="enemy",number=1,name="Ork",hp=28,attackers={}}},
+    others={{id="neutral",number=2,name="Veith",hp=100,attackers={}}},
 }
-local team={view=function() return view end}
+local team={view=function() return view end,resolve=function(mark)
+    if mark=="@" then return view.self.id end
+    for _,p in ipairs(view.members) do if p.letter==mark:upper() then return p.id end end
+    for _,list in ipairs({view.enemies,view.others}) do
+        for _,p in ipairs(list) do if tostring(p.number)==mark then return p.id end end
+    end
+end}
 local location_actions={{key="Ctrl+Shift+1",command="przejrzyj kufer"}}
 local called={}
 local locations={
@@ -211,12 +217,38 @@ assert(chimera_vip.ui.resolve_target("member","@")=="me")
 assert(chimera_vip.ui.resolve_target("enemy","1")=="enemy")
 assert(chimera_vip.ui.resolve_target("enemy","2")=="neutral")
 local previous_ally=view.members[1]
-view.members[1]={id="new-ally",name="Zmieniona",hp=91,attackers={}}
+view.members[1]={id="new-ally",letter="A",name="Zmieniona",hp=91,attackers={}}
 assert(chimera_vip.ui.resolve_target("member","A")=="new-ally",
     "Resolver used a stale rendered mark after a team update")
 assert(chimera_vip_ui_targets.members.A=="new-ally")
 view.members[1]=previous_ally
 assert(chimera_vip.ui.resolve_target("member","A")=="ally")
+-- Official numbering is global, not hostile-first. Preserve team gaps too.
+view.members[1].letter="C"
+view.enemies[1].number=2
+view.others[1].number=1
+handlers["chimera.team.changed"]() -- must update before deferred timers fire
+assert(chimera_vip_ui_targets.members.C=="ally" and not chimera_vip_ui_targets.members.A)
+assert(chimera_vip_ui_targets.enemies["1"]=="neutral")
+assert(chimera_vip_ui_targets.enemies["2"]=="enemy")
+local marks={}; for _,p in ipairs(printed) do marks[#marks+1]=p.text end
+assert(table.concat(marks):find("[C]",1,true))
+assert(chimera_vip.ui.resolve_target("member","A")==nil)
+assert(chimera_vip.ui.resolve_target("member","c")==team.resolve("c"))
+assert(chimera_vip.ui.resolve_target("enemy","1")==team.resolve("1"))
+-- A mark-only change must invalidate the renderer cache without an event.
+view.members[1].letter="D"
+assert(chimera_vip.ui.resolve_target("member","D")=="ally")
+marks={}; for _,p in ipairs(printed) do marks[#marks+1]=p.text end
+assert(table.concat(marks):find("[D]",1,true))
+local official_resolve=team.resolve
+team.resolve=function() return "different-id" end
+assert(chimera_vip.ui.resolve_target("enemy","1")==nil)
+team.resolve=official_resolve
+view.enemies[1].number=nil
+assert(chimera_vip.ui.resolve_target("enemy","2")==nil)
+view.members[1].letter="A"; view.enemies[1].number=1; view.others[1].number=2
+handlers["chimera.team.changed"](); flush()
 -- Kondycje: small chess pawn icon BEFORE the letter, no [P]/Z:x% suffix.
 -- Changing only henchman must invalidate the cached window signature.
 view.self.leader=true

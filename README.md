@@ -1,7 +1,7 @@
 # ChimeraVIP
 
 Pastelowa nakladka na **oficjalne skrypty Chimery 5.0** dla Mudleta.
-Serwer: `chimera.co.pl:2300`. Wersja ChimeraVIP: **0.183**.
+Serwer: `chimera.co.pl:2300`. Wersja ChimeraVIP: **0.184**.
 Audyt źródeł oficjalnej Chimery: **5.0.1** (testy integracyjne w Mudlecie nadal potrzebne).
 
 W 0.183 wylaczono stary renderer Kondycji na Chimerze 5, dodano cache klatek HUD i jedno zrodlo znacznikow /vz, /vza, /vrza.
@@ -67,7 +67,7 @@ VIP stara sie utworzyc oba widoki przed ukryciem oficjalnych.
 Gdy Geyser lub okna Mudleta nie dzialaja, nie wylacza oficjalnego
 interfejsu. Widoki tworzy osobna wtyczka `chimeravip_ui`; kod 4.x
 nie jest uruchamiany na Chimera 5. Wlasne Kondycje stosuja
-litery `A,B,C...` bez luk, wyswietlaja druzyne, pachołkow, ogluszenie,
+oficjalne litery drużyny (`letter`, również z lukami) i numery NPC (`number`), wyswietlaja druzyne, pachołkow, ogluszenie,
 cel ataku, przeciwnikow, osoby na lokacji i nieaktywnych walczacych `[X]`.
 
 Przyciski wywoluja oficjalne komendy:
@@ -77,12 +77,35 @@ Skroty VIP `/vz NUMER`, `/vza LITERA`, `/vrza LITERA LITERA`
 korzystaja z oznaczen z aktualnych Kondycji; oficjalne `/z` i `/za`
 zachowuja swoja semantyke.
 
+Numeracja Kondycji jest wspólna z oficjalnymi `/z`, `/za`, `/ra` i `/rz`.
+Podział na WROGOWIE i POZOSTALI nie zmienia numerów. Aktualizacja oznaczeń
+jest wyświetlana od razu po zdarzeniu drużyny, przed opóźnionym odrysowaniem HUD.
+Brak oznaczenia w danych jest wyświetlany jako `?`, bez nadawania własnego numeru.
+
+## Przyjaciele (0.184)
+
+- `/ziom Trul` wysyła `odmien Trul` i zapisuje przyjaciela dopiero po odebraniu sześciu odmian.
+- `/ziom` pokazuje bazę i pomoc; `/ziom- Trul` usuwa wpis po mianowniku.
+- `/ziomkolor` pokazuje klikalne pastelowe próbki; `/ziomkolor #A8DCC2` ustawia własny kolor dla wszystkich przyjaciół.
+
+Baza i kolor są zapisywane osobno dla każdego profilu, w sekcji `friends` pliku
+`ChimeraVIP-data/settings.lua`, objętego kopiami aktualizatora. Zmiana koloru dotyczy
+nowego tekstu z gry. Kolorowane są całe odmiany z zachowaniem wielkości liter;
+fragmenty dłuższych imion i słów, identyfikatorów oraz wyrazów z łącznikiem nie pasują.
+Powtarzające się odmiany kolorowane są raz, a odmiany wspólne dla różnych przyjaciół
+są pomijane. Moduł nie rozpoznaje kontekstu wypowiedzi — identyczne pełne imię
+w rozmowie też będzie kolorowane.
+
+Niepełna, przerwana lub obca odpowiedź nie nadpisuje bazy. Oczekiwanie trwa
+maksymalnie 10 sekund; w tym czasie kolejne `/ziom IMIE` jest odrzucane.
+Przeładowanie usuwa stare aliasy, trigger, timer i listenery.
+Rozkazy i dotychczasowe aliasy bojowe pozostają bez zmian.
+
 ## Pozostale moduly
 
 Wlasny `/xp` (zabicia, XP/h, typy mobow), Combat Colors,
 Kamienie Milowe, cechy, ekwipunek, skracanie opisow i raporty pozostaja
-czescia VIP. Nie instalujemy Defense Trackera ani osobnej bazy
-odmian graczy. Dawne dane w `ChimeraVIP-data/` pozostaja nietkniete.
+czescia VIP. Nie instalujemy Defense Trackera. Dawne dane w `ChimeraVIP-data/` pozostaja nietkniete.
 
 ## Testowanie i repozytorium
 

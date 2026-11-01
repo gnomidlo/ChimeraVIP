@@ -120,7 +120,9 @@ return {
             end}
 
         ctx:on("chimera.team.changed",function()
-            S.signature=nil
+            -- Marks must be visible before the next official /z or /rz alias.
+            -- Do not leave old numbers on screen until the deferred HUD draw.
+            if S.active then conditions.draw(team.view()) end
             schedule()
         end)
         ctx:on("chimera.progress",function(data)

@@ -1,3 +1,13 @@
+## 0.184 — Przyjaciele i oficjalna numeracja Kondycji
+
+- Kondycje używają oficjalnych pól `letter` i `number`, bez renumerowania według grup widoku.
+- Zmiana oznaczeń odrysowuje okno natychmiast; aliasy VIP sprawdzają zgodność celu z `team.resolve`.
+- `/ziom IMIE`: zbieranie sześciu odmian z odpowiedzi `odmien`, zapis w profilu.
+- `/ziom- IMIE`: usuwanie; `/ziom`: lista i pomoc.
+- `/ziomkolor`: klikalna paleta VIP i własny #RRGGBB, zachowany po restarcie.
+- Pełne imiona, deduplikacja odmian, pomijanie niejednoznaczności, timeout i cleanup.
+- Testy parsera, trwałości, kolorowania i cyklu życia; manifest z SHA i rozmiarami.
+
 ## 0.183 — Lżejszy HUD i wspólne znaczniki Chimery 5
 
 - Wyłączono ładowanie starego renderera i jego GMCP listenerów w Chimerze 5,
