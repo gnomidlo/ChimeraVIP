@@ -1,3 +1,10 @@
+## 0.185 — Zwarty widok żołdu
+
+- `pazold`: jeden wiersz na pachołka, numery z gry, krótkie kwoty i pozostały czas.
+- Pastelowe kolumny oraz wyróżnienie zapasu poniżej godziny i 10 minut.
+- Izolacja od panelu `/pa` i poleceń płatności; odtworzenie tekstu niepełnych raportów.
+- Test dziesięciu pachołków z logu, kwot, czasu, timeoutu i przeładowania.
+
 ## 0.184 — Przyjaciele i oficjalna numeracja Kondycji
 
 - Kondycje używają oficjalnych pól `letter` i `number`, bez renumerowania według grup widoku.

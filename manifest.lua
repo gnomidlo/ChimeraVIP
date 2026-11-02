@@ -1,10 +1,11 @@
 return {
     name = "ChimeraVIP",
-    version = "0.184",
+    version = "0.185",
     schema = 2,
     tested_upstream = "5.0.1",
     raw_base = "https://raw.githubusercontent.com/gnomidlo/ChimeraVIP/main/",
     changes = {
+        "0.185: pazold - zwarta tabela zoldu, krotkie kwoty i pozostaly czas",
         "0.184: Kondycje zachowuja oficjalne numery NPC i litery druzyny",
         "0.184: /ziom, /ziom- i /ziomkolor - przyjaciele, odmiany i trwaly kolor",
         "0.183: bez starego renderera na Chimera 5; odswiezanie HUD tylko przy zmianach",
@@ -43,6 +44,7 @@ return {
         "Usuniecie Defense Tracker i wlasnej bazy postaci",
     },
     files = {
+        "src/features/retainer_wages.lua",
         "src/features/friends.lua",
         "plugins/chimeravip_ui/theme.lua",
         "plugins/chimeravip_ui/actions.lua",
@@ -90,6 +92,7 @@ return {
         "src/ui/module_controls.lua"
     },
     file_meta = {
+        ["src/features/retainer_wages.lua"] = {hash="68dc7d8eba913b239673642035ab3c142894dc9c", size=4806},
         ["src/features/friends.lua"] = {hash="987d550451a4ab99f9d99ad06cd04156543148e7", size=6956},
         ["plugins/chimeravip_ui/theme.lua"] = {hash="d8a3932eb18dea27aec6e547cb2ba24957069a4f", size=3467},
         ["plugins/chimeravip_ui/actions.lua"] = {hash="3d56011e8712b9cbcb6eb2afd1ae807d18be644d", size=13709},
@@ -97,8 +100,8 @@ return {
         ["plugins/chimeravip_ui/footer.lua"] = {hash="9bc9c95c65cb487c7a7f3e9a6a7a1f3424519559", size=28412},
         ["plugins/chimeravip_ui/layout.lua"] = {hash="6cdc696a44e25ee7a4ff0c717b83e562e0067f99", size=5016},
         ["loader.lua"] = {hash="1381414d89e55d2fad70beb8f42e48098d4b1802", size=4501},
-        ["src/init.lua"] = {hash="8e8fbfabb5c12d86a767517da7e47283baf221c4", size=3423},
-        ["src/core/bootstrap.lua"] = {hash="67d9183271f84c007702354a96c714618f77658f", size=2063},
+        ["src/init.lua"] = {hash="73f1b56be8b2c3fe673f32e1e52015068b4d42f2", size=3463},
+        ["src/core/bootstrap.lua"] = {hash="4b5dbf98b90d154cc6d19f822cf412a7fb51d5f4", size=2063},
         ["src/core/safety.lua"] = {hash="ab4fca47f610a24ec88b8dad7aedab9baf507578", size=3239},
         ["src/core/util.lua"] = {hash="7561cd9259be9ff0ce74228e9048eef0b5aba280", size=6686},
         ["src/core/hash.lua"] = {hash="362c18bf131c9939d03b59dd50568d66de8f6a5e", size=2118},
