@@ -50,7 +50,30 @@ for _,s in ipairs(footer) do assert(W:consume(s)) end
 assert(not W.armed and not W.capture and not W.timer)
 local rendered=table.concat(output)
 for _,r in ipairs(rows) do assert(rendered:find(r[2],1,true)) end
-assert(rendered:find('4 mth 75 zl 18 sr 11 md',1,true))
+local plain=rendered:gsub("#%x%x%x%x%x%x","")
+assert(plain:find('4mt 75z 18s 11m',1,true))
+local P=chimera_vip.util.palette()
+assert(rendered:find(P.lavender..'4mt',1,true))
+assert(rendered:find(P.yellow..'75z',1,true))
+assert(rendered:find(P.text..'18s',1,true))
+assert(rendered:find(P.peach..'11m',1,true))
+assert(plain:find('Doba: 48 min',1,true))
+assert(not plain:find('/ 48m',1,true) and not plain:find('STAWKA / DOBA',1,true))
+assert(plain:find('\n  #',1,true) and plain:find(string.rep('-',72),1,true))
+-- Every monetary field starts in the same visible column despite color tags.
+local rate_column,paid_column,time_column
+for row in plain:gmatch('[^\n]+') do
+    if row:find('Rakthar',1,true) then
+        rate_column=row:find('10s 10m',1,true)
+        paid_column=row:find('11s 5m',1,true)
+        time_column=row:find('~',1,true)
+    elseif row:find('Isskana',1,true) then
+        assert(row:find('1z 3m',1,true)==rate_column)
+        assert(row:find('4mt',1,true)==paid_column)
+        assert(row:find('~',1,true)==time_column)
+    end
+end
+assert(rate_column and paid_column and time_column)
 assert(rendered:find('~15 dni 16 h',1,true))
 assert(rendered:find(chimera_vip.util.palette().rose..'~1 min',1,true))
 assert(#replayed==0 and gags==55)

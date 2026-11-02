@@ -1,3 +1,10 @@
+## 0.186 — Żołd w stylistyce palista
+
+- Monety zapisane i kolorowane jak w opisie broni: `mt`, `z`, `s`, `m`.
+- Krótki nagłówek STAWKA; długość doby przeniesiona do stopki.
+- Wcięcia, kolumny, lawendowy tytuł i separatory zgodne ze stylem palista.
+- Wyrównanie kolumn liczone bez znaczników kolorów.
+
 ## 0.185 — Zwarty widok żołdu
 
 - `pazold`: jeden wiersz na pachołka, numery z gry, krótkie kwoty i pozostały czas.
