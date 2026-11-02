@@ -1,7 +1,7 @@
 # ChimeraVIP
 
 Pastelowa nakladka na **oficjalne skrypty Chimery 5.0** dla Mudleta.
-Serwer: `chimera.co.pl:2300`. Wersja ChimeraVIP: **0.185**.
+Serwer: `chimera.co.pl:2300`. Wersja ChimeraVIP: **0.186**.
 Audyt źródeł oficjalnej Chimery: **5.0.1** (testy integracyjne w Mudlecie nadal potrzebne).
 
 W 0.183 wylaczono stary renderer Kondycji na Chimerze 5, dodano cache klatek HUD i jedno zrodlo znacznikow /vz, /vza, /vrza.
@@ -101,12 +101,14 @@ maksymalnie 10 sekund; w tym czasie kolejne `/ziom IMIE` jest odrzucane.
 Przeładowanie usuwa stare aliasy, trigger, timer i listenery.
 Rozkazy i dotychczasowe aliasy bojowe pozostają bez zmian.
 
-## Żołd pachołków (0.185)
+## Żołd pachołków (0.186)
 
 Wpisz `pazold`, aby zobaczyć tabelę: numer, imię, stawka za dobę służby,
 opłacona kwota i przybliżony czas przy tobie. Numer oraz czas pochodzą wprost
-z gry. Kwoty używają skrótów `mth`, `zl`, `sr`, `md`; przy stawce widnieje
-liczba minut służby na dobę (np. `/ 48m`). Zapas poniżej 10 minut jest różowy,
+z gry. Kwoty mają taki sam zapis i kolory jak wartość broni: `4mt 75z 18s 11m`
+(mithryl lawendowy, złoto żółte, srebro jasne, miedź brzoskwiniowa). Nagłówek
+kolumny to `STAWKA`; stopka podaje długość doby, zwykle `Doba: 48 min`.
+Układ z wcięciem i separatorami nawiązuje do `palista`. Zapas poniżej 10 minut jest różowy,
 a poniżej godziny żółty. Czas biegnie tylko, gdy pachołek jest przy tobie.
 
 Polecenia zapłaty (`pazold IMIE ...`) i oficjalny panel `/pa` pozostają bez zmian.

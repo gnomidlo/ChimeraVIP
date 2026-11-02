@@ -37,38 +37,57 @@ function W:request()
 end
 
 function W:money(text)
-    local out=text:gsub("(%d+)%s+mithrylow%a*","%1 mth")
-        :gsub("(%d+)%s+zlot%a*","%1 zl")
-        :gsub("(%d+)%s+srebrn%a*","%1 sr")
-        :gsub("(%d+)%s+miedzian%a*","%1 md")
+    -- Same suffixes and denomination colors as weapon_info.colored_money.
+    local plain=text:gsub("(%d+)%s+mithrylow%a*","%1mt")
+        :gsub("(%d+)%s+zlot%a*","%1z")
+        :gsub("(%d+)%s+srebrn%a*","%1s")
+        :gsub("(%d+)%s+miedzian%a*","%1m")
         :gsub("%s+monet%a*",""):gsub("%s+i%s+"," "):gsub(",%s*"," ")
-    return out
+    local P=U.palette()
+    local colors={mt=P.lavender,z=P.yellow,s=P.text,m=P.peach}
+    local rich=plain:gsub("(%d+)(%a+)",function(amount,coin)
+        return (colors[coin] or P.text)..amount..coin..P.text_muted
+    end)
+    return plain,rich
 end
 
 function W:render(rows)
     local P=U.palette()
-    local columns={"NR","PACHOLEK","STAWKA / DOBA","OPLACONE","CZAS PRZY TOBIE"}
-    local widths={2,8,14,8,16}
-    local cells={}
+    local columns={"#","IMIE","STAWKA","OPLACONE","POZOSTALO"}
+    local widths={1,10,8,8,9}
+    local cells,intervals,seen={},{},{}
     for _,r in ipairs(rows) do
-        local values={r.number,r.name,self:money(r.rate).." / "..r.interval.."m",
-            self:money(r.paid),"~"..r.time}
-        cells[#cells+1]=values
-        for i,v in ipairs(values) do widths[i]=math.max(widths[i],U.text_width(v)) end
-    end
-    local function print_row(values,colors)
-        for i,v in ipairs(values) do hecho(colors[i]..U.pad_right(v,widths[i]).."  ") end
-        hecho("\n")
-    end
-    hecho("\n"..P.lavender.."ZOLD PACHOLKOW\n")
-    print_row(columns,{P.text_muted,P.text_muted,P.text_muted,P.text_muted,P.text_muted})
-    for i,values in ipairs(cells) do
-        local minutes=tonumber(rows[i].time:match("^(%d+) min$"))
+        local rate,rate_rich=self:money(r.rate)
+        local paid,paid_rich=self:money(r.paid)
+        local minutes=tonumber(r.time:match("^(%d+) min$"))
         local tint=minutes and minutes<10 and P.rose or minutes and minutes<60 and P.yellow or P.mint
-        print_row(values,{P.text_muted,P.lavender,P.text,P.peach,tint})
+        local values={r.number,r.name,rate,paid,"~"..r.time}
+        local rich={P.text_muted..r.number,P.text..r.name,rate_rich,paid_rich,tint..values[5]}
+        cells[#cells+1]={plain=values,rich=rich}
+        for i,v in ipairs(values) do widths[i]=math.max(widths[i],U.text_width(v)) end
+        if not seen[r.interval] then intervals[#intervals+1]=r.interval; seen[r.interval]=true end
     end
-    hecho(P.text_muted.."mth/mithryl, zl/zloto, sr/srebro, md/miedz. Czas biegnie tylko przy tobie.\n")
-    hecho(P.text_muted.."pazold IMIE: 3 doby | 2 godziny | 1 dzien | 9 zlotych monet | splac\n")
+    -- Layout follows palista: two-space inset, muted headers, separators and
+    -- a short footer. Padding uses visible text, never embedded color tags.
+    local width=2+2*(#columns-1)
+    for _,n in ipairs(widths) do width=width+n end
+    local rule=P.separator..string.rep("-",math.max(72,width))
+    local function print_row(values,rich)
+        hecho("\n  ")
+        for i,v in ipairs(values) do
+            hecho((rich and rich[i] or P.text_muted..v))
+            if i<#values then hecho(string.rep(" ",widths[i]-U.text_width(v)+2)) end
+        end
+    end
+    hecho("\n\n"..P.lavender.."ZOLD PACHOLKOW\n"..rule)
+    print_row(columns)
+    for _,cell in ipairs(cells) do print_row(cell.plain,cell.rich) end
+    hecho("\n"..rule)
+    table.sort(intervals,function(a,b) return tonumber(a)<tonumber(b) end)
+    hecho("\n  "..P.text_muted.."Doba: "..P.lavender..table.concat(intervals,"/").." min"
+        ..P.text_muted.."  |  czas liczy sie tylko przy tobie.")
+    hecho("\n  "..P.text_muted.."pazold IMIE: 3 doby | 2 godziny | 1 dzien | 9 zlotych monet | splac")
+    hecho("\n"..rule.."\n")
 end
 
 function W:consume(text)
