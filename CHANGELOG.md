@@ -1,3 +1,10 @@
+## 0.189 — Umiejętności: nowa kolumna Razem
+
+- Obsługa nowego nagłówka `Umiejetnosc Praktyka Teoria Premia Razem Cwiczenia` i starego formatu bez `Razem`.
+- Wiersze z premią i wartością łączną nie znikają już z przechwytywanej listy.
+- `Razem` jest osobną kolumną; puste wartości pozostają puste (`--`), bez wyliczania wyniku z domysłów.
+- Zgodność ze starym formatem oraz testy regresji: premie, brakujące kolumny, ćwiczenia i pozostałe umiejętności.
+
 ## 0.188 — Kamienie Milowe: postęp tylko w procentach
 
 - `kamienie`: rozpoznawanie nowego komunikatu z paskami doświadczenia bez ich wyświetlania lub przeliczania; zachowany procent z gry.
