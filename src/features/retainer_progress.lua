@@ -56,6 +56,14 @@ local function display_role(role)
     return tostring(role or ""):gsub("_", " ")
 end
 
+-- Status is independent of the optional specialization suffix. Never include
+-- the suffix in the value used to count retainers who are "przy tobie".
+local function split_roster_status(raw)
+    local status, specialization = tostring(raw or ""):match("^(.-),%s*specjalizacja:%s*(.+)$")
+    if status then return normalize(status), normalize(specialization) end
+    return normalize(raw), ""
+end
+
 local function display_warning(warning)
     warning = normalize(warning)
     if warning == "" then return "" end
@@ -109,12 +117,14 @@ end
 
 function R:add_roster_entry(index, name, role, level, status, obedience, warning)
     if not self.roster then return false end
+    local base_status, specialization = split_roster_status(status)
     self.roster.entries[#self.roster.entries + 1] = {
         index = tonumber(index) or (#self.roster.entries + 1),
         name = tostring(name or ""),
         role = display_role(role),
         level = tonumber(level) or 0,
-        status = normalize(status),
+        status = base_status,
+        specialization = specialization,
         obedience = tonumber(obedience) or 0,
         warning = normalize(warning),
     }
@@ -132,7 +142,9 @@ function R:show_roster(limit_text, charisma)
     limit_text = tostring(limit_text or ""):gsub("^mozesz prowadzic%s+", "")
 
     local active_count, active_obedience = 0, 0
+    local role_width = 19
     for _, entry in ipairs(roster.entries) do
+        role_width = math.max(role_width, U.text_width(entry.role) + 2)
         if entry.status == "przy tobie" then
             active_count = active_count + 1
             active_obedience = active_obedience + entry.obedience
@@ -144,23 +156,26 @@ function R:show_roster(limit_text, charisma)
     hecho("\n" .. P.text_muted
         .. "  " .. pad("#", 3)
         .. pad("IMIE", 12)
-        .. pad("PROFESJA", 19)
+        .. pad("PROFESJA", role_width)
         .. pad("POZ", 6)
         .. pad("POSLUCH", 9)
         .. "STATUS")
 
     for _, entry in ipairs(roster.entries) do
         local active = entry.status == "przy tobie"
-        local status_text = active and "PRZY TOBIE" or (entry.status == "czeka na wezwanie" and "czeka" or entry.status)
+        local status_text = active and "PRZY TOBIE" or entry.status
         local warning_text = display_warning(entry.warning)
         local row_color = active and P.mint or P.text
         hecho("\n" .. row_color
             .. "  " .. pad(tostring(entry.index), 3)
             .. pad(entry.name, 12)
-            .. pad(entry.role, 19)
+            .. pad(entry.role, role_width)
             .. P.peach .. pad(tostring(entry.level), 6)
             .. P.yellow .. pad(tostring(entry.obedience), 9)
             .. (active and P.mint or P.text_muted) .. status_text)
+        if entry.specialization ~= "" then
+            hecho(P.text_muted .. "  [specjalizacja: " .. entry.specialization .. "]")
+        end
         if warning_text ~= "" then
             hecho(P.text_muted .. "   " .. P.rose .. warning_text)
         end
@@ -237,7 +252,7 @@ function R:install()
     )
 
     self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
-        [[^\s*(\d+)\.\s+(\S+)\s+(\S+)\s+poziom\s+(\d+)\s+(.+?)\s+\(wymaga posluchu\s+(\d+)(?:;\s*(.+?))?\)\s*$]],
+        [[^\s*(\d+)\.\s+(\S+)\s+(.+?)\s+poziom\s+(\d+)\s+(.+?)\s+\(wymaga posluchu\s+(\d+)(?:;\s*(.+?))?\)\s*$]],
         function()
             if not R.roster then return end
             R:add_roster_entry(matches[2], matches[3], matches[4], matches[5], matches[6], matches[7], matches[8])
