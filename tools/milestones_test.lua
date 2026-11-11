@@ -42,8 +42,8 @@ assert(#overview.attributes.inteligencja.stones == 1)
 assert(overview.attributes.inteligencja.stones[1].name == "Zestrojenie z Ghyran")
 assert(overview.attributes.inteligencja.stones[1].rank == "II")
 assert(overview.attributes.inteligencja.stones[1].percent == 46)
-assert(overview.attributes.inteligencja.stones[1].current == 51024090)
-assert(overview.attributes.madrosc.stones[1].required == 43937102)
+assert(overview.attributes.inteligencja.stones[1].current == nil)
+assert(overview.attributes.madrosc.stones[1].required == nil)
 assert(overview.attributes.odwaga.stones[1].rank == "IV")
 assert(overview.full_set == true)
 print("Milestones overview parsing: PASS")
@@ -105,7 +105,7 @@ assert(detail.name == "GLEBOKIE ZRODLO")
 assert(detail.attribute == "madrosc")
 assert(detail.selected == true and detail.rank == "I")
 assert(detail.percent == 24)
-assert(detail.current == 10553430 and detail.required == 43937102)
+assert(detail.current == nil and detail.required == nil)
 assert(detail.effect[1] == "Regeneracja many +5/10/15%.")
 assert(detail.abandon_cost == 50)
 assert(detail.abandon_command == "kamien porzuc glebokie zrodlo")
@@ -184,7 +184,9 @@ local function column_at(pos)
 end
 assert(column_at(p1) == column_at(p2))
 assert(column_at(p2) == column_at(p3))
-assert(aligned_rendered:find("  2%   656k / 25.3m", 1, true))
+assert(aligned_rendered:find("  2%   Sila Tytana", 1, true))
+assert(not aligned_rendered:find("656k", 1, true))
+assert(not aligned_rendered:find("25.3m", 1, true))
 print("Milestones overview progress columns: PASS")
 
 
@@ -235,3 +237,68 @@ assert(locked_rendered:find("31", 1, true))
 assert(locked_rendered:find("0/0", 1, true))
 assert(locked_rendered:find("pierwszy wybor przy 50", 1, true))
 print("Milestones below first threshold: PASS")
+
+-- New Chimera milestones report: experience bars are source-only metadata.
+-- Percentages are authoritative; never derive them from rounded bar counts.
+local bars_overview = M:parse_overview_lines({
+    "Kamienie Milowe -- aktywne 3 z 3.",
+    "  Sila (szczyt 113), wybrane 0 z 2 (odblokowane szczytem cechy):",
+    "  Zrecznosc (szczyt 116), wybrane 0 z 2 (odblokowane szczytem cechy):",
+    "  Wytrzymalosc (szczyt 117), wybrane 1 z 2 (odblokowane szczytem cechy):",
+    "    * Wola Zycia                 II  (do nastepnego: 89%, 4.50 z 5 paskow doswiadczenia)",
+    "  Inteligencja (szczyt 125), wybrane 0 z 2 (odblokowane szczytem cechy):",
+    "  Madrosc (szczyt 114), wybrane 1 z 2 (odblokowane szczytem cechy):",
+    "    * Niezlomny Umysl            II  (do nastepnego: 89%, 4.49 z 5 paskow doswiadczenia)",
+    "  Odwaga (szczyt 127), wybrane 1 z 2 (odblokowane szczytem cechy):",
+    "    * Charyzmatyczny Przywodca   II  (do nastepnego: 91%, 4.55 z 5 paskow doswiadczenia)",
+    '  "kamienie <cecha>" -- opisy,  "kamien wybierz <nazwa>" -- wybierasz',
+    "  Masz juz pelny zestaw. Zmiana wyboru bedzie mozliwa za oplate, ktorej",
+    "  wysokosc nie jest jeszcze ustalona.",
+})
+assert(bars_overview.active == 3 and bars_overview.maximum == 3)
+assert(#bars_overview.order == 6)
+for _, key in ipairs({"wytrzymalosc", "madrosc", "odwaga"}) do
+    assert(#bars_overview.attributes[key].stones == 1, key)
+    assert(bars_overview.attributes[key].stones[1].rank == "II", key)
+end
+assert(bars_overview.attributes.wytrzymalosc.stones[1].percent == 89)
+assert(bars_overview.attributes.madrosc.stones[1].percent == 89)
+assert(bars_overview.attributes.odwaga.stones[1].percent == 91)
+assert(bars_overview.attributes.wytrzymalosc.stones[1].current == nil)
+assert(bars_overview.full_set == true)
+local bars_output, bars_links = {}, {}
+hecho = function(text) bars_output[#bars_output+1] = text end
+hechoLink = function(text, callback)
+    bars_links[#bars_links+1] = callback
+    bars_output[#bars_output+1] = text
+end
+M:render_overview(bars_overview)
+local bars_rendered = table.concat(bars_output):gsub("#%x%x%x%x%x%x", "")
+for _, name in ipairs({"Wola Zycia", "Niezlomny Umysl", "Charyzmatyczny Przywodca"}) do
+    assert(bars_rendered:find(name, 1, true), name)
+end
+assert(bars_rendered:find("89%", 1, true))
+assert(bars_rendered:find("91%", 1, true))
+assert(not bars_rendered:find("paskow", 1, true))
+assert(not bars_rendered:find("4.50", 1, true))
+assert(not bars_rendered:find("4.49", 1, true))
+assert(not bars_rendered:find("4.55", 1, true))
+assert(table.concat(bars_links):find("kamien wola zycia", 1, true))
+print("Milestones bar-based format renders percentages only: PASS")
+
+local bars_detail = M:parse_detail_lines({
+    "WOLA ZYCIA",
+    "Cecha: wytrzymalosc",
+    "Status:",
+    "  wybrany, poziom II (do nastepnego: 89%, 4.50 z 5 paskow doswiadczenia)",
+    "Dzialanie:",
+    "  Wytrzymalosc.",
+})
+assert(bars_detail.selected and bars_detail.rank == "II" and bars_detail.percent == 89)
+bars_output = {}
+M:render_detail(bars_detail)
+bars_rendered = table.concat(bars_output):gsub("#%x%x%x%x%x%x", "")
+assert(bars_rendered:find("Postep", 1, true) and bars_rendered:find("89%", 1, true))
+assert(not bars_rendered:find("paskow", 1, true))
+assert(not bars_rendered:find("4.50", 1, true))
+print("Milestone details render server percentage only: PASS")

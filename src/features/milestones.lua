@@ -21,14 +21,6 @@ local normalize = U.normalize
 local colors = U.palette
 local gag_line = U.gag_line
 
-local function compact_number(value)
-    value = math.max(0, math.floor(tonumber(value) or 0))
-    if value < 1000 then return tostring(value) end
-    if value < 1000000 then return tostring(math.floor(value / 1000)) .. "k" end
-    local tenths = math.floor(value / 100000) / 10
-    return string.format("%.1fm", tenths)
-end
-
 local function command_link(label, command, hint, color)
     local P = colors()
     color = color or P.mint
@@ -39,30 +31,16 @@ local function command_link(label, command, hint, color)
     end
 end
 
-local function xp_link(current, required)
-    local P = colors()
-    current, required = tonumber(current), tonumber(required)
-    if not current or not required then return end
-    local short = compact_number(current) .. " / " .. compact_number(required)
-    local hint = U.format_int(current) .. " / " .. U.format_int(required) .. " exp"
-    if type(hechoLink) == "function" then
-        hechoLink(P.peach .. short, "", hint, true)
-    else
-        hecho(P.peach .. short)
-    end
-end
-
 function M:parse_stone_line(line)
     line = trim(line)
     line = line:gsub("^%*%s*", "")
-    local name, rank, percent, current, required = line:match(
-        "^(.-)%s+([IVX]+)%s+%(do nastepnego:%s*(%d+)%%,%s*(%d+)/(%d+)%s+exp%)%s*$"
+    -- The server may send raw XP or fractional "paski doswiadczenia".
+    -- Keep only its authoritative percentage; no conversion of bars to XP.
+    local name, rank, percent = line:match(
+        "^(.-)%s+([IVX]+)%s+%(do nastepnego:%s*(%d+)%%,%s*.+%)%s*$"
     )
-    if name then
-        return {
-            name=trim(name), rank=rank, percent=tonumber(percent),
-            current=tonumber(current), required=tonumber(required),
-        }
+    if name and trim(name) ~= "" then
+        return {name=trim(name), rank=rank, percent=tonumber(percent)}
     end
     name, rank = line:match("^(.-)%s+([IVX]+)%s*$")
     if name and trim(name) ~= "" then return {name=trim(name), rank=rank} end
@@ -178,12 +156,12 @@ end
 -- Osobny, prostszy parser statusu karty. Lua przypisuje capture'y pozycyjnie,
 -- dlatego utrzymujemy go oddzielnie od parsera struktury.
 function M:parse_detail_status(line, out)
-    local rank, percent, current, required = trim(line):match(
-        "^wybrany, poziom ([IVX]+) %(do nastepnego:%s*(%d+)%%,%s*(%d+)/(%d+)%s+exp%)$"
+    local rank, percent = trim(line):match(
+        "^wybrany, poziom ([IVX]+) %(do nastepnego:%s*(%d+)%%,%s*.+%)$"
     )
     if rank then
         out.selected, out.rank = true, rank
-        out.percent, out.current, out.required = tonumber(percent), tonumber(current), tonumber(required)
+        out.percent = tonumber(percent)
         return true
     end
     rank = trim(line):match("^wybrany, poziom ([IVX]+)$")
@@ -247,16 +225,7 @@ function M:render_overview(data)
 
         for _, stone in ipairs(attr.stones or {}) do
             local percent_text = stone.percent and (tostring(stone.percent) .. "%") or "--"
-            local xp_text = stone.current and stone.required
-                and (compact_number(stone.current) .. " / " .. compact_number(stone.required)) or "--"
-
             hecho("\n      " .. P.mint .. string.format("%4s", percent_text) .. P.text_muted .. "   ")
-            if stone.current and stone.required then
-                xp_link(stone.current, stone.required)
-            else
-                hecho(P.peach .. xp_text)
-            end
-            hecho(P.text_muted .. string.rep(" ", math.max(3, 18 - #xp_text)))
             command_link(stone.name, "kamien " .. normalize(stone.name), "Szczegoly Kamienia", P.text)
             hecho(P.lavender .. "  " .. tostring(stone.rank or ""))
         end
@@ -314,8 +283,7 @@ function M:render_detail(data)
         hecho("\n" .. P.text_muted .. "  Status    " .. P.mint .. "wybrany"
             .. P.text_muted .. "  |  poziom " .. P.lavender .. tostring(data.rank or "?"))
         if data.percent then
-            hecho("\n" .. P.text_muted .. "  Postep    " .. P.mint .. tostring(data.percent) .. "%  ")
-            xp_link(data.current, data.required)
+            hecho("\n" .. P.text_muted .. "  Postep    " .. P.mint .. tostring(data.percent) .. "%")
         end
     end
     if #data.effect > 0 then
