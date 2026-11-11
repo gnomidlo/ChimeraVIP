@@ -255,3 +255,70 @@ resetFormat = function() end
 assert(S:highlight_growth('walce mieczem'))
 assert(selected == 'walce mieczem' and bold and underlined and colored)
 print('Snapshot growth totals and inline emphasis: PASS')
+
+
+-- New server table (Premia / Razem): four numeric columns must not
+-- make bonus-bearing skills disappear; blank bonus/total stay distinct.
+S.previous_skills, S.previous_abilities, S.session_gains = {}, {}, {}
+S:start_skills()
+assert(S:parse_practice_table_header(
+    '  Umiejetnosc            Praktyka  Teoria  Premia  Razem  Cwiczenia'))
+assert(S.skill_capture.has_total_column == true)
+for _, line in ipairs({
+    'miecze                       50      50',
+    'topory                       30      30',
+    'sztylety                     30      30',
+    'mloty                        30      30',
+    'parowanie                    45      45',
+    'uniki                        25      25',
+    'tarczownictwo                25      25',
+}) do
+    assert(S:parse_practice_table_line(line), line)
+end
+assert(S:parse_practice_table_line('parowanie                    45      45      +7     52      1/439'))
+assert(S:parse_practice_table_line('miecze                       50      50             50'))
+assert(S:parse_practice_table_line('uniki                        25      25      +4     29'))
+assert(not S:parse_practice_table_line('bad skill                    45      45      +7     52    53     1/439'))
+assert(not S:parse_practice_table_line('bad skill                    45      45      +7     52      1/0'))
+assert(S.skill_capture.skills['bad skill'] == nil)
+assert(#S.skill_capture.order == 7)
+local new_table = S.skill_capture.skills
+assert(new_table.parowanie.value == 45 and new_table.parowanie.theory == 45)
+assert(new_table.parowanie.bonus == 7 and new_table.parowanie.total == 52)
+assert(new_table.parowanie.exercises == 1 and new_table.parowanie.required == 439)
+assert(new_table.miecze.bonus == nil and new_table.miecze.total == 50)
+assert(new_table.uniki.bonus == 4 and new_table.uniki.total == 29)
+assert(S:parse_skill_line('kondotierstwo:        71                   targowanie sie:       80'))
+assert(S.skill_capture.skills.kondotierstwo.value == 71)
+assert(S.skill_capture.skills['targowanie sie'].value == 80)
+assert(S:parse_remaining_skill_line('Zielarstwo:        6/500'))
+assert(S.skill_capture.abilities.zielarstwo.value == 6)
+local new_table_output = {}
+hecho = function(text) new_table_output[#new_table_output+1] = text end
+hechoLink = nil
+S:finish_skills()
+local new_table_rendered = table.concat(new_table_output):gsub('#%x%x%x%x%x%x', '')
+assert(new_table_rendered:find('   razem', 1, true))
+assert(new_table_rendered:find('parowanie', 1, true))
+assert(new_table_rendered:find(string.format('%10s%8s%8s%8s%12s',
+    '45', '45', '+7', '52', '1/439'), 1, true))
+assert(new_table_rendered:find(string.format('%10s%8s%8s%8s%12s',
+    '50', '50', '--', '50', '--'), 1, true))
+assert(new_table_rendered:find('Zielarstwo', 1, true))
+print('New Razem column with bonuses, blank cells and ability snapshot: PASS')
+
+-- Backwards compatibility: the old header's one extra number is a bonus,
+-- rather than the new header's unsigned Razem value.
+S:start_skills()
+assert(S:parse_practice_table_header('Umiejetnosc Praktyka Teoria Premia Cwiczenia'))
+assert(S.skill_capture.has_total_column == false)
+assert(S:parse_practice_table_line('parowanie 72 75 7 0/439'))
+assert(S.skill_capture.skills.parowanie.bonus == 7)
+assert(S.skill_capture.skills.parowanie.total == nil)
+local old_table_output = {}
+hecho = function(text) old_table_output[#old_table_output+1] = text end
+S:finish_skills()
+local old_table_rendered = table.concat(old_table_output):gsub('#%x%x%x%x%x%x', '')
+assert(not old_table_rendered:find('razem', 1, true))
+assert(old_table_rendered:find(string.format('%10s%8s%8s%12s', '72', '75', '+7', '0/439'), 1, true))
+print('Legacy skills header and single bonus value: PASS')
