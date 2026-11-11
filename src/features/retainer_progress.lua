@@ -107,20 +107,48 @@ function R:start_roster()
     touch_roster()
 end
 
+-- Separate the optional specialization from the actual status. The latter
+-- drives active counts, so it must never contain presentation metadata.
 function R:add_roster_entry(index, name, role, level, status, obedience, warning)
     if not self.roster then return false end
+    local status_text = normalize(status)
+    local base_status, specialization = status_text:match("^(.-)%s*,%s*specjalizacja:%s*(.+)$")
+    if base_status then status_text = normalize(base_status) end
     self.roster.entries[#self.roster.entries + 1] = {
         index = tonumber(index) or (#self.roster.entries + 1),
         name = tostring(name or ""),
-        role = display_role(role),
+        role = display_role(normalize(role)),
         level = tonumber(level) or 0,
-        status = normalize(status),
+        status = status_text,
+        specialization = normalize(specialization),
         obedience = tonumber(obedience) or 0,
         warning = normalize(warning),
     }
     gag_line()
     touch_roster()
     return true
+end
+
+-- Parse the entire raw server row. "poziom" separates a potentially
+-- multiword profession from the numeric level; no profession dictionary needed.
+function R:parse_roster_line(text)
+    local index, name, role, level, status, obedience, warning = tostring(text or ""):match(
+        "^%s*(%d+)%.%s+(%S+)%s+(.-)%s+poziom%s+(%d+)%s+(.+)%s+%(wymaga posluchu%s+(%d+)(.-)%)%s*$"
+    )
+    if not index or normalize(role) == "" then return nil end
+    warning = normalize(warning)
+    if warning ~= "" then
+        warning = warning:match("^;%s*(.+)$")
+        if not warning then return nil end
+    end
+    return index, name, role, level, status, obedience, warning
+end
+
+function R:add_roster_line(text)
+    if not self.roster then return false end
+    local index, name, role, level, status, obedience, warning = self:parse_roster_line(text)
+    if not index then return false end
+    return self:add_roster_entry(index, name, role, level, status, obedience, warning)
 end
 
 function R:show_roster(limit_text, charisma)
@@ -131,8 +159,9 @@ function R:show_roster(limit_text, charisma)
     charisma = tonumber(charisma) or 0
     limit_text = tostring(limit_text or ""):gsub("^mozesz prowadzic%s+", "")
 
-    local active_count, active_obedience = 0, 0
+    local active_count, active_obedience, role_width = 0, 0, 19
     for _, entry in ipairs(roster.entries) do
+        role_width = math.max(role_width, U.text_width(entry.role) + 2)
         if entry.status == "przy tobie" then
             active_count = active_count + 1
             active_obedience = active_obedience + entry.obedience
@@ -144,7 +173,7 @@ function R:show_roster(limit_text, charisma)
     hecho("\n" .. P.text_muted
         .. "  " .. pad("#", 3)
         .. pad("IMIE", 12)
-        .. pad("PROFESJA", 19)
+        .. pad("PROFESJA", role_width)
         .. pad("POZ", 6)
         .. pad("POSLUCH", 9)
         .. "STATUS")
@@ -157,10 +186,13 @@ function R:show_roster(limit_text, charisma)
         hecho("\n" .. row_color
             .. "  " .. pad(tostring(entry.index), 3)
             .. pad(entry.name, 12)
-            .. pad(entry.role, 19)
+            .. pad(entry.role, role_width)
             .. P.peach .. pad(tostring(entry.level), 6)
             .. P.yellow .. pad(tostring(entry.obedience), 9)
             .. (active and P.mint or P.text_muted) .. status_text)
+        if entry.specialization ~= "" then
+            hecho(P.text_muted .. "  [" .. P.lavender .. entry.specialization .. P.text_muted .. "]")
+        end
         if warning_text ~= "" then
             hecho(P.text_muted .. "   " .. P.rose .. warning_text)
         end
@@ -237,10 +269,10 @@ function R:install()
     )
 
     self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
-        [[^\s*(\d+)\.\s+(\S+)\s+(\S+)\s+poziom\s+(\d+)\s+(.+?)\s+\(wymaga posluchu\s+(\d+)(?:;\s*(.+?))?\)\s*$]],
+        [[^\s*\d+\.\s+\S+\s+.+?\s+poziom\s+\d+\s+.+?\s+\(wymaga posluchu\s+\d+(?:;\s*.+?)?\)\s*$]],
         function()
             if not R.roster then return end
-            R:add_roster_entry(matches[2], matches[3], matches[4], matches[5], matches[6], matches[7], matches[8])
+            R:add_roster_line(matches[1] or line)
         end
     )
 

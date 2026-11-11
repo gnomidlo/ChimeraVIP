@@ -59,3 +59,5 @@ jobs:
         run: lua5.1 tools/friends_test.lua
       - name: Test compact retainer wages and report recovery
         run: lua5.1 tools/retainer_wages_test.lua
+      - name: Test palista multiword professions and specializations
+        run: lua5.1 tools/retainer_progress_test.lua

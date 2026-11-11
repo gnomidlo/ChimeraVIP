@@ -1,3 +1,10 @@
+## 0.187 — Palista: profesje wielowyrazowe i specjalizacje
+
+- Rozpoznawanie profesji skladajacych sie z kilku slow (np. `lowczyni nagrod`).
+- Specjalizacja oddzielona od statusu, aby `przy tobie` prawidlowo liczylo aktywnych pacholkow i ich posluch.
+- Zwarty opis specjalizacji przy statusie oraz szersza kolumna dla dlugich nazw profesji.
+- Zgodnosc ze starym formatem, ostrzezeniami i numeracja pacholkow; test regresji na 11 wpisach z logu.
+
 ## 0.186 — Żołd w stylistyce palista
 
 - Monety zapisane i kolorowane jak w opisie broni: `mt`, `z`, `s`, `m`.
