@@ -25,8 +25,25 @@ assert(table.concat(output):find('  nieskoordynowana jak na herosa', 1, true))
 render('  Precyzyjny Cios                [walka]')
 assert(links[#links].callback == 'send("specjalizacja Precyzyjny Cios", false)')
 render('  Zrecznosc  Czujne Zmysly I  (do nastepnego: 0%, 30/39283324 exp)')
-assert(table.concat(output):find('<0,01%', 1, true))
-assert(links[#links].hint:find('39 283 324', 1, true))
+assert(table.concat(output):find('0%', 1, true))
+assert(not table.concat(output):find('39283324', 1, true))
+-- New POSTAC report: preserve game percentages, never display "paski".
+render('  Kamienie Milowe                               3/3')
+render('  Odwaga          Charyzmatyczny Przywodca II  (do nastepnego: 91%, 4.55 z 5 paskow doswiadczenia)')
+render('  Wytrzymalosc    Wola Zycia II  (do nastepnego: 90%, 4.50 z 5 paskow doswiadczenia)')
+render('  Madrosc         Niezlomny Umysl II  (do nastepnego: 89%, 4.49 z 5 paskow doswiadczenia)')
+local character_rendered = table.concat(output)
+for _, percent in ipairs({'91%', '90%', '89%'}) do
+    assert(character_rendered:find(percent, 1, true), percent)
+end
+for _, stone in ipairs({'Charyzmatyczny Przywodca II', 'Wola Zycia II', 'Niezlomny Umysl II'}) do
+    assert(character_rendered:find(stone, 1, true), stone)
+end
+assert(not character_rendered:find('paskow', 1, true))
+assert(not character_rendered:find('4.55', 1, true))
+assert(not character_rendered:find('4.50', 1, true))
+assert(not character_rendered:find('4.49', 1, true))
+
 render('Szczegoly:')
 assert(links[#links].callback == 'send("postac kamienie", false)')
 render('  postac cechy')
