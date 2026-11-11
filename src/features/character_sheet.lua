@@ -75,17 +75,15 @@ function V:render(raw)
             end
         end
     end
-    local milestone, displayed, earned, total = text:match(
-        "^(.-)%s+%(do nastepnego:%s*(%d+)%%,%s*(%d+)/(%d+)%s+exp%)$"
+    -- Character report: accept old XP and new bar-based source formats,
+    -- but show only the percentage reported by the game.
+    local milestone, displayed = text:match(
+        "^(.-)%s+%(do nastepnego:%s*(%d+)%%,%s*.+%)$"
     )
-    if milestone and tonumber(total) > 0 then
-        local percent = tonumber(earned) / tonumber(total) * 100
-        local short = percent > 0 and percent < 0.01 and "<0,01%"
-            or (string.format("%.2f%%", percent):gsub("%.", ","))
+    if milestone and U.trim(milestone) ~= "" then
         return function()
-            hecho("  " .. P.text .. U.pad_right(milestone, 48) .. P.mint)
-            link(short, nil, U.format_int(earned) .. " / " .. U.format_int(total)
-                .. " exp (gra: " .. displayed .. "%)")
+            hecho("  " .. P.text .. U.pad_right(milestone, 48)
+                .. P.mint .. displayed .. "%")
         end
     end
     if text == "Szczegoly:" or text == "Dostepne kategorie:" then
