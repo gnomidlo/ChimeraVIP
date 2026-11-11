@@ -1,3 +1,10 @@
+## 0.188 — Kamienie Milowe: postęp tylko w procentach
+
+- `kamienie`: rozpoznawanie nowego komunikatu z paskami doświadczenia bez ich wyświetlania lub przeliczania; zachowany procent z gry.
+- `postac`: pozycje Kamieni Milowych pokazują wyłącznie procent, bez wartości pasków i surowego tekstu z serwera.
+- Również starszy format `XP/XP exp` pozostaje obsługiwany, ale w widoku pokazujemy sam procent.
+- Regresje na logach z trzema Kamieniami, starym formatem oraz szczegółami Kamienia.
+
 ## 0.187 — Palista: profesje wielowyrazowe i specjalizacje
 
 - Rozpoznawanie profesji skladajacych sie z kilku slow (np. `lowczyni nagrod`).
