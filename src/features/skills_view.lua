@@ -130,27 +130,63 @@ function S:parse_remaining_skill_line(line)
     return true
 end
 
+-- The server may add a "Razem" column between Premia and Cwiczenia.
+-- Remember the header so one unsigned trailing number is assigned to the
+-- correct column (old: Premia; new: Razem).
+function S:parse_practice_table_header(line)
+    if not self.skill_capture then return false end
+    local header = trim(line):gsub("%s+", " ")
+    if header == "Umiejetnosc Praktyka Teoria Premia Cwiczenia" then
+        self.skill_capture.has_total_column = false
+    elseif header == "Umiejetnosc Praktyka Teoria Premia Razem Cwiczenia" then
+        self.skill_capture.has_total_column = true
+    else
+        return false
+    end
+    return true
+end
+
 function S:parse_practice_table_line(line)
     if not self.skill_capture then return false end
     local name, practice, theory, rest = trim(line):match("^(.-)%s+(%d+)%s+(%d+)%s*(.*)$")
     if not name or trim(name) == "" then return false end
-    local bonus, exercises, required
     rest = trim(rest)
-    if rest ~= "" then
-        bonus, exercises, required = rest:match("^([+-]%d+)%s+(%d+)/(%d+)$")
-        if not bonus then exercises, required = rest:match("^(%d+)/(%d+)$") end
-        if not exercises and not bonus then bonus = rest:match("^([+-]%d+)$") or rest:match("^(%d+)$") end
-        if not bonus and not exercises then return false end
-        if required and tonumber(required) <= 0 then return false end
+
+    -- Parse the optional exercise fraction from the right, then consume up
+    -- to two numeric columns (Premia and Razem). Reject unknown trailing
+    -- data before touching the current snapshot.
+    local bonus, total, exercises, required
+    local prefix, done, needed = rest:match("^(.-)%s*(%d+)/(%d+)$")
+    if done then
+        if tonumber(needed) <= 0 then return false end
+        exercises, required, rest = tonumber(done), tonumber(needed), trim(prefix)
     end
+    local values = {}
+    for token in rest:gmatch("%S+") do
+        if not token:match("^[+-]?%d+$") then return false end
+        values[#values+1] = token
+        if #values > 2 then return false end
+    end
+    if #values == 2 then
+        bonus, total = tonumber(values[1]), tonumber(values[2])
+        if total < 0 then return false end
+    elseif #values == 1 then
+        if values[1]:match("^[+-]") or not self.skill_capture.has_total_column then
+            bonus = tonumber(values[1])
+        else
+            total = tonumber(values[1])
+        end
+    end
+
     self:add_skill(name, "Poziom: " .. practice, practice)
     local skill = self.skill_capture.skills[normalize(name)]
     skill.numeric = true
     skill.theory = tonumber(theory)
     skill.theory_level = "Teoria: " .. theory
-    skill.bonus = tonumber(bonus)
-    skill.exercises = tonumber(exercises)
-    skill.required = tonumber(required)
+    skill.bonus = bonus
+    skill.total = total
+    skill.exercises = exercises
+    skill.required = required
     return true
 end
 
@@ -254,7 +290,7 @@ function S:parse_skill_line(line)
     return false
 end
 
-function S:print_skill(skill, previous)
+function S:print_skill(skill, previous, has_total_column)
     local P = colors()
     local delta = previous and not skill.untrained and not previous.untrained
         and math.max(0, skill.value - previous.value) or 0
@@ -280,7 +316,9 @@ function S:print_skill(skill, previous)
         cell(string.format("%8s", skill.theory or "--"), skill.theory_level or "Nie dotyczy", P.blue)
         local exercises = skill.exercises and (skill.exercises .. "/" .. skill.required) or "--"
         local bonus = skill.bonus and string.format("%+d", skill.bonus) or "--"
+        local total = skill.total and tostring(skill.total) or "--"
         hecho(P.lavender .. string.format("%8s", bonus)
+            .. (has_total_column and (P.mint .. string.format("%8s", total)) or "")
             .. P.text_muted .. string.format("%12s", exercises)
             .. (skill.untrained and (P.yellow .. "  do wytrenowania") or "")
             .. "  " .. delta_text(delta, (skill.theory or skill.numeric) and "" or "%", P))
@@ -357,11 +395,14 @@ function S:finish_skills()
             self.name_width = math.max(self.name_width, U.text_width(skill.name) + 2)
         end
         hecho("\n\n" .. P.lavender .. "UMIEJETNOSCI"
-            .. "\n" .. P.separator .. string.rep("-", self.name_width + 38) .. "\n")
-        hecho(P.text_muted .. pad("", self.name_width)
-            .. string.format("%10s%8s%8s%12s", "praktyka", "teoria", "premia", "cwiczenia") .. "\n")
+            .. "\n" .. P.separator .. string.rep("-", self.name_width + 38
+                + (capture.has_total_column and 8 or 0)) .. "\n")
+        local columns = capture.has_total_column
+            and string.format("%10s%8s%8s%8s%12s", "praktyka", "teoria", "premia", "razem", "cwiczenia")
+            or string.format("%10s%8s%8s%12s", "praktyka", "teoria", "premia", "cwiczenia")
+        hecho(P.text_muted .. pad("", self.name_width) .. columns .. "\n")
         for _, key in ipairs(capture.order) do
-            self:print_skill(capture.skills[key], self.previous_skills[key])
+            self:print_skill(capture.skills[key], self.previous_skills[key], capture.has_total_column)
             hecho("\n")
         end
     end
@@ -530,14 +571,20 @@ function S:install()
     )
 
     self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
-        [[^\s*(?:Umiejetnosci z teoria i praktyka:|Pozostale umiejetnosci:|Umiejetnosc\s+Praktyka\s+Teoria\s+Premia\s+Cwiczenia)\s*$]],
+        [[^\s*(?:Umiejetnosci z teoria i praktyka:|Pozostale umiejetnosci:|Umiejetnosc\s+Praktyka\s+Teoria\s+Premia\s+(?:Razem\s+)?Cwiczenia)\s*$]],
         function()
-            if S.skill_capture then gag_line(); S:touch_skill_timer() end
+            if not S.skill_capture then return end
+            local current = getCurrentLine()
+            if current:match("^%s*Umiejetnosc%s+") then
+                if not S:parse_practice_table_header(current) then return end
+            end
+            gag_line()
+            S:touch_skill_timer()
         end
     )
 
     self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
-        [[^\s*.+?\s+\d+\s+\d+(?:\s+[+-]?\d+)?(?:\s+\d+/\d+)?\s*$]],
+        [[^\s*.+?\s+\d+\s+\d+(?:\s+[+-]?\d+){0,2}(?:\s+\d+/\d+)?\s*$]],
         function()
             if not S.skill_capture then return end
             if S:parse_practice_table_line(getCurrentLine()) then gag_line(); S:touch_skill_timer() end
