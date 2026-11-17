@@ -15,8 +15,11 @@ R.capture = nil
 R.capture_timer = nil
 R.roster = nil
 R.roster_timer = nil
+R.progress = nil
+R.progress_timer = nil
 R.capture_timeout = 2.0
 R.roster_timeout = 3.0
+R.progress_timeout = 0.65
 
 local colors = U.palette
 local normalize = U.normalize
@@ -50,6 +53,76 @@ local function touch_roster()
         R.roster_timer = nil
         R.roster = nil
     end)
+end
+
+-- "parozkaz postepy" now emits one-line statuses for multiple retainers,
+-- independently of the detailed progress card. Group only these exact
+-- messages; do not swallow unrelated combat or chat lines.
+local function touch_progress()
+    if R.progress_timer then pcall(killTimer, R.progress_timer) end
+    R.progress_timer = tempTimer(R.progress_timeout, function()
+        R.progress_timer = nil
+        R:finish_progress()
+    end)
+end
+
+function R:parse_progress_line(text)
+    local line = U.trim(tostring(text or ""))
+    local name = line:match("^(.+) osiagnela juz najwyzsza range wyszkolenia%.$")
+        or line:match("^(.+) osiagnal juz najwyzsza range wyszkolenia%.$")
+    if name and U.trim(name) ~= "" then
+        return {name=U.trim(name), max_rank=true}
+    end
+
+    local recipient, remaining = line:match(
+        "^Do nastepnej rangi (.+) brakuje (%d+) doswiadczenia%.$"
+    )
+    if recipient and U.trim(recipient) ~= "" then
+        -- The game uses dative here (e.g. "Chasstanie"). Do not guess a
+        -- nominative form; preserve what the server actually sent.
+        return {name=U.trim(recipient), remaining=tonumber(remaining)}
+    end
+    return nil
+end
+
+function R:add_progress_line(text)
+    local entry = self:parse_progress_line(text)
+    if not entry then return false end
+    if not self.progress then self.progress = {entries={}} end
+    self.progress.entries[#self.progress.entries+1] = entry
+    gag_line()
+    touch_progress()
+    return true
+end
+
+function R:show_progress(report)
+    if not report or not report.entries or #report.entries == 0 then return false end
+    local P = colors()
+    local name_width = 19
+    for _, entry in ipairs(report.entries) do
+        name_width = math.max(name_width, U.text_width(entry.name) + 3)
+    end
+    hecho("\n\n" .. P.lavender .. "PACHOLKOWIE  POSTEPY"
+        .. "\n" .. P.separator .. "-------------------------------------------------------")
+    for _, entry in ipairs(report.entries) do
+        hecho("\n  " .. P.text .. pad(entry.name, name_width))
+        if entry.max_rank then
+            hecho(P.mint .. "MAKSYMALNA RANGA")
+        else
+            hecho(P.yellow .. fmt_int(entry.remaining) .. " XP"
+                .. P.text_muted .. " do nastepnej rangi")
+        end
+    end
+    hecho("\n" .. P.separator .. "-------------------------------------------------------\n")
+    return true
+end
+
+function R:finish_progress()
+    local report = self.progress
+    self.progress = nil
+    if self.progress_timer then pcall(killTimer, self.progress_timer) end
+    self.progress_timer = nil
+    return self:show_progress(report)
 end
 
 local function display_role(role)
@@ -261,6 +334,17 @@ function R:install()
             local shown = R:show_card()
             if shown then reset_capture() else touch_capture() end
         end
+    )
+
+    -- New concise per-retainer rank messages. Exact triggers ensure
+    -- that a different server message cannot be accidentally hidden.
+    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
+        [[^.+ osiagn(?:ela|al) juz najwyzsza range wyszkolenia\.\s*$]],
+        function() R:add_progress_line(matches[1] or getCurrentLine()) end
+    )
+    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
+        [[^Do nastepnej rangi .+ brakuje \d+ doswiadczenia\.\s*$]],
+        function() R:add_progress_line(matches[1] or getCurrentLine()) end
     )
 
     self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger(
