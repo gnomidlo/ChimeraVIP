@@ -87,3 +87,57 @@ assert(rendered:find("posluch: 16/100", 1, true))
 assert(rendered:find("ZA CIEZKI", 1, true))
 assert(rendered:find("starsza pani szamanka bagiennych gnomow", 1, true))
 print("Palista legacy format, warnings and long professions: PASS")
+
+
+-- New "parozkaz postepy" format: individual rank statuses, no detailed
+-- retainer card fields. Parse declined names verbatim; never invent a
+-- nominative form from "Chasstanie".
+local progress_max = "Zathrika osiagnela juz najwyzsza range wyszkolenia."
+local progress_remaining = "Do nastepnej rangi Chasstanie brakuje 691373 doswiadczenia."
+local max_callback, remaining_callback
+for _, trigger in ipairs(triggers) do
+    if trigger.pattern:find("osiagn", 1, true) then max_callback = trigger.callback end
+    if trigger.pattern:find("brakuje", 1, true)
+        and trigger.pattern:find("doswiadczenia", 1, true) then
+        remaining_callback = trigger.callback
+    end
+end
+assert(max_callback and remaining_callback, "New parozkaz postepy triggers missing")
+assert(not R:parse_progress_line("Przeciwnik brakuje doswiadczenia."))
+assert(not R:parse_progress_line("To calkiem inny komunikat."))
+assert(R:parse_progress_line("Rakthar osiagnal juz najwyzsza range wyszkolenia.").max_rank)
+assert(R:parse_progress_line(progress_remaining).name == "Chasstanie")
+assert(R:parse_progress_line(progress_remaining).remaining == 691373)
+assert(R:parse_progress_line(progress_max).max_rank == true)
+output = {}
+matches = {progress_max}
+max_callback()
+matches = {progress_remaining}
+remaining_callback()
+assert(R.progress and #R.progress.entries == 2)
+assert(R.progress.entries[1].name == "Zathrika")
+assert(R.progress.entries[2].name == "Chasstanie")
+assert(R:finish_progress())
+assert(R.progress == nil and R.progress_timer == nil)
+local summary = table.concat(output):gsub("#%x%x%x%x%x%x", "")
+assert(summary:find("PACHOLKOWIE  POSTEPY", 1, true))
+assert(summary:find("Zathrika", 1, true))
+assert(summary:find("MAKSYMALNA RANGA", 1, true))
+assert(summary:find("Chasstanie", 1, true))
+assert(summary:find("691 373 XP", 1, true))
+assert(summary:find("do nastepnej rangi", 1, true))
+assert(not summary:find("nil", 1, true))
+assert(not R:finish_progress())
+print("Retainer parozkaz postepy new summary and dative names: PASS")
+
+-- Legacy detailed cards still render the whole XP snapshot.
+output = {}
+R:start("Zathrika", "lowczyni nagrod", 16, 1212334)
+R.capture.since_call = 6000
+R.capture.to_next = 15000
+assert(R:show_card())
+local card = table.concat(output):gsub("#%x%x%x%x%x%x", "")
+assert(card:find("15 000 XP", 1, true))
+assert(card:find("6 000 XP", 1, true))
+assert(card:find("1 212 334 XP", 1, true))
+print("Legacy detailed retainer progress card retained: PASS")
