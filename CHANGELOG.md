@@ -1,3 +1,11 @@
+## 0.190 — Pachołkowie: nowe komunikaty `parozkaz postepy`
+
+- Rozpoznawanie `Zathrika osiagnela juz najwyzsza range wyszkolenia.` i analogicznej formy męskiej.
+- Rozpoznawanie `Do nastepnej rangi Chasstanie brakuje 691373 doswiadczenia.`.
+- Zwięzły, zbiorczy raport postępów: maksymalna ranga lub liczba XP pozostała do awansu.
+- Bez zgadywania mianownika imion odmienionych przez serwer; zachowany dotychczasowy widok szczegółowy oraz lista `palista`.
+- Testy regresji obu komunikatów, ignorowania obcych wierszy i zgodności starych kart.
+
 ## 0.189 — Umiejętności: nowa kolumna Razem
 
 - Obsługa nowego nagłówka `Umiejetnosc Praktyka Teoria Premia Razem Cwiczenia` i starego formatu bez `Razem`.
