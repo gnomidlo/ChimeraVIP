@@ -653,61 +653,135 @@ function XP:find_mob(name)
     }
 end
 
+local function retainer_remaining_text(xp, data)
+    if data.pending then return "pobieram..." end
+    local remain = xp:retainer_remaining(data)
+    if remain == "MAX" then return "MAX" end
+    if remain == "AWANS" then return "AWANS — odswiez" end
+    if type(remain) == "number" then return "~" .. format_integer(remain) end
+    return data.snapshot_error and "brak odpowiedzi" or "brak snapshotu"
+end
+
+local function retainer_eta_text(xp, data)
+    local remain, rate = xp:retainer_remaining(data), xp:retainer_rate(data)
+    if type(remain) ~= "number" or not rate or rate <= 0 then return "--" end
+    return "~" .. format_time(remain / rate * 3600)
+end
+
 function XP:show_summary()
-    local Cc,S=self.colors,self.session
-    if S.kills==0 then hecho("\n"..Cc.text_muted.."XP: "..Cc.text.."brak danych w tej sesji."); actions("summary"); return end
-    local now=os.time(); local session_seconds=now-S.started_at; local active_seconds=self:get_active_seconds(now)
-    local session_rate=calculate_rate(S.total_xp,session_seconds); local active_rate=calculate_rate(S.total_xp,active_seconds)
-    local current_rate=self:get_current_rate(now); local previous_rate=self:get_previous_rate(now); local trend=self:get_trend(current_rate,previous_rate)
-    local average=S.total_xp/S.kills; local trend_text=""
-    if trend then
-        if trend>=3 then trend_text=string.format("  %s↗ +%.1f%%",Cc.mint,trend)
-        elseif trend<=-3 then trend_text=string.format("  %s↘ %.1f%%",Cc.rose,trend)
-        else trend_text=string.format("  %s→ %.1f%%",Cc.text_muted,trend) end
+    local Cc, S = self.colors, self.session
+    local now = os.time()
+    self:accrue_combat(now)
+    local members = self:get_present_retainers()
+    local elapsed = S.started_at and math.max(0, now - S.started_at) or 0
+    local combat = S.party_combat_seconds or 0
+    local personal = S.self_combat_seconds or 0
+    local current_rate = self:get_current_rate(now)
+    local previous_rate = self:get_previous_rate(now)
+    local trend = self:get_trend(current_rate, previous_rate)
+    local arrow = trend and (trend >= 3 and " ↗" or trend <= -3 and " ↘" or " →") or ""
+    local average = S.kills > 0 and format_integer(S.total_xp / S.kills) or "--"
+    local top = self:get_mob_stats()[1]
+
+    hecho("\n\n" .. Cc.lavender .. "XP — SESJA"
+        .. "\n" .. Cc.separator .. "-------------------------------------------------------"
+        .. "\n" .. Cc.text_muted .. "Czas sesji      " .. Cc.text .. format_time(elapsed)
+        .. "\n" .. Cc.text_muted .. "W walce druzyna " .. Cc.text
+        .. (S.combat_seen and format_time(combat) or "brak danych GMCP")
+        .. "\n" .. Cc.text_muted .. "W walce TY      " .. Cc.text
+        .. (S.combat_seen and format_time(personal) or "brak danych GMCP")
+        .. "\n\n" .. Cc.blue .. "TWOJE DOSWIADCZENIE"
+        .. "\n" .. Cc.text_muted .. "Zdobyte XP      " .. Cc.mint .. format_integer(S.total_xp)
+        .. "\n" .. Cc.text_muted .. "Pokonane moby   " .. Cc.text .. format_integer(S.kills)
+        .. "\n" .. Cc.text_muted .. "XP / mob        " .. Cc.text .. average
+        .. "\n\n" .. Cc.blue .. "WYDAJNOSC"
+        .. "\n" .. Cc.text_muted .. "Teraz (10 min)  " .. Cc.mint .. format_rate(current_rate) .. arrow
+        .. "\n" .. Cc.text_muted .. "W walce         " .. Cc.blue
+        .. (S.combat_seen and format_rate(calculate_rate(S.total_xp, combat)) or "--")
+        .. "\n" .. Cc.text_muted .. "Sesja           " .. Cc.lavender
+        .. format_rate(calculate_rate(S.total_xp, elapsed)))
+    if top then
+        hecho("\n" .. Cc.text_muted .. "Top mob (suma)  " .. Cc.text
+            .. top.name .. " (" .. format_integer(top.xp) .. " XP)")
     end
 
-    local top=self:get_mob_stats()[1]
-    local top_text=top and (top.name.." ("..format_integer(top.xp).." xp)") or "..."
-    local killers=self:get_killer_stats()
-    local killer_name_width=12
-    for _,data in ipairs(killers) do killer_name_width=math.max(killer_name_width,text_width(data.name)) end
-    killer_name_width=math.max(killer_name_width,text_width("DRUZYNA RAZEM"))
-
-    local function percent(value,total)
-        if not total or total<=0 then return "0.0%" end
-        return string.format("%.1f%%",value/total*100)
+    hecho("\n\n" .. Cc.blue .. "PACHOLKOWIE")
+    if #members == 0 then
+        hecho("\n  " .. Cc.text_muted .. "Brak pacholkow przy tobie.")
     end
-
-    local function killer_row(name,kills,xp,name_color,total_row)
-        local kill_share=total_row and "100.0%" or percent(kills,S.kills)
-        local xp_share=total_row and "100.0%" or percent(xp,S.total_xp)
-        hecho("\n  "..(name_color or Cc.text)..pad(name,killer_name_width+2)
-            ..Cc.text..string.format("%7s",format_integer(kills))
-            ..Cc.text_muted..string.format("%9s",kill_share)
-            ..Cc.peach..string.format("%14s",format_integer(xp))
-            ..Cc.text_muted..string.format("%9s",xp_share))
+    for _, member in ipairs(members) do
+        local data = self:retainer_data(member.id, member.name)
+        hecho("\n  " .. Cc.text .. pad(data.name, 16)
+            .. Cc.mint .. "+" .. format_integer(data.xp) .. " XP"
+            .. Cc.text_muted .. "  |  do awansu: " .. Cc.yellow
+            .. retainer_remaining_text(self, data)
+            .. Cc.text_muted .. "  |  " .. retainer_eta_text(self, data))
     end
-
-    local table_width=killer_name_width+41
-    hecho("\n\n"..Cc.lavender.."XP — SESJA\n"..Cc.separator.."------------------------------------------\n"
-        ..Cc.text_muted.."Czas       "..Cc.text..string.format("%12s",format_time(session_seconds)).."\n"
-        ..Cc.text_muted.."Aktywnie   "..Cc.text..string.format("%12s",format_time(active_seconds)).."\n\n"
-        ..Cc.text_muted.."  "..pad("KTO",killer_name_width+2)
-        ..string.format("%7s","ZABICIA")..string.format("%9s","UDZIAL")
-        ..string.format("%14s","XP")..string.format("%9s","UDZIAL"))
-
-    killer_row("TY",S.own_kills,S.own_xp,Cc.mint,false)
-    for _,data in ipairs(killers) do killer_row(data.name,data.kills,data.xp,Cc.text,false) end
-    hecho("\n  "..Cc.separator..string.rep("-",table_width))
-    killer_row("DRUZYNA RAZEM",S.kills,S.total_xp,Cc.lavender,true)
-
-    hecho("\n\n"..Cc.text_muted.."XP / kill  "..Cc.text..string.format("%12s",format_integer(average)).."\n"
-        ..Cc.text_muted.."Top mob    "..Cc.mint..top_text.."\n\n"
-        ..Cc.text_muted.."TERAZ      "..Cc.mint..string.format("%12s",format_rate(current_rate))..trend_text.."\n"
-        ..Cc.text_muted.."AKTYWNIE   "..Cc.blue..string.format("%12s",format_rate(active_rate)).."\n"
-        ..Cc.text_muted.."SESJA      "..Cc.lavender..string.format("%12s",format_rate(session_rate))
-        .."\n"..Cc.separator.."------------------------------------------")
+    hecho("\n" .. Cc.separator .. "-------------------------------------------------------")
     actions("summary")
+end
+
+function XP:show_retainers()
+    local Cc = self.colors
+    self:accrue_combat(os.time())
+    local members = self:get_present_retainers()
+    local here = {}
+    for _, member in ipairs(members) do
+        here[member.id] = true
+        self:retainer_data(member.id, member.name)
+    end
+    local list = {}
+    for _, data in pairs(self.session.retainers) do list[#list + 1] = data end
+    table.sort(list, function(a,b) return a.name < b.name end)
+    hecho("\n\n" .. Cc.lavender .. "XP — PACHOLKOWIE"
+        .. "\n" .. Cc.separator .. "-------------------------------------------------------")
+    if #list == 0 then
+        hecho("\n" .. Cc.text_muted .. "Brak danych. Dodaj pacholkow do druzyny.")
+    end
+    for _, data in ipairs(list) do
+        local rate = self:retainer_rate(data)
+        hecho("\n\n  " .. (here[data.id] and Cc.mint or Cc.text_muted)
+            .. data.name .. (here[data.id] and "" or " (poza druzyna)")
+            .. "\n" .. Cc.text_muted .. "  XP sesja       " .. Cc.text .. format_integer(data.xp)
+            .. "\n" .. Cc.text_muted .. "  XP/h w walce   " .. Cc.blue .. format_rate(rate)
+            .. "\n" .. Cc.text_muted .. "  Do awansu      " .. Cc.yellow
+            .. retainer_remaining_text(self, data)
+            .. "\n" .. Cc.text_muted .. "  Szac. awans    " .. Cc.mint
+            .. retainer_eta_text(self, data))
+        if data.snapshot then
+            hecho("\n" .. Cc.text_muted .. "  Snapshot       "
+                .. os.date("%H:%M", data.snapshot.checked_at))
+        end
+        if here[data.id] and type(echoLink) == "function" then
+            hecho("\n  " .. Cc.text_muted)
+            echoLink("[ODSWIEZ]", string.format("expandAlias(%q, false)",
+                "/xp odswiez " .. data.id), "Odczytaj postepy: " .. data.name, true)
+        end
+    end
+    hecho("\n" .. Cc.separator .. "-------------------------------------------------------")
+    actions("retainers")
+end
+
+function XP:show_killers()
+    local Cc, S = self.colors, self.session
+    local list = self:get_killer_stats()
+    local function row(label, count)
+        local share = S.kills > 0 and string.format("%.1f%%", count / S.kills * 100) or "--"
+        hecho("\n  " .. Cc.text .. pad(label, 18)
+            .. Cc.peach .. string.format("%7s",format_integer(count))
+            .. Cc.text_muted .. string.format("%9s",share))
+    end
+    hecho("\n\n" .. Cc.lavender .. "XP — DOBICIA"
+        .. "\n" .. Cc.separator .. "------------------------------------------"
+        .. "\n  " .. Cc.text_muted .. pad("KTO",18) .. " DOBICIA   UDZIAL")
+    row("TY", S.own_kills)
+    for _, killer in ipairs(list) do row(killer.name, killer.kills) end
+    hecho("\n" .. Cc.separator .. "------------------------------------------")
+    row("RAZEM", S.kills)
+    hecho("\n" .. Cc.text_muted
+        .. "Dobicia nie oznaczaja udzialu w otrzymanym XP."
+        .. "\n" .. Cc.separator .. "------------------------------------------")
+    actions("kills")
 end
 
 function XP:show_mobs()
