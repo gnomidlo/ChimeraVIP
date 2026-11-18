@@ -162,6 +162,148 @@ end
 
 XP:ensure_session_schema()
 
+-- Use immutable entity IDs, not names or inflected command targets.
+-- A party can include players: only confirmed nearby NPC members are retainers.
+function XP:get_present_retainers()
+    local group = gmcp and gmcp.Chimera and gmcp.Chimera.Group and gmcp.Chimera.Group.State
+    local room = gmcp and gmcp.Chimera and gmcp.Chimera.Room and gmcp.Chimera.Room.Entities
+    local npcs = {}
+    if room and type(room.entities) == "table" then
+        for _, entity in pairs(room.entities) do
+            if type(entity) == "table" and entity.id and entity.kind == "npc"
+                and entity.group_role == "member" and entity.relation == "ally" then
+                npcs[tostring(entity.id)] = true
+            end
+        end
+    end
+    local list = {}
+    if group and type(group.members) == "table" then
+        for _, member in pairs(group.members) do
+            if type(member) == "table" and member.id and member.self ~= 1
+                and (member.here == 1 or member.here == true)
+                and (npcs[tostring(member.id)] or member.kind == "npc") then
+                list[#list + 1] = {id=tostring(member.id), name=trim(member.name)}
+            end
+        end
+    end
+    table.sort(list, function(a,b)
+        if a.name == b.name then return a.id < b.id end
+        return a.name < b.name
+    end)
+    return list
+end
+
+function XP:retainer_data(id, name)
+    id = tostring(id or "")
+    if id == "" then return nil end
+    local S = self.session
+    local data = S.retainers[id]
+    if not data then
+        data = {id=id, name=trim(name), xp=0, rewards=0}
+        S.retainers[id] = data
+    elseif trim(name) ~= "" then
+        data.name = trim(name)
+    end
+    return data
+end
+
+function XP:find_present_retainer(name)
+    local wanted, found = normalize(name), nil
+    if wanted == "" then return nil end
+    for _, member in ipairs(self:get_present_retainers()) do
+        if normalize(member.name) == wanted then
+            if found then return nil end -- Ambiguous name: never guess the ID.
+            found = member
+        end
+    end
+    return found
+end
+
+-- Integrate the *previous* state up to this instant before accepting a new
+-- GMCP snapshot. Never use Combat.Kill: the last kill remains in GMCP at rest.
+function XP:accrue_combat(now)
+    local clock, S = self.combat_clock, self.session
+    now = now or os.time()
+    if not clock.last_at then clock.last_at = now; return end
+    local elapsed = math.max(0, now - clock.last_at)
+    -- A stale snapshot after a disconnect must not count hours of combat.
+    elapsed = math.min(elapsed, self.combat_clock_max_gap)
+    if clock.party then S.party_combat_seconds = S.party_combat_seconds + elapsed end
+    if clock.self then S.self_combat_seconds = S.self_combat_seconds + elapsed end
+    for id in pairs(clock.members or {}) do
+        S.member_combat_seconds[id] = (S.member_combat_seconds[id] or 0) + elapsed
+    end
+    clock.last_at = now
+end
+
+function XP:on_combat_state(now)
+    local state = gmcp and gmcp.Chimera and gmcp.Chimera.Combat and gmcp.Chimera.Combat.State
+    if type(state) ~= "table" or type(state.relations) ~= "table" then return false end
+    now = now or os.time()
+    self:accrue_combat(now)
+    local group = gmcp.Chimera.Group and gmcp.Chimera.Group.State
+    local members = {}
+    local self_id = gmcp.Char and gmcp.Char.Info and gmcp.Char.Info.id
+    if self_id then members[tostring(self_id)] = "self" end
+    if type(group) == "table" and type(group.members) == "table" then
+        for _, member in pairs(group.members) do
+            if type(member) == "table" and member.id and (member.here == 1 or member.here == true) then
+                members[tostring(member.id)] = member.self == 1 and "self" or "other"
+                if member.self == 1 then self_id = tostring(member.id) end
+            end
+        end
+    end
+    local retainers = {}
+    for _, member in ipairs(self:get_present_retainers()) do retainers[member.id] = true end
+    local self_fighting, party_fighting, active_retainers = false, false, {}
+    for _, relation in pairs(state.relations) do
+        if type(relation) == "table" and relation.attacker and relation.defender then
+            local a, d = tostring(relation.attacker), tostring(relation.defender)
+            -- Only hostile relations. Two party members cannot fight each
+            -- other for the purpose of this session timer.
+            if members[a] and not members[d] then
+                party_fighting = true
+                if a == self_id then self_fighting = true end
+                if retainers[a] then active_retainers[a] = true end
+            elseif members[d] and not members[a] then
+                party_fighting = true
+                if d == self_id then self_fighting = true end
+                if retainers[d] then active_retainers[d] = true end
+            end
+        end
+    end
+    self.combat_clock.party = party_fighting
+    self.combat_clock.self = self_fighting
+    self.combat_clock.members = active_retainers
+    self.combat_clock.last_at = now
+    self.session.combat_seen = true
+    if not self.session.started_at and party_fighting then self.session.started_at = now end
+    return true
+end
+
+function XP:stop_combat_clock()
+    self:accrue_combat(os.time())
+    self.combat_clock.party = false
+    self.combat_clock.self = false
+    self.combat_clock.members = {}
+    self.combat_clock.last_at = nil
+end
+
+function XP:retainer_rate(data)
+    local seconds = self.session.member_combat_seconds[data.id] or 0
+    if seconds < 60 or (data.rewards or 0) < 3 then return nil end
+    return calculate_rate(data.xp, seconds)
+end
+
+function XP:retainer_remaining(data)
+    local snap = data.snapshot
+    if not snap then return nil end
+    if snap.max_rank then return "MAX" end
+    local remaining = snap.remaining - (data.xp - snap.xp_at_read)
+    if remaining <= 0 then return "AWANS" end
+    return math.floor(remaining)
+end
+
 function XP:classify_mob(raw_name)
     local normalized = normalize(raw_name); local best_rule = nil
     for _, rule in ipairs(self.rules) do
