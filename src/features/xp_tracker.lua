@@ -24,8 +24,11 @@ if XP.snapshot_timer and type(killTimer) == "function" then pcall(killTimer, XP.
 XP.snapshot_timer, XP.snapshot_queue, XP.snapshot_current = nil, nil, nil
 XP.snapshot_show_pending = false
 XP.snapshot_timeout = 3.0
-XP.combat_clock = {last_at=nil, party=false, self=false, members={}}
+if XP.combat_tick and type(killTimer) == "function" then pcall(killTimer, XP.combat_tick) end
+XP.combat_tick = nil
+XP.combat_clock = {last_at=nil, party=false, self=false, members={}, present={}}
 XP.combat_clock_max_gap = 60
+XP.combat_tick_seconds = 5
 
 XP.rules = {
     { name = "krasnolud chaosu", match = "krasnoluda chaosu" },
@@ -101,7 +104,7 @@ function XP:new_session()
         kills=0, own_kills=0, group_kills=0, own_xp=0, group_xp=0,
         events={}, rate_events={}, mob_stats={}, killer_stats={},
         retainers={}, party_combat_seconds=0, self_combat_seconds=0,
-        member_combat_seconds={}, combat_seen=false,
+        member_combat_seconds={}, member_party_seconds={}, combat_seen=false,
     }
 end
 
@@ -146,6 +149,7 @@ function XP:ensure_session_schema()
     S.party_combat_seconds = tonumber(S.party_combat_seconds) or 0
     S.self_combat_seconds = tonumber(S.self_combat_seconds) or 0
     S.member_combat_seconds = type(S.member_combat_seconds) == "table" and S.member_combat_seconds or {}
+    S.member_party_seconds = type(S.member_party_seconds) == "table" and S.member_party_seconds or {}
     S.combat_seen = S.combat_seen == true
 
     if type(S.mob_stats) ~= "table" then S.mob_stats = self:rebuild_mob_stats(S.events) end
@@ -233,7 +237,32 @@ function XP:accrue_combat(now)
     for id in pairs(clock.members or {}) do
         S.member_combat_seconds[id] = (S.member_combat_seconds[id] or 0) + elapsed
     end
+    if clock.party then
+        for id in pairs(clock.present or {}) do
+            S.member_party_seconds[id] = (S.member_party_seconds[id] or 0) + elapsed
+        end
+    end
     clock.last_at = now
+end
+
+-- A short timer accounts for long boss fights even when GMCP Combat.State is
+-- sent only on start/end transitions. Disconnect and idle both cancel it.
+function XP:stop_combat_tick()
+    if self.combat_tick and type(killTimer) == "function" then
+        pcall(killTimer, self.combat_tick)
+    end
+    self.combat_tick = nil
+end
+
+function XP:schedule_combat_tick()
+    if not self.combat_clock.party or self.combat_tick then return end
+    self.combat_tick = tempTimer(self.combat_tick_seconds, function()
+        self.combat_tick = nil
+        if self.combat_clock.party then
+            self:accrue_combat(os.time())
+            self:schedule_combat_tick()
+        end
+    end)
 end
 
 function XP:on_combat_state(now)
@@ -275,7 +304,9 @@ function XP:on_combat_state(now)
     self.combat_clock.party = party_fighting
     self.combat_clock.self = self_fighting
     self.combat_clock.members = active_retainers
+    self.combat_clock.present = retainers
     self.combat_clock.last_at = now
+    if party_fighting then self:schedule_combat_tick() else self:stop_combat_tick() end
     self.session.combat_seen = true
     if not self.session.started_at and party_fighting then self.session.started_at = now end
     return true
@@ -283,14 +314,18 @@ end
 
 function XP:stop_combat_clock()
     self:accrue_combat(os.time())
+    self:stop_combat_tick()
     self.combat_clock.party = false
     self.combat_clock.self = false
     self.combat_clock.members = {}
+    self.combat_clock.present = {}
     self.combat_clock.last_at = nil
 end
 
 function XP:retainer_rate(data)
-    local seconds = self.session.member_combat_seconds[data.id] or 0
+    -- A retainer earns XP from the party kill even if it never swung a
+    -- weapon; use party-fight time while *present*, not its personal attacks.
+    local seconds = self.session.member_party_seconds[data.id] or 0
     if seconds < 60 or (data.rewards or 0) < 3 then return nil end
     return calculate_rate(data.xp, seconds)
 end
