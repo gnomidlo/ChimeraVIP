@@ -88,6 +88,13 @@ end
 function R:add_progress_line(text)
     local entry = self:parse_progress_line(text)
     if not entry then return false end
+    -- /xp requests exactly one retainer at a time. Hide the raw reply and
+    -- feed it to its ID-bound snapshot instead of printing another report.
+    local xp = C.xp_tracker
+    if xp and xp.snapshot_current and type(xp.consume_retainer_progress) == "function" then
+        gag_line()
+        return xp:consume_retainer_progress(entry)
+    end
     if not self.progress then self.progress = {entries={}} end
     self.progress.entries[#self.progress.entries+1] = entry
     gag_line()
