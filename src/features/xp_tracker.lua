@@ -20,6 +20,12 @@ XP.trigger_ids = XP.trigger_ids or {}
 XP.alias_ids = XP.alias_ids or {}
 XP.pending_rewards = {}
 XP.pending_death = nil
+if XP.snapshot_timer and type(killTimer) == "function" then pcall(killTimer, XP.snapshot_timer) end
+XP.snapshot_timer, XP.snapshot_queue, XP.snapshot_current = nil, nil, nil
+XP.snapshot_show_pending = false
+XP.snapshot_timeout = 3.0
+XP.combat_clock = {last_at=nil, party=false, self=false, members={}}
+XP.combat_clock_max_gap = 60
 
 XP.rules = {
     { name = "krasnolud chaosu", match = "krasnoluda chaosu" },
@@ -60,9 +66,13 @@ local function actions(kind)
     if kind == "summary" then
         U.action_links({
             {"MOBY", "/xp mobs", "Statystyki typow mobow"},
+            {"PACHOLKOWIE", "/xp pacholkowie", "Postepy i XP pacholkow"},
+            {"DOBICIA", "/xp dobicia", "Kto dobija przeciwnikow"},
             {"LAST 10", "/xp last 10", "Ostatnie 10 zabojstw"},
             {"RESET", "/xp reset", "Wyzeruj sesje XP"},
         })
+    elseif kind == "retainers" or kind == "kills" then
+        U.action_links({{"SESJA", "/xp", "Podsumowanie sesji"}, {"ODSWIEZ", "/xp odswiez", "Pobierz postepy obecnych pacholkow"}})
     elseif kind == "mobs" then
         U.action_links({{"SESJA", "/xp", "Podsumowanie sesji"}, {"LAST 10", "/xp last 10", "Ostatnie 10 zabojstw"}})
     elseif kind == "last" or kind == "mob" then
@@ -90,6 +100,8 @@ function XP:new_session()
         started_at=nil, last_kill_at=nil, active_seconds=0, total_xp=0,
         kills=0, own_kills=0, group_kills=0, own_xp=0, group_xp=0,
         events={}, rate_events={}, mob_stats={}, killer_stats={},
+        retainers={}, party_combat_seconds=0, self_combat_seconds=0,
+        member_combat_seconds={}, combat_seen=false,
     }
 end
 
@@ -130,6 +142,11 @@ function XP:ensure_session_schema()
     S.events = type(S.events) == "table" and S.events or {}
     S.own_xp = tonumber(S.own_xp) or 0
     S.group_xp = tonumber(S.group_xp) or 0
+    S.retainers = type(S.retainers) == "table" and S.retainers or {}
+    S.party_combat_seconds = tonumber(S.party_combat_seconds) or 0
+    S.self_combat_seconds = tonumber(S.self_combat_seconds) or 0
+    S.member_combat_seconds = type(S.member_combat_seconds) == "table" and S.member_combat_seconds or {}
+    S.combat_seen = S.combat_seen == true
 
     if type(S.mob_stats) ~= "table" then S.mob_stats = self:rebuild_mob_stats(S.events) end
     if type(S.killer_stats) ~= "table" then S.killer_stats = self:rebuild_killer_stats(S.events) end
