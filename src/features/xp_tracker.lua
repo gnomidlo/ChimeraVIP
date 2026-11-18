@@ -871,7 +871,7 @@ alias([[^/xp$]],function()
 end)
 alias([[^/xp (?:pacholkowie|pachołkowie|paxp)$]],function() XP:show_retainers() end)
 alias([[^/xp dobicia$]],function() XP:show_killers() end)
-alias([[^/xp odswiez(?:\\s+(\\S+))?$]],function()
+alias([[^/xp odswiez(?:\s+(\S+))?$]],function()
     if not XP:request_snapshots("retainers", matches[2]) then
         hecho("\n"..XP.colors.text_muted.."[XP] Brak takiego pacholka przy tobie.\n")
         XP:show_retainers()
