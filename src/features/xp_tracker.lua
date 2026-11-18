@@ -429,12 +429,94 @@ function XP:clear_pending_rewards()
     self.pending_rewards = {}
 end
 
+-- Read progress only when /xp (or an explicit refresh) is requested.
+-- One outstanding command at a time makes declined names unambiguous:
+-- the response belongs to the exact retainer ID we just asked about.
+function XP:complete_snapshots()
+    if self.snapshot_timer and type(killTimer) == "function" then
+        pcall(killTimer, self.snapshot_timer)
+    end
+    self.snapshot_timer, self.snapshot_current, self.snapshot_queue = nil, nil, nil
+    local render = self.snapshot_render
+    self.snapshot_render = nil
+    if render == "summary" then self:show_summary()
+    elseif render == "retainers" then self:show_retainers() end
+end
+
+function XP:send_next_snapshot()
+    if not self.snapshot_queue then return end
+    local next_member = table.remove(self.snapshot_queue, 1)
+    if not next_member then self:complete_snapshots(); return end
+    self.snapshot_current = next_member
+    local data = self:retainer_data(next_member.id, next_member.name)
+    data.pending = true
+    send("parozkaz " .. next_member.id .. " postepy", false)
+    local id = next_member.id
+    self.snapshot_timer = tempTimer(self.snapshot_timeout, function()
+        if self.snapshot_current and self.snapshot_current.id == id then
+            data.pending = false
+            data.snapshot_error = true
+            -- Fail closed: do NOT continue the queue after a timeout.
+            -- A late inflected reply must never be attributed to the next ID.
+            self:complete_snapshots()
+        end
+    end)
+end
+
+function XP:request_snapshots(render, only_id)
+    if self.snapshot_current then
+        self.snapshot_render = render or self.snapshot_render
+        return true
+    end
+    local members = {}
+    for _, member in ipairs(self:get_present_retainers()) do
+        if not only_id or member.id == tostring(only_id) then
+            members[#members+1] = member
+            self:retainer_data(member.id, member.name)
+        end
+    end
+    if #members == 0 then return false end
+    self.snapshot_queue, self.snapshot_render = members, render
+    self:send_next_snapshot()
+    return true
+end
+
+function XP:consume_retainer_progress(entry)
+    local current = self.snapshot_current
+    if not current or not entry or not (entry.max_rank or tonumber(entry.remaining)) then
+        return false
+    end
+    local data = self:retainer_data(current.id, current.name)
+    data.pending = false
+    data.snapshot_error = nil
+    data.snapshot = {
+        remaining = tonumber(entry.remaining),
+        max_rank = entry.max_rank == true,
+        xp_at_read = data.xp or 0,
+        checked_at = os.time(),
+    }
+    if self.snapshot_timer and type(killTimer) == "function" then
+        pcall(killTimer, self.snapshot_timer)
+    end
+    self.snapshot_timer, self.snapshot_current = nil, nil
+    self:send_next_snapshot()
+    return true
+end
+
 function XP:remember_reward(name, amount)
     amount = tonumber(amount)
     name = trim(name)
     if not amount or name == "" or not self:is_current_group_killer(name) then return end
 
     local now = os.time()
+    -- Count every actual reward notification once per recipient, separately
+    -- from the kill/dobijajacy (which only determines who finished the mob).
+    local member = self:find_present_retainer(name)
+    if member then
+        local data = self:retainer_data(member.id, member.name)
+        data.xp = (data.xp or 0) + amount
+        data.rewards = (data.rewards or 0) + 1
+    end
     self:prune_pending_rewards(now)
     local key = normalize(name)
     for _, reward in ipairs(self.pending_rewards) do
