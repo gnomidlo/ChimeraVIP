@@ -20,6 +20,15 @@ XP.trigger_ids = XP.trigger_ids or {}
 XP.alias_ids = XP.alias_ids or {}
 XP.pending_rewards = {}
 XP.pending_death = nil
+if XP.snapshot_timer and type(killTimer) == "function" then pcall(killTimer, XP.snapshot_timer) end
+XP.snapshot_timer, XP.snapshot_queue, XP.snapshot_current = nil, nil, nil
+XP.snapshot_show_pending = false
+XP.snapshot_timeout = 3.0
+if XP.combat_tick and type(killTimer) == "function" then pcall(killTimer, XP.combat_tick) end
+XP.combat_tick = nil
+XP.combat_clock = {last_at=nil, party=false, self=false, members={}, present={}}
+XP.combat_clock_max_gap = 60
+XP.combat_tick_seconds = 5
 
 XP.rules = {
     { name = "krasnolud chaosu", match = "krasnoluda chaosu" },
@@ -60,9 +69,13 @@ local function actions(kind)
     if kind == "summary" then
         U.action_links({
             {"MOBY", "/xp mobs", "Statystyki typow mobow"},
+            {"PACHOLKOWIE", "/xp pacholkowie", "Postepy i XP pacholkow"},
+            {"DOBICIA", "/xp dobicia", "Kto dobija przeciwnikow"},
             {"LAST 10", "/xp last 10", "Ostatnie 10 zabojstw"},
             {"RESET", "/xp reset", "Wyzeruj sesje XP"},
         })
+    elseif kind == "retainers" or kind == "kills" then
+        U.action_links({{"SESJA", "/xp", "Podsumowanie sesji"}, {"ODSWIEZ", "/xp odswiez", "Pobierz postepy obecnych pacholkow"}})
     elseif kind == "mobs" then
         U.action_links({{"SESJA", "/xp", "Podsumowanie sesji"}, {"LAST 10", "/xp last 10", "Ostatnie 10 zabojstw"}})
     elseif kind == "last" or kind == "mob" then
@@ -90,6 +103,8 @@ function XP:new_session()
         started_at=nil, last_kill_at=nil, active_seconds=0, total_xp=0,
         kills=0, own_kills=0, group_kills=0, own_xp=0, group_xp=0,
         events={}, rate_events={}, mob_stats={}, killer_stats={},
+        retainers={}, party_combat_seconds=0, self_combat_seconds=0,
+        member_combat_seconds={}, member_party_seconds={}, combat_seen=false,
     }
 end
 
@@ -130,6 +145,12 @@ function XP:ensure_session_schema()
     S.events = type(S.events) == "table" and S.events or {}
     S.own_xp = tonumber(S.own_xp) or 0
     S.group_xp = tonumber(S.group_xp) or 0
+    S.retainers = type(S.retainers) == "table" and S.retainers or {}
+    S.party_combat_seconds = tonumber(S.party_combat_seconds) or 0
+    S.self_combat_seconds = tonumber(S.self_combat_seconds) or 0
+    S.member_combat_seconds = type(S.member_combat_seconds) == "table" and S.member_combat_seconds or {}
+    S.member_party_seconds = type(S.member_party_seconds) == "table" and S.member_party_seconds or {}
+    S.combat_seen = S.combat_seen == true
 
     if type(S.mob_stats) ~= "table" then S.mob_stats = self:rebuild_mob_stats(S.events) end
     if type(S.killer_stats) ~= "table" then S.killer_stats = self:rebuild_killer_stats(S.events) end
@@ -144,6 +165,179 @@ function XP:ensure_session_schema()
 end
 
 XP:ensure_session_schema()
+
+-- Use immutable entity IDs, not names or inflected command targets.
+-- A party can include players: only confirmed nearby NPC members are retainers.
+function XP:get_present_retainers()
+    local group = gmcp and gmcp.Chimera and gmcp.Chimera.Group and gmcp.Chimera.Group.State
+    local room = gmcp and gmcp.Chimera and gmcp.Chimera.Room and gmcp.Chimera.Room.Entities
+    local npcs = {}
+    if room and type(room.entities) == "table" then
+        for _, entity in pairs(room.entities) do
+            if type(entity) == "table" and entity.id and entity.kind == "npc"
+                and entity.group_role == "member" and entity.relation == "ally" then
+                npcs[tostring(entity.id)] = true
+            end
+        end
+    end
+    local list = {}
+    if group and type(group.members) == "table" then
+        for _, member in pairs(group.members) do
+            if type(member) == "table" and member.id and member.self ~= 1
+                and (member.here == 1 or member.here == true)
+                and (npcs[tostring(member.id)] or member.kind == "npc") then
+                list[#list + 1] = {id=tostring(member.id), name=trim(member.name)}
+            end
+        end
+    end
+    table.sort(list, function(a,b)
+        if a.name == b.name then return a.id < b.id end
+        return a.name < b.name
+    end)
+    return list
+end
+
+function XP:retainer_data(id, name)
+    id = tostring(id or "")
+    if id == "" then return nil end
+    local S = self.session
+    local data = S.retainers[id]
+    if not data then
+        data = {id=id, name=trim(name), xp=0, rewards=0}
+        S.retainers[id] = data
+    elseif trim(name) ~= "" then
+        data.name = trim(name)
+    end
+    return data
+end
+
+function XP:find_present_retainer(name)
+    local wanted, found = normalize(name), nil
+    if wanted == "" then return nil end
+    for _, member in ipairs(self:get_present_retainers()) do
+        if normalize(member.name) == wanted then
+            if found then return nil end -- Ambiguous name: never guess the ID.
+            found = member
+        end
+    end
+    return found
+end
+
+-- Integrate the *previous* state up to this instant before accepting a new
+-- GMCP snapshot. Never use Combat.Kill: the last kill remains in GMCP at rest.
+function XP:accrue_combat(now)
+    local clock, S = self.combat_clock, self.session
+    now = now or os.time()
+    if not clock.last_at then clock.last_at = now; return end
+    local elapsed = math.max(0, now - clock.last_at)
+    -- A stale snapshot after a disconnect must not count hours of combat.
+    elapsed = math.min(elapsed, self.combat_clock_max_gap)
+    if clock.party then S.party_combat_seconds = S.party_combat_seconds + elapsed end
+    if clock.self then S.self_combat_seconds = S.self_combat_seconds + elapsed end
+    for id in pairs(clock.members or {}) do
+        S.member_combat_seconds[id] = (S.member_combat_seconds[id] or 0) + elapsed
+    end
+    if clock.party then
+        for id in pairs(clock.present or {}) do
+            S.member_party_seconds[id] = (S.member_party_seconds[id] or 0) + elapsed
+        end
+    end
+    clock.last_at = now
+end
+
+-- A short timer accounts for long boss fights even when GMCP Combat.State is
+-- sent only on start/end transitions. Disconnect and idle both cancel it.
+function XP:stop_combat_tick()
+    if self.combat_tick and type(killTimer) == "function" then
+        pcall(killTimer, self.combat_tick)
+    end
+    self.combat_tick = nil
+end
+
+function XP:schedule_combat_tick()
+    if not self.combat_clock.party or self.combat_tick then return end
+    self.combat_tick = tempTimer(self.combat_tick_seconds, function()
+        self.combat_tick = nil
+        if self.combat_clock.party then
+            self:accrue_combat(os.time())
+            self:schedule_combat_tick()
+        end
+    end)
+end
+
+function XP:on_combat_state(now)
+    local state = gmcp and gmcp.Chimera and gmcp.Chimera.Combat and gmcp.Chimera.Combat.State
+    if type(state) ~= "table" or type(state.relations) ~= "table" then return false end
+    now = now or os.time()
+    self:accrue_combat(now)
+    local group = gmcp.Chimera.Group and gmcp.Chimera.Group.State
+    local members = {}
+    local self_id = gmcp.Char and gmcp.Char.Info and gmcp.Char.Info.id
+    if self_id then members[tostring(self_id)] = "self" end
+    if type(group) == "table" and type(group.members) == "table" then
+        for _, member in pairs(group.members) do
+            if type(member) == "table" and member.id and (member.here == 1 or member.here == true) then
+                members[tostring(member.id)] = member.self == 1 and "self" or "other"
+                if member.self == 1 then self_id = tostring(member.id) end
+            end
+        end
+    end
+    local retainers = {}
+    for _, member in ipairs(self:get_present_retainers()) do retainers[member.id] = true end
+    local self_fighting, party_fighting, active_retainers = false, false, {}
+    for _, relation in pairs(state.relations) do
+        if type(relation) == "table" and relation.attacker and relation.defender then
+            local a, d = tostring(relation.attacker), tostring(relation.defender)
+            -- Only hostile relations. Two party members cannot fight each
+            -- other for the purpose of this session timer.
+            if members[a] and not members[d] then
+                party_fighting = true
+                if a == self_id then self_fighting = true end
+                if retainers[a] then active_retainers[a] = true end
+            elseif members[d] and not members[a] then
+                party_fighting = true
+                if d == self_id then self_fighting = true end
+                if retainers[d] then active_retainers[d] = true end
+            end
+        end
+    end
+    self.combat_clock.party = party_fighting
+    self.combat_clock.self = self_fighting
+    self.combat_clock.members = active_retainers
+    self.combat_clock.present = retainers
+    self.combat_clock.last_at = now
+    if party_fighting then self:schedule_combat_tick() else self:stop_combat_tick() end
+    self.session.combat_seen = true
+    if not self.session.started_at and party_fighting then self.session.started_at = now end
+    return true
+end
+
+function XP:stop_combat_clock()
+    self:accrue_combat(os.time())
+    self:stop_combat_tick()
+    self.combat_clock.party = false
+    self.combat_clock.self = false
+    self.combat_clock.members = {}
+    self.combat_clock.present = {}
+    self.combat_clock.last_at = nil
+end
+
+function XP:retainer_rate(data)
+    -- A retainer earns XP from the party kill even if it never swung a
+    -- weapon; use party-fight time while *present*, not its personal attacks.
+    local seconds = self.session.member_party_seconds[data.id] or 0
+    if seconds < 60 or (data.rewards or 0) < 3 then return nil end
+    return calculate_rate(data.xp, seconds)
+end
+
+function XP:retainer_remaining(data)
+    local snap = data.snapshot
+    if not snap then return nil end
+    if snap.max_rank then return "MAX" end
+    local remaining = snap.remaining - (data.xp - snap.xp_at_read)
+    if remaining <= 0 then return "AWANS" end
+    return math.floor(remaining)
+end
 
 function XP:classify_mob(raw_name)
     local normalized = normalize(raw_name); local best_rule = nil
@@ -270,12 +464,94 @@ function XP:clear_pending_rewards()
     self.pending_rewards = {}
 end
 
+-- Read progress only when /xp (or an explicit refresh) is requested.
+-- One outstanding command at a time makes declined names unambiguous:
+-- the response belongs to the exact retainer ID we just asked about.
+function XP:complete_snapshots()
+    if self.snapshot_timer and type(killTimer) == "function" then
+        pcall(killTimer, self.snapshot_timer)
+    end
+    self.snapshot_timer, self.snapshot_current, self.snapshot_queue = nil, nil, nil
+    local render = self.snapshot_render
+    self.snapshot_render = nil
+    if render == "summary" then self:show_summary()
+    elseif render == "retainers" then self:show_retainers() end
+end
+
+function XP:send_next_snapshot()
+    if not self.snapshot_queue then return end
+    local next_member = table.remove(self.snapshot_queue, 1)
+    if not next_member then self:complete_snapshots(); return end
+    self.snapshot_current = next_member
+    local data = self:retainer_data(next_member.id, next_member.name)
+    data.pending = true
+    send("parozkaz " .. next_member.id .. " postepy", false)
+    local id = next_member.id
+    self.snapshot_timer = tempTimer(self.snapshot_timeout, function()
+        if self.snapshot_current and self.snapshot_current.id == id then
+            data.pending = false
+            data.snapshot_error = true
+            -- Fail closed: do NOT continue the queue after a timeout.
+            -- A late inflected reply must never be attributed to the next ID.
+            self:complete_snapshots()
+        end
+    end)
+end
+
+function XP:request_snapshots(render, only_id)
+    if self.snapshot_current then
+        self.snapshot_render = render or self.snapshot_render
+        return true
+    end
+    local members = {}
+    for _, member in ipairs(self:get_present_retainers()) do
+        if not only_id or member.id == tostring(only_id) then
+            members[#members+1] = member
+            self:retainer_data(member.id, member.name)
+        end
+    end
+    if #members == 0 then return false end
+    self.snapshot_queue, self.snapshot_render = members, render
+    self:send_next_snapshot()
+    return true
+end
+
+function XP:consume_retainer_progress(entry)
+    local current = self.snapshot_current
+    if not current or not entry or not (entry.max_rank or tonumber(entry.remaining)) then
+        return false
+    end
+    local data = self:retainer_data(current.id, current.name)
+    data.pending = false
+    data.snapshot_error = nil
+    data.snapshot = {
+        remaining = tonumber(entry.remaining),
+        max_rank = entry.max_rank == true,
+        xp_at_read = data.xp or 0,
+        checked_at = os.time(),
+    }
+    if self.snapshot_timer and type(killTimer) == "function" then
+        pcall(killTimer, self.snapshot_timer)
+    end
+    self.snapshot_timer, self.snapshot_current = nil, nil
+    self:send_next_snapshot()
+    return true
+end
+
 function XP:remember_reward(name, amount)
     amount = tonumber(amount)
     name = trim(name)
     if not amount or name == "" or not self:is_current_group_killer(name) then return end
 
     local now = os.time()
+    -- Count every actual reward notification once per recipient, separately
+    -- from the kill/dobijajacy (which only determines who finished the mob).
+    local member = self:find_present_retainer(name)
+    if member then
+        local data = self:retainer_data(member.id, member.name)
+        data.xp = (data.xp or 0) + amount
+        data.rewards = (data.rewards or 0) + 1
+    end
     self:prune_pending_rewards(now)
     local key = normalize(name)
     for _, reward in ipairs(self.pending_rewards) do
@@ -412,61 +688,144 @@ function XP:find_mob(name)
     }
 end
 
+local function retainer_remaining_text(xp, data)
+    if data.pending then return "pobieram..." end
+    local remain = xp:retainer_remaining(data)
+    -- Keep the previous useful snapshot, but label it as stale after a
+    -- timeout. Do not silently present an old reading as freshly queried.
+    if data.snapshot_error then
+        if type(remain) == "number" then
+            return "brak odpowiedzi (poprzednio ~" .. format_integer(remain) .. ")"
+        end
+        if remain == "MAX" then return "brak odpowiedzi (poprzednio MAX)" end
+        return "brak odpowiedzi"
+    end
+    if remain == "MAX" then return "MAX" end
+    if remain == "AWANS" then return "AWANS — odswiez" end
+    if type(remain) == "number" then return "~" .. format_integer(remain) end
+    return data.snapshot_error and "brak odpowiedzi" or "brak snapshotu"
+end
+
+local function retainer_eta_text(xp, data)
+    local remain, rate = xp:retainer_remaining(data), xp:retainer_rate(data)
+    if type(remain) ~= "number" or not rate or rate <= 0 then return "--" end
+    return "~" .. format_time(remain / rate * 3600)
+end
+
 function XP:show_summary()
-    local Cc,S=self.colors,self.session
-    if S.kills==0 then hecho("\n"..Cc.text_muted.."XP: "..Cc.text.."brak danych w tej sesji."); actions("summary"); return end
-    local now=os.time(); local session_seconds=now-S.started_at; local active_seconds=self:get_active_seconds(now)
-    local session_rate=calculate_rate(S.total_xp,session_seconds); local active_rate=calculate_rate(S.total_xp,active_seconds)
-    local current_rate=self:get_current_rate(now); local previous_rate=self:get_previous_rate(now); local trend=self:get_trend(current_rate,previous_rate)
-    local average=S.total_xp/S.kills; local trend_text=""
-    if trend then
-        if trend>=3 then trend_text=string.format("  %s↗ +%.1f%%",Cc.mint,trend)
-        elseif trend<=-3 then trend_text=string.format("  %s↘ %.1f%%",Cc.rose,trend)
-        else trend_text=string.format("  %s→ %.1f%%",Cc.text_muted,trend) end
+    local Cc, S = self.colors, self.session
+    local now = os.time()
+    self:accrue_combat(now)
+    local members = self:get_present_retainers()
+    local elapsed = S.started_at and math.max(0, now - S.started_at) or 0
+    local combat = S.party_combat_seconds or 0
+    local personal = S.self_combat_seconds or 0
+    local current_rate = self:get_current_rate(now)
+    local previous_rate = self:get_previous_rate(now)
+    local trend = self:get_trend(current_rate, previous_rate)
+    local arrow = trend and (trend >= 3 and " ↗" or trend <= -3 and " ↘" or " →") or ""
+    local average = S.kills > 0 and format_integer(S.total_xp / S.kills) or "--"
+    local top = self:get_mob_stats()[1]
+
+    hecho("\n\n" .. Cc.lavender .. "XP — SESJA"
+        .. "\n" .. Cc.separator .. "-------------------------------------------------------"
+        .. "\n" .. Cc.text_muted .. "Czas sesji      " .. Cc.text .. format_time(elapsed)
+        .. "\n" .. Cc.text_muted .. "W walce druzyna " .. Cc.text
+        .. (S.combat_seen and format_time(combat) or "brak danych GMCP")
+        .. "\n" .. Cc.text_muted .. "W walce TY      " .. Cc.text
+        .. (S.combat_seen and format_time(personal) or "brak danych GMCP")
+        .. "\n\n" .. Cc.blue .. "TWOJE DOSWIADCZENIE"
+        .. "\n" .. Cc.text_muted .. "Zdobyte XP      " .. Cc.mint .. format_integer(S.total_xp)
+        .. "\n" .. Cc.text_muted .. "Pokonane moby   " .. Cc.text .. format_integer(S.kills)
+        .. "\n" .. Cc.text_muted .. "XP / mob        " .. Cc.text .. average
+        .. "\n\n" .. Cc.blue .. "WYDAJNOSC"
+        .. "\n" .. Cc.text_muted .. "Teraz (10 min)  " .. Cc.mint .. format_rate(current_rate) .. arrow
+        .. "\n" .. Cc.text_muted .. "W walce         " .. Cc.blue
+        .. (S.combat_seen and format_rate(calculate_rate(S.total_xp, combat)) or "--")
+        .. "\n" .. Cc.text_muted .. "Sesja           " .. Cc.lavender
+        .. format_rate(calculate_rate(S.total_xp, elapsed)))
+    if top then
+        hecho("\n" .. Cc.text_muted .. "Top mob (suma)  " .. Cc.text
+            .. top.name .. " (" .. format_integer(top.xp) .. " XP)")
     end
 
-    local top=self:get_mob_stats()[1]
-    local top_text=top and (top.name.." ("..format_integer(top.xp).." xp)") or "..."
-    local killers=self:get_killer_stats()
-    local killer_name_width=12
-    for _,data in ipairs(killers) do killer_name_width=math.max(killer_name_width,text_width(data.name)) end
-    killer_name_width=math.max(killer_name_width,text_width("DRUZYNA RAZEM"))
-
-    local function percent(value,total)
-        if not total or total<=0 then return "0.0%" end
-        return string.format("%.1f%%",value/total*100)
+    hecho("\n\n" .. Cc.blue .. "PACHOLKOWIE")
+    if #members == 0 then
+        hecho("\n  " .. Cc.text_muted .. "Brak pacholkow przy tobie.")
     end
-
-    local function killer_row(name,kills,xp,name_color,total_row)
-        local kill_share=total_row and "100.0%" or percent(kills,S.kills)
-        local xp_share=total_row and "100.0%" or percent(xp,S.total_xp)
-        hecho("\n  "..(name_color or Cc.text)..pad(name,killer_name_width+2)
-            ..Cc.text..string.format("%7s",format_integer(kills))
-            ..Cc.text_muted..string.format("%9s",kill_share)
-            ..Cc.peach..string.format("%14s",format_integer(xp))
-            ..Cc.text_muted..string.format("%9s",xp_share))
+    for _, member in ipairs(members) do
+        local data = self:retainer_data(member.id, member.name)
+        hecho("\n  " .. Cc.text .. pad(data.name, 16)
+            .. Cc.mint .. "+" .. format_integer(data.xp) .. " XP"
+            .. Cc.text_muted .. "  |  do awansu: " .. Cc.yellow
+            .. retainer_remaining_text(self, data)
+            .. Cc.text_muted .. "  |  " .. retainer_eta_text(self, data))
     end
-
-    local table_width=killer_name_width+41
-    hecho("\n\n"..Cc.lavender.."XP — SESJA\n"..Cc.separator.."------------------------------------------\n"
-        ..Cc.text_muted.."Czas       "..Cc.text..string.format("%12s",format_time(session_seconds)).."\n"
-        ..Cc.text_muted.."Aktywnie   "..Cc.text..string.format("%12s",format_time(active_seconds)).."\n\n"
-        ..Cc.text_muted.."  "..pad("KTO",killer_name_width+2)
-        ..string.format("%7s","ZABICIA")..string.format("%9s","UDZIAL")
-        ..string.format("%14s","XP")..string.format("%9s","UDZIAL"))
-
-    killer_row("TY",S.own_kills,S.own_xp,Cc.mint,false)
-    for _,data in ipairs(killers) do killer_row(data.name,data.kills,data.xp,Cc.text,false) end
-    hecho("\n  "..Cc.separator..string.rep("-",table_width))
-    killer_row("DRUZYNA RAZEM",S.kills,S.total_xp,Cc.lavender,true)
-
-    hecho("\n\n"..Cc.text_muted.."XP / kill  "..Cc.text..string.format("%12s",format_integer(average)).."\n"
-        ..Cc.text_muted.."Top mob    "..Cc.mint..top_text.."\n\n"
-        ..Cc.text_muted.."TERAZ      "..Cc.mint..string.format("%12s",format_rate(current_rate))..trend_text.."\n"
-        ..Cc.text_muted.."AKTYWNIE   "..Cc.blue..string.format("%12s",format_rate(active_rate)).."\n"
-        ..Cc.text_muted.."SESJA      "..Cc.lavender..string.format("%12s",format_rate(session_rate))
-        .."\n"..Cc.separator.."------------------------------------------")
+    hecho("\n" .. Cc.separator .. "-------------------------------------------------------")
     actions("summary")
+end
+
+function XP:show_retainers()
+    local Cc = self.colors
+    self:accrue_combat(os.time())
+    local members = self:get_present_retainers()
+    local here = {}
+    for _, member in ipairs(members) do
+        here[member.id] = true
+        self:retainer_data(member.id, member.name)
+    end
+    local list = {}
+    for _, data in pairs(self.session.retainers) do list[#list + 1] = data end
+    table.sort(list, function(a,b) return a.name < b.name end)
+    hecho("\n\n" .. Cc.lavender .. "XP — PACHOLKOWIE"
+        .. "\n" .. Cc.separator .. "-------------------------------------------------------")
+    if #list == 0 then
+        hecho("\n" .. Cc.text_muted .. "Brak danych. Dodaj pacholkow do druzyny.")
+    end
+    for _, data in ipairs(list) do
+        local rate = self:retainer_rate(data)
+        hecho("\n\n  " .. (here[data.id] and Cc.mint or Cc.text_muted)
+            .. data.name .. (here[data.id] and "" or " (poza druzyna)")
+            .. "\n" .. Cc.text_muted .. "  XP sesja       " .. Cc.text .. format_integer(data.xp)
+            .. "\n" .. Cc.text_muted .. "  XP/h w walce   " .. Cc.blue .. format_rate(rate)
+            .. "\n" .. Cc.text_muted .. "  Do awansu      " .. Cc.yellow
+            .. retainer_remaining_text(self, data)
+            .. "\n" .. Cc.text_muted .. "  Szac. awans    " .. Cc.mint
+            .. retainer_eta_text(self, data))
+        if data.snapshot then
+            hecho("\n" .. Cc.text_muted .. "  Snapshot       "
+                .. os.date("%H:%M", data.snapshot.checked_at))
+        end
+        if here[data.id] and type(echoLink) == "function" then
+            hecho("\n  " .. Cc.text_muted)
+            echoLink("[ODSWIEZ]", string.format("expandAlias(%q, false)",
+                "/xp odswiez " .. data.id), "Odczytaj postepy: " .. data.name, true)
+        end
+    end
+    hecho("\n" .. Cc.separator .. "-------------------------------------------------------")
+    actions("retainers")
+end
+
+function XP:show_killers()
+    local Cc, S = self.colors, self.session
+    local list = self:get_killer_stats()
+    local function row(label, count)
+        local share = S.kills > 0 and string.format("%.1f%%", count / S.kills * 100) or "--"
+        hecho("\n  " .. Cc.text .. pad(label, 18)
+            .. Cc.peach .. string.format("%7s",format_integer(count))
+            .. Cc.text_muted .. string.format("%9s",share))
+    end
+    hecho("\n\n" .. Cc.lavender .. "XP — DOBICIA"
+        .. "\n" .. Cc.separator .. "------------------------------------------"
+        .. "\n  " .. Cc.text_muted .. pad("KTO",18) .. " DOBICIA   UDZIAL")
+    row("TY", S.own_kills)
+    for _, killer in ipairs(list) do row(killer.name, killer.kills) end
+    hecho("\n" .. Cc.separator .. "------------------------------------------")
+    row("RAZEM", S.kills)
+    hecho("\n" .. Cc.text_muted
+        .. "Dobicia nie oznaczaja udzialu w otrzymanym XP."
+        .. "\n" .. Cc.separator .. "------------------------------------------")
+    actions("kills")
 end
 
 function XP:show_mobs()
@@ -507,7 +866,16 @@ function XP:show_last(count)
 end
 
 function XP:reset()
+    self.snapshot_render = nil
+    if self.snapshot_timer and type(killTimer) == "function" then
+        pcall(killTimer, self.snapshot_timer)
+    end
+    self.snapshot_timer, self.snapshot_current, self.snapshot_queue = nil, nil, nil
+    self:stop_combat_clock()
     self:new_session()
+    if gmcp and gmcp.Chimera and gmcp.Chimera.Combat then
+        self:on_combat_state(os.time())
+    end
     self:clear_pending_rewards()
     hecho("\n"..self.colors.mint.."[XP] Sesja wyzerowana.\n")
 end
@@ -516,6 +884,9 @@ function XP:show_help()
     local Cc=self.colors
     local rows={
         {"/xp","podsumowanie sesji"},
+        {"/xp pacholkowie","XP, snapshoty i czas awansu pacholkow"},
+        {"/xp dobicia","kto wykonuje ostatnie ciosy"},
+        {"/xp odswiez [ID]","ponowny odczyt postepow obecnych pacholkow"},
         {"/xp mobs","statystyki typow mobow"},
         {"/xp mob <nazwa>","szczegoly typu"},
         {"/xp last [N]","ostatnie N zabojstw"},
@@ -526,7 +897,8 @@ function XP:show_help()
     for _,row in ipairs(rows) do command_width=math.max(command_width,U and U.text_width and U.text_width(row[1]) or #row[1]) end
     command_width=command_width+2
     hecho("\n\n"..Cc.lavender.."XP — POMOC\n"..Cc.separator.."--------------------------------------------------"
-        .."\n"..Cc.text_muted.."Sesyjny licznik doswiadczenia, zabojstw, XP/h i wydajnosci typow przeciwnikow."
+        .."\n"..Cc.text_muted.."Twoje XP i XP pacholkow liczone osobno; dobicia nie przyznaja dodatkowego XP."
+        .."\n"..Cc.text_muted.."Czas walki opiera sie na GMCP Combat.State; /xp pobiera postepy pacholkow po ID."
         .."\n"..Cc.text_muted.."Niestandardowe typy mobow sa utrzymywane centralnie w ChimeraVIP.\n")
     for _,row in ipairs(rows) do hecho("\n"..Cc.text..pad(row[1],command_width)..Cc.text_muted..row[2]) end
     finish_output()
@@ -538,11 +910,42 @@ table.insert(XP.trigger_ids,tempRegexTrigger([[^(Zabilas|Zabiles) (.+)\. \[(\d+)
 table.insert(XP.trigger_ids,tempRegexTrigger([[^(.+?) (zabil|zabila) (.+)\. \[(\d+)xp\]$]],function() XP:add_event(matches[4],matches[5],matches[2],false) end))
 
 local function alias(pattern,fn) table.insert(XP.alias_ids,tempAlias(pattern,fn)) end
-alias([[^/xp$]],function() XP:show_summary() end)
+alias([[^/xp$]],function()
+    if not XP:request_snapshots("summary") then XP:show_summary() end
+end)
+alias([[^/xp (?:pacholkowie|pachołkowie|paxp)$]],function() XP:show_retainers() end)
+alias([[^/xp dobicia$]],function() XP:show_killers() end)
+alias([[^/xp odswiez(?:\s+(\S+))?$]],function()
+    if not XP:request_snapshots("retainers", matches[2]) then
+        hecho("\n"..XP.colors.text_muted.."[XP] Brak takiego pacholka przy tobie.\n")
+        XP:show_retainers()
+    end
+end)
 alias([[^/xp reset$]],function() XP:reset() end)
 alias([[^/xp (?:mobs|moby)$]],function() XP:show_mobs() end)
 alias([[^/xp last(?:\s+(\d+))?$]],function() XP:show_last(matches[2]) end)
 alias([[^/xp mob (.+)$]],function() XP:show_mob(matches[2]) end)
 alias([[^/xp (?:help|pomoc)$]],function() XP:show_help() end)
+
+-- Measure transitions instead of estimating activity from kill gaps.
+if U and type(U.replace_handler) == "function"
+    and type(registerAnonymousEventHandler) == "function" then
+    U.replace_handler(XP, "combat_state", "gmcp.Chimera.Combat.State",
+        function() XP:on_combat_state(os.time()) end)
+    U.replace_handler(XP, "group_state", "gmcp.Chimera.Group.State",
+        function() XP:on_combat_state(os.time()) end)
+    U.replace_handler(XP, "disconnected", "sysDisconnectionEvent",
+        function()
+            XP:stop_combat_clock()
+            if XP.snapshot_timer and type(killTimer) == "function" then
+                pcall(killTimer, XP.snapshot_timer)
+            end
+            XP.snapshot_timer, XP.snapshot_queue, XP.snapshot_current = nil, nil, nil
+            XP.snapshot_render = nil
+        end)
+end
+if gmcp and gmcp.Chimera and gmcp.Chimera.Combat then
+    XP:on_combat_state(os.time())
+end
 
 return XP

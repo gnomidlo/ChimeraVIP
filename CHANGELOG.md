@@ -1,3 +1,12 @@
+## 0.191 — XP drużyny, rzeczywista walka GMCP i ciche postępy pachołków
+
+- `/xp` automatycznie pobiera `parozkaz <id> postepy` dla aktualnie obecnych pachołków (potwierdzonych jako NPC przez GMCP), po kolei i bez pokazywania odpowiedzi serwera. Bez pachołków nie wysyła żadnych zapytań.
+- Nagrody `<pachołek> otrzymal(a) N expa` zbierane są oddzielnie według ID; dobicie nie jest doliczane jako dodatkowe XP. Postęp do awansu maleje od ostatniego snapshotu, a po przekroczeniu progu wskazuje potrzebę odświeżenia.
+- Zamiast szacować aktywność na podstawie odstępów między zabójstwami, mierzymy czas walki postaci, drużyny i poszczególnych pachołków z `gmcp.Chimera.Combat.State.relations`. Nie wykorzystujemy starego `Combat.Kill`.
+- `/xp pacholkowie` pokazuje przydziały XP, tempo i prognozę awansu; `/xp dobicia` pokazuje wyłącznie wykonawców dobić. `/xp odswiez [ID]` ponawia zapytania.
+- Brak odpowiedzi przerywa kolejkę bez przypisywania spóźnionej odpowiedzi innej postaci. Rozłączenie zatrzymuje licznik walki.
+- Testy: czas walki GMCP, dwa pachołki, osobne nagrody, snapshoty, odmiany imion, timeout i tryb solo.
+
 ## 0.190 — Pachołkowie: nowe komunikaty `parozkaz postepy`
 
 - Rozpoznawanie `Zathrika osiagnela juz najwyzsza range wyszkolenia.` i analogicznej formy męskiej.
