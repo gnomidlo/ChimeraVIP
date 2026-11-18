@@ -88,6 +88,9 @@ assert(XP.session.party_combat_seconds == 80)
 assert(XP.session.self_combat_seconds == 50)
 assert(XP.session.member_combat_seconds.ch == 80)
 assert(XP.session.member_combat_seconds.uz == 50)
+-- Even a resting helper receives XP while the party fights.
+assert(XP.session.member_party_seconds.ch == 80)
+assert(XP.session.member_party_seconds.uz == 80)
 assert(XP.combat_clock.party == false)
 
 -- /xp sends one ID command at a time; only the owning NPC gets its response.
@@ -167,5 +170,23 @@ XP:reset()
 assert(XP.session.total_xp == 0 and XP.session.kills == 0)
 assert(next(XP.session.retainers) == nil)
 assert(XP.session.party_combat_seconds == 0)
+-- Long fights with only start/end GMCP messages are still timed correctly
+-- because a 5-second heartbeat advances the combat clock between updates.
+clock = 2000
+gmcp.Chimera.Combat.State.relations = {{attacker="self", defender="enemy"}}
+XP:on_combat_state(clock)
+assert(XP.combat_tick)
+for n=1,20 do
+    clock = 2000 + n * 5
+    local current_tick = XP.combat_tick
+    assert(current_tick and timers[current_tick])
+    timers[current_tick]()
+end
+gmcp.Chimera.Combat.State.relations = {}
+XP:on_combat_state(clock)
+assert(XP.session.party_combat_seconds == 100)
+assert(XP.session.self_combat_seconds == 100)
+assert(XP.combat_tick == nil)
+
 os.time = original_time
 print("GMCP party XP and silent per-ID snapshot workflow: PASS")
