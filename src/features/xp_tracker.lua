@@ -822,7 +822,16 @@ function XP:show_last(count)
 end
 
 function XP:reset()
+    self.snapshot_render = nil
+    if self.snapshot_timer and type(killTimer) == "function" then
+        pcall(killTimer, self.snapshot_timer)
+    end
+    self.snapshot_timer, self.snapshot_current, self.snapshot_queue = nil, nil, nil
+    self:stop_combat_clock()
     self:new_session()
+    if gmcp and gmcp.Chimera and gmcp.Chimera.Combat then
+        self:on_combat_state(os.time())
+    end
     self:clear_pending_rewards()
     hecho("\n"..self.colors.mint.."[XP] Sesja wyzerowana.\n")
 end
@@ -831,6 +840,9 @@ function XP:show_help()
     local Cc=self.colors
     local rows={
         {"/xp","podsumowanie sesji"},
+        {"/xp pacholkowie","XP, snapshoty i czas awansu pacholkow"},
+        {"/xp dobicia","kto wykonuje ostatnie ciosy"},
+        {"/xp odswiez [ID]","ponowny odczyt postepow obecnych pacholkow"},
         {"/xp mobs","statystyki typow mobow"},
         {"/xp mob <nazwa>","szczegoly typu"},
         {"/xp last [N]","ostatnie N zabojstw"},
@@ -841,7 +853,8 @@ function XP:show_help()
     for _,row in ipairs(rows) do command_width=math.max(command_width,U and U.text_width and U.text_width(row[1]) or #row[1]) end
     command_width=command_width+2
     hecho("\n\n"..Cc.lavender.."XP — POMOC\n"..Cc.separator.."--------------------------------------------------"
-        .."\n"..Cc.text_muted.."Sesyjny licznik doswiadczenia, zabojstw, XP/h i wydajnosci typow przeciwnikow."
+        .."\n"..Cc.text_muted.."Twoje XP i XP pacholkow liczone osobno; dobicia nie przyznaja dodatkowego XP."
+        .."\n"..Cc.text_muted.."Czas walki opiera sie na GMCP Combat.State; /xp pobiera postepy pacholkow po ID."
         .."\n"..Cc.text_muted.."Niestandardowe typy mobow sa utrzymywane centralnie w ChimeraVIP.\n")
     for _,row in ipairs(rows) do hecho("\n"..Cc.text..pad(row[1],command_width)..Cc.text_muted..row[2]) end
     finish_output()
@@ -853,11 +866,42 @@ table.insert(XP.trigger_ids,tempRegexTrigger([[^(Zabilas|Zabiles) (.+)\. \[(\d+)
 table.insert(XP.trigger_ids,tempRegexTrigger([[^(.+?) (zabil|zabila) (.+)\. \[(\d+)xp\]$]],function() XP:add_event(matches[4],matches[5],matches[2],false) end))
 
 local function alias(pattern,fn) table.insert(XP.alias_ids,tempAlias(pattern,fn)) end
-alias([[^/xp$]],function() XP:show_summary() end)
+alias([[^/xp$]],function()
+    if not XP:request_snapshots("summary") then XP:show_summary() end
+end)
+alias([[^/xp (?:pacholkowie|pachołkowie|paxp)$]],function() XP:show_retainers() end)
+alias([[^/xp dobicia$]],function() XP:show_killers() end)
+alias([[^/xp odswiez(?:\\s+(\\S+))?$]],function()
+    if not XP:request_snapshots("retainers", matches[2]) then
+        hecho("\n"..XP.colors.text_muted.."[XP] Brak takiego pacholka przy tobie.\n")
+        XP:show_retainers()
+    end
+end)
 alias([[^/xp reset$]],function() XP:reset() end)
 alias([[^/xp (?:mobs|moby)$]],function() XP:show_mobs() end)
 alias([[^/xp last(?:\s+(\d+))?$]],function() XP:show_last(matches[2]) end)
 alias([[^/xp mob (.+)$]],function() XP:show_mob(matches[2]) end)
 alias([[^/xp (?:help|pomoc)$]],function() XP:show_help() end)
+
+-- Measure transitions instead of estimating activity from kill gaps.
+if U and type(U.replace_handler) == "function"
+    and type(registerAnonymousEventHandler) == "function" then
+    U.replace_handler(XP, "combat_state", "gmcp.Chimera.Combat.State",
+        function() XP:on_combat_state(os.time()) end)
+    U.replace_handler(XP, "group_state", "gmcp.Chimera.Group.State",
+        function() XP:on_combat_state(os.time()) end)
+    U.replace_handler(XP, "disconnected", "sysDisconnectionEvent",
+        function()
+            XP:stop_combat_clock()
+            if XP.snapshot_timer and type(killTimer) == "function" then
+                pcall(killTimer, XP.snapshot_timer)
+            end
+            XP.snapshot_timer, XP.snapshot_queue, XP.snapshot_current = nil, nil, nil
+            XP.snapshot_render = nil
+        end)
+end
+if gmcp and gmcp.Chimera and gmcp.Chimera.Combat then
+    XP:on_combat_state(os.time())
+end
 
 return XP
