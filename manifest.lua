@@ -127,7 +127,7 @@ return {
         ["src/features/tactical_states.lua"] = {hash="8143b310acba3b06165a62cc5eef6ab6725077d5", size=21199},
         ["src/features/tactical_states_view.lua"] = {hash="92ed35156d864698fe81c7b35efca1fdac1f9d3c", size=9774},
         ["src/features/tactical_aliases.lua"] = {hash="1bc52d0952d186b4543b7738f65c4ce7242295aa", size=6021},
-        ["src/features/xp_tracker.lua"] = {hash="1bf9439ea919b7cffc3c943e3a79c16901f39056", size=39693},
+        ["src/features/xp_tracker.lua"] = {hash="61d19b3c8cec9ca9f2e5d0005e00ab81bf977032", size=40128},
         ["src/features/xp_kill_card_view.lua"] = {hash="2bf985dba91536ac5f857d921e36e2e4fd4c4041", size=1374},
         ["src/features/stats.lua"] = {hash="a86b01c86f7d1f6ea8d28bc26347e374f1691709", size=21996},
         ["src/features/stats_compact_view.lua"] = {hash="ea0006525dc4e5f884401716de9b227da4908c4e", size=4197},
