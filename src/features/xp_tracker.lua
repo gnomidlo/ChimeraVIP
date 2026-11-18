@@ -656,6 +656,15 @@ end
 local function retainer_remaining_text(xp, data)
     if data.pending then return "pobieram..." end
     local remain = xp:retainer_remaining(data)
+    -- Keep the previous useful snapshot, but label it as stale after a
+    -- timeout. Do not silently present an old reading as freshly queried.
+    if data.snapshot_error then
+        if type(remain) == "number" then
+            return "brak odpowiedzi (poprzednio ~" .. format_integer(remain) .. ")"
+        end
+        if remain == "MAX" then return "brak odpowiedzi (poprzednio MAX)" end
+        return "brak odpowiedzi"
+    end
     if remain == "MAX" then return "MAX" end
     if remain == "AWANS" then return "AWANS — odswiez" end
     if type(remain) == "number" then return "~" .. format_integer(remain) end
