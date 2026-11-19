@@ -16,6 +16,13 @@ function getMudletHomeDir() return "/tmp" end
 
 chimera_vip = {}
 dofile("src/core/util.lua")
+chimera_vip.magia={
+    parse_duration=function(text)
+        return text=="25 godzin" and 25*3600 or nil
+    end,
+    format=function(s) return s==25*3600 and "~25h" or "?" end,
+    color=function() return "#EFD8A6" end,
+}
 dofile("src/features/weapon_info.lua")
 local W = chimera_vip.weapon_info
 
@@ -86,11 +93,14 @@ W:on_weapon_header("miecz", "jednoreczna")
 W:on_damage("klute i ciete")
 W:on_weapon_scores("srednio", "20", "bardzo skuteczne", "31")
 assert(not table.concat(output):find("OCENA", 1, true), "podsumowanie nie powinno wyprzedzac linii o magii")
+W:on_magic_expiry("25 godzin")
 W:on_magic()
 local magic_weapon = table.concat(output)
 assert(magic_weapon:find("OCENA - masywny wyszczerbiony tasak  |  MAGIA", 1, true))
 assert(magic_weapon:find("stan: ", 1, true) and magic_weapon:find("7/7", 1, true))
 assert(magic_weapon:find("WYW: ", 1, true) and magic_weapon:find("20", 1, true))
+assert(magic_weapon:find("trwalosc: ", 1, true) and magic_weapon:find("~25h", 1, true))
+assert(select(2,magic_weapon:gsub("MAGIA",""))==1,"no duplicate MAGIC label")
 assert(magic_weapon:find("SKUT: ", 1, true) and magic_weapon:find("31", 1, true))
 flush_short_timers()
 magic_weapon = table.concat(output)

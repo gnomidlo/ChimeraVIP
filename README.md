@@ -388,3 +388,10 @@ Nie trzeba dopisywać `/cvip v5 instaluj` ani `/przeladuj`.
 Jeśli nic się nie zmieniło, nie wymusza niepotrzebnego restartu.
 W razie błędu lub braku `chimera.restart()` pokaże instrukcję.
 Szczegółowy opis przejścia oraz zabezpieczeń: `docs/CHIMERA5_MIGRATION.md`.
+
+### Magia — trwałość wyposażenia
+
+`/magia sprawdz` skanuje twoje `efekty` i efekty aktualnie obecnych pachołków po GMCP ID, po jednym rozkazie naraz. `/magia` wyświetla raport, `/magia okno` otwiera natywne, dokowalne okno Mudleta. `/magia kompakt` i `/magia pelny` przełączają widoki, `/magia ukryj` chowa okno, a `/magia alarmy` przełącza ostrzeżenia. Kolory oznaczają progi 12h, 3h i 1h. Szczegóły ocenianych magicznych przedmiotów zawierają tylko jeden dodatkowy wiersz `trwalosc` (oznaczenie MAGIA pozostaje w nagłówku).
+
+Czasy `za okolo ...` są przybliżone; skrypt ich nie traktuje jako potwierdzenia zniszczenia. Do potwierdzenia pozostaje, czy rozpad postępuje po wylogowaniu.
+

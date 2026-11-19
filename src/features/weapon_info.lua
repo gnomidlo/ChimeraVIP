@@ -197,10 +197,23 @@ function W:on_duration(duration)
     self:ensure_capture().duration = trim(duration)
 end
 
+function W:on_magic_expiry(text)
+    -- Ten komunikat wystepuje rowniez w 'efekty'; nie tworz nowej oceny
+    -- bez rozpoczetej karty przedmiotu.
+    local c=self.capture
+    if not c then return end
+    local magic=C.magia
+    c.magic_seconds=magic and magic.parse_duration(text) or nil
+    c.magic=true
+    if not c.complete then self:schedule_summary() end
+end
+
 function W:on_magic()
-    local c = self:ensure_capture()
-    c.magic = true
-    if c.complete then self:finish_summary(c) end
+    local c=self.capture
+    if not c then return end
+    c.magic=true
+    if c.complete then self:finish_summary(c)
+    else self:schedule_summary() end
 end
 
 function W:on_weapon_header(weapon_type, grip)
@@ -319,6 +332,11 @@ function W:show_summary()
         end
     end
 
+    -- MAGIA jest juz w naglowku OCENA; nie powtarzamy "magia: zakleta".
+    if c.magic_seconds then
+        hecho("\n  "..P.text_muted.."trwalosc: "..(C.magia and C.magia:color(c.magic_seconds) or P.mint)
+            ..(C.magia and C.magia.format(c.magic_seconds) or tostring(c.magic_seconds).."s"))
+    end
     hecho("\n" .. P.separator .. "-------------------------------------------------------\n")
 end
 
@@ -348,6 +366,7 @@ function W:install()
     self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger([[^Oceniasz, ze (.+?) wazy (\d+) (gramow|kilogramow), zas (?:jego|jej|ich) objetosc wynosi (\d+) mililitrow\.\s*$]], function() W:on_physical(matches[2], matches[3], matches[4], matches[5]) end)
     self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger([[^Wydaje ci sie, ze jest wart(?:a|e)? (.+?)\.\s*$]], function() W:on_value(matches[2]) end)
     self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger([[^Wyglada na to, ze mogl(?:by|aby|oby) ci jeszcze (.+?) sluzyc\.\s*$]], function() W:on_duration(matches[2]) end)
+    self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger([[^Rozsypie sie w pyl za okolo (.+)\.\s*$]], function() W:on_magic_expiry(matches[2]) end)
     self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger([[^Sadzac po .*zostala zakleta jakas magia\.\s*$]], function() W:on_magic() end)
     self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger([[^Typ broni:\s*(.+?)\s+Chwyt:\s*(.+?)\s*$]], function() W:on_weapon_header(matches[2], matches[3]) end)
     self.trigger_ids[#self.trigger_ids + 1] = tempRegexTrigger([[^Obrazenia:\s*(.+?)\s*$]], function() W:on_damage(matches[2]) end)

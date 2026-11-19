@@ -145,9 +145,14 @@ local function row(mark,p,ally,self_row,map,fighting,hostile,columns)
     -- Incoming relations only, as in the old Kondycje renderer:
     -- team members show who attacks them; enemies show their attackers.
     local relation=idle and " [X]" or attacker_relation(p,map)
+    local magia=rawget(_G,"chimera_vip") and chimera_vip.magia
+    local magic_text=ally and magia and magia.shortest and
+        magia:shortest(self_row and "@" or id) or nil
+    local magic_suffix=magic_text and (" ✦ "..magic_text) or ""
     local fixed=visual_width(prefix.."["..mark.."] "..(stacked and "" or hp_text))
     local name=fit_tail_words(self_row and "JA" or clean(p.name),
-        math.max(1,(columns or 72)-fixed-visual_width(relation)-1))
+        math.max(1,(columns or 72)-fixed-visual_width(relation)
+            -visual_width(magic_suffix)-1))
     if p.stunned and type(setBgColor)=="function"
         and type(resetFormat)=="function" then
         setBgColor(WINDOW,48,54,69) -- #303645
@@ -160,6 +165,13 @@ local function row(mark,p,ally,self_row,map,fighting,hostile,columns)
         print_segment(" [X]","yellow")
     elseif relation~="" then
         print_segment(relation,ally and "rose" or (hostile and "lavender" or "muted"))
+    end
+    if magic_text then
+        set_window_color("yellow")
+        if type(echoLink)=="function" then
+            echoLink(WINDOW,magic_suffix,
+                "expandAlias('/magia okno', false)","Otworz okno Magia",true)
+        else print_segment(magic_suffix,"yellow") end
     end
     echo(WINDOW,"\n")
     if stacked then
@@ -180,6 +192,9 @@ local function draw_window(view)
                 tostring(p.here),tostring(p.stunned),tostring(p.name),
                 tostring(p.henchman),tostring(p.leader),tostring(p.letter),tostring(p.number),
                 table.concat(p.attackers or {},","),
+                tostring(rawget(_G,"chimera_vip") and chimera_vip.magia
+                    and chimera_vip.magia:shortest(
+                        p==view.self and "@" or p.id) or ""),
             },":")
         end
     end

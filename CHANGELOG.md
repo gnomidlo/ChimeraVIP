@@ -1,3 +1,12 @@
+## 0.192 — Magia i trwałość magicznego wyposażenia
+
+- `OCENA | MAGIA` pokazuje szacowany czas rozpadu (`trwalosc: ~25h`) bez powtarzania informacji o zaklęciu.
+- `/magia sprawdz` kolejno odczytuje `efekty` oraz `parozkaz ID efekty` dla obecnych pachołków identyfikowanych przez GMCP.
+- Natywne, przenoszalne okno Mudleta z widokiem kompaktowym i pełnym, przewijaniem oraz alarmami przy 3h, 1h i 30 min.
+- Jeden monitor czasu i zapis danych pomiędzy sesjami; brak kasowania danych przy niepełnej odpowiedzi.
+- Dyskretny wskaźnik `✦` najkrótszej trwałości przy członkach drużyny w Kondycjach Chimera 5.
+- Czasy są **szacowane**; dopóki nie potwierdzimy mechaniki offline, licznik wykorzystuje czas zegarowy.
+
 ## 0.191 — XP drużyny, rzeczywista walka GMCP i ciche postępy pachołków
 
 - `/xp` automatycznie pobiera `parozkaz <id> postepy` dla aktualnie obecnych pachołków (potwierdzonych jako NPC przez GMCP), po kolei i bez pokazywania odpowiedzi serwera. Bez pachołków nie wysyła żadnych zapytań.
