@@ -137,7 +137,8 @@ function W:consume(text)
     if not self.armed then return false end
     text=tostring(text or ""):gsub("\r$","")
     local c=self.capture
-    local keep_line=false
+    local header_prefix=nil
+    local is_header=false
     if not c then
         -- Preserve any unrelated non-terminated output before a fused header:
         -- "DLUG: 2 miedziane monetyZold twoich pacholkow:"
@@ -145,7 +146,8 @@ function W:consume(text)
         -- continue with the next line instead of throwing away the capture.
         local prefix=text:match("^(.-)Zold twoich pacholkow:%s*$")
         if prefix==nil then return false end
-        keep_line=prefix~=""
+        header_prefix=prefix
+        is_header=true
         c={raw={},rows={},state="row"}
         self.capture=c
     else
@@ -202,7 +204,17 @@ function W:consume(text)
             end
         end
     end
-    if not keep_line then
+    if is_header then
+        -- The previous unrelated MUD line may not have a trailing newline.
+        -- Deleting the header must not glue it to the previous "DLUG".
+        if U.gag_line() then
+            if header_prefix~="" then
+                echo("\n"..header_prefix.."\n")
+            else
+                echo("\n")
+            end
+        end
+    else
         c.raw[#c.raw+1]=text
         U.gag_line()
     end
