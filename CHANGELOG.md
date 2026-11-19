@@ -1,3 +1,11 @@
+## 0.196 — Pazold: brak oplaty i dlug bez psucia tabeli
+
+- Zwarty widok `pazold` obsługuje pachołków, dla których po `stawka` nie pojawia się `oplacone` ani `czyli ok.` (w tabeli `brak oplaty` bez zgadywania salda).
+- Komunikat `DLUG: ...` działa również jako **jedyna linia danych pod imieniem** (bez `stawka` i `oplacone`). Pokazujemy nieznaną stawkę jako `-`, a dług jako rzeczywistą kwotę, nie jako brak opłaty.
+- Naprawa niepełnych linii: nagłówek `Zold twoich pacholkow:` nie dokleja się do poprzedniego `DLUG`; zachowujemy pierwotny tekst i separację wierszy.
+- Zabezpieczenie przed nowymi nieznanymi wariantami: jeśli odpowiedź jest naprawdę nierozpoznana, przywracamy oryginalne przechwycone linie z nowym separatorem.
+- Testy regresyjne: pachołek bez opłacenia, dług, dosłownie sklejony nagłówek i stary format z pełną opłatą.
+
 ## 0.195 — Potwierdzony rozpad magicznego przedmiotu
 
 - Moduł Magia rozpoznaje komunikat `Zakorkowana szklana buteleczka rozpada sie w pyl!` (i analogiczne nazwy) i natychmiast usuwa rozpadnięty przedmiot z monitoringu, zapisując zmianę i odświeżając okno.
