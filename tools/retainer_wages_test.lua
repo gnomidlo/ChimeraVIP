@@ -112,7 +112,8 @@ assert(mixed:find('Xisstan',1,true) and mixed:find('Isskana',1,true))
 assert(mixed:find('Testowy',1,true))
 -- Rate is deliberately unknown, not inferred from the outstanding debt.
 local debt_row
-for text in mixed:gmatch('[^\n]+') do
+local plain_mixed=mixed:gsub("#%x%x%x%x%x%x","")
+for text in plain_mixed:gmatch('[^\n]+') do
     if text:find('Rethkal',1,true) then debt_row=text;break end
 end
 assert(debt_row and debt_row:find('DLUG 2m',1,true),
