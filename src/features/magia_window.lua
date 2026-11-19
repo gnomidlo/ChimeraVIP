@@ -82,6 +82,13 @@ function M:display_rows()
                 end
             end
         end
+        -- Jezeli pacholkow jest wiecej niz miejsc, pokaz tych z
+        -- najkrotsza trwaloscia, nie pierwszych alfabetycznie.
+        table.sort(first,function(a,b)
+            if a.row.id=="@" then return true end
+            if b.row.id=="@" then return false end
+            return a.row.seconds<b.row.seconds
+        end)
         -- Rezerwuj miejsce dla JA nawet jesli odczyt jeszcze nie dotarl.
         local own_known=false
         for _,v in ipairs(first) do if v.row.id=="@" then own_known=true end end
