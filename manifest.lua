@@ -5,7 +5,7 @@ return {
     tested_upstream = "5.0.1",
     raw_base = "https://raw.githubusercontent.com/gnomidlo/ChimeraVIP/main/",
     changes = {
-        "0.196: pazold obsluguje brak oplacone, DLUG i sklejone komunikaty bez utraty tabeli",
+        "0.196: pazold obsluguje DLUG bez stawki, brak oplacone i sklejone komunikaty",
         "0.195: /magia rozpoznaje potwierdzony rozpad i usuwa przedmiot ze sledzenia",
         "0.194: magia czyta lada chwila i wszystkie przedmioty; czas pozostaje widoczny przy zwezaniu okna",
         "0.193: Magia - poprawiony odczyt wlasnych efektow, nowe okno inspirowane Arka",
@@ -109,7 +109,7 @@ return {
     file_meta = {
         ["src/features/magia_window.lua"] = {hash="c0a2097387a273bdcb86edaaf8cb1e3a61a5e25b", size=16332},
         ["src/features/magia.lua"] = {hash="082de50b308e4392b61948c1f45961f46d14b096", size=16673},
-        ["src/features/retainer_wages.lua"] = {hash="00ca3cc2f082a81f1abad4b79f6200dcad41c811", size=9198},
+        ["src/features/retainer_wages.lua"] = {hash="6db1d938e3752cdb09c9009fb9f53cb169aa9ecd", size=9846},
         ["src/features/friends.lua"] = {hash="987d550451a4ab99f9d99ad06cd04156543148e7", size=6956},
         ["plugins/chimeravip_ui/theme.lua"] = {hash="d8a3932eb18dea27aec6e547cb2ba24957069a4f", size=3467},
         ["plugins/chimeravip_ui/actions.lua"] = {hash="3d56011e8712b9cbcb6eb2afd1ae807d18be644d", size=13709},
