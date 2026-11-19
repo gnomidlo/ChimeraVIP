@@ -94,6 +94,39 @@ parse_lines({
 })
 assert(#M.data.owners["npc-2"].items==1,"incomplete data must not replace prior results")
 assert(M:shortest("@")~=nil)
--- Check that the UI module is syntactically valid; it needs real Mudlet/Geyser at runtime.
+-- UI smoke test: native UserWindow owns nested Geyser labels and ScrollBox.
+local function widget()
+    local item={visible=false}
+    function item:show() self.visible=true end
+    function item:hide() self.visible=false end
+    function item:move(x,y) self.x=x;self.y=y end
+    function item:resize(w,h) self.w=w;self.h=h end
+    function item:setStyleSheet(v) self.css=v end
+    function item:setClickCallback(fn) self.click=fn end
+    function item:echo(v) self.text=v end
+    function item:setToolTip(v) self.tip=v end
+    return item
+end
+Geyser={
+    UserWindow={new=function(_,props)
+        local o=widget();o.native=true;o.props=props;return o
+    end},
+    Label={new=function(_,props,parent)
+        assert(parent,"label must be inside UserWindow or ScrollBox")
+        return widget()
+    end},
+    ScrollBox={new=function(_,props,parent)
+        assert(parent and parent.native,"scrollbox must be inside UserWindow")
+        return widget()
+    end},
+}
 assert(loadfile("src/features/magia_window.lua"))
+dofile("src/features/magia_window.lua")
+assert(M:show_window() and M.win.native)
+assert(M.win.visible and M.data.mode=="compact")
+assert(M.body and #M.row_labels==4,"compact view should list 4 urgent items")
+M:set_mode("full")
+assert(M.data.mode=="full" and #M.row_labels>=9)
+M:hide_window()
+assert(not M.win.visible)
 print("Magia tests: PASS")
