@@ -1,11 +1,11 @@
--- ChimeraVIP 0.193 / Magic UserWindow
+-- ChimeraVIP 0.194 / Magic UserWindow
 -- Samodzielne natywne okno Mudleta. Styl na podstawie le/ui.lua i
 -- le/zlecenia.lua (Arka): cienki akcent, spokojne powierzchnie, Qt rich text.
 -- Brak Geyser overlay na glownej konsoli; brak zmian w Kondycjach.
 local M=chimera_vip.magia
 local U=chimera_vip.util
 
-local DESIGN=2
+local DESIGN=3
 local WINDOW_NAME="ChimeraVIP_Magia"
 local ACCENT="#B6A2E1"
 local BG="#101216"
@@ -29,12 +29,21 @@ local function short(value,max_chars)
     if #chars<=max_chars then return table.concat(chars) end
     return table.concat(chars,"",1,math.max(1,max_chars-1)).."…"
 end
-local function window_width()
+local function window_width(self)
+    -- sysUserWindowResizeEvent daje aktualna szerokosc docka. Jesli
+    -- nie bylo jeszcze resize, zapytaj Mudleta o natywny rozmiar okna.
+    local cached=tonumber(self._window_width)
+    if cached and cached>0 then return cached end
     if type(getUserWindowSize)=="function" then
         local ok,w=pcall(getUserWindowSize,WINDOW_NAME)
         if ok and type(w)=="number" and w>0 then return w end
     end
     return 360
+end
+-- Minimalne poziome miejsce dla pierwszych liter nazwy po odjeciu
+-- stalej kolumny czasu i paska przewijania. NIGDY nie ucinaj od lewej.
+function M.name_char_limit(width)
+    return math.max(1,math.min(96,math.floor(((tonumber(width) or 360)-172)/7.5)))
 end
 local function style(bg,edge,font_size,padding)
     return "background-color:"..bg..";border:none;border-left:3px solid "
@@ -47,9 +56,10 @@ local function button_style()
     return "background-color:transparent;border:none;border-bottom:1px solid "
         ..DIVIDER..";padding:0px;font-family:'Consolas',monospace;font-size:14px;"
 end
-local function rich_time(seconds)
-    local color=M:color(seconds)
-    return "<span style='color:"..color.."'><b>"..esc(M.format(seconds)).."</b></span>"
+local function rich_time(item)
+    local color=M:color(M:remaining(item))
+    return "<span style='color:"..color.."'><b>"..
+        esc(M:format_item(item)).."</b></span>"
 end
 local function tooltip(widget,message)
     if type(setLabelToolTip)=="function" then
@@ -150,9 +160,13 @@ end
 function M:clear_old_content()
     -- W czasie aktualizacji Geyser.UserWindow zachowuje istniejacy dock.
     -- Kasujemy tylko dzieci starego interfejsu, nie samo okno (geometria!).
-    for _,widget in ipairs(self.row_labels or {}) do
-        if widget and type(widget.delete)=="function" then pcall(widget.delete,widget)
-        elseif widget then pcall(widget.hide,widget) end
+    for _,collection in ipairs({self.row_labels or {},
+                                 self.name_labels or {},
+                                 self.time_labels or {}}) do
+        for _,widget in ipairs(collection) do
+            if widget and type(widget.delete)=="function" then pcall(widget.delete,widget)
+            elseif widget then pcall(widget.hide,widget) end
+        end
     end
     for _,widget in ipairs({self.header,self.scan_button,self.mode_button,
                             self.footer,self.body}) do
@@ -160,7 +174,8 @@ function M:clear_old_content()
         elseif widget and type(widget.hide)=="function" then pcall(widget.hide,widget) end
     end
     self.header=nil;self.scan_button=nil;self.mode_button=nil
-    self.footer=nil;self.body=nil;self.row_labels=nil
+    self.footer=nil;self.body=nil
+    self.row_labels=nil;self.name_labels=nil;self.time_labels=nil
 end
 
 function M:show_window()
@@ -198,6 +213,8 @@ function M:show_window()
             x="0px",y="-"..FOOTER_H.."px",width="100%",
             height=FOOTER_H.."px"},w)
         self.row_labels={}
+        self.name_labels={}
+        self.time_labels={}
         self._window_design=DESIGN
         self.header:setClickCallback(function() M:toggle_mode() end)
         self.scan_button:setClickCallback(function() M:scan() end)
@@ -228,16 +245,14 @@ local function row_height(v)
 end
 local function item_html(self,item,width)
     local row=item.row
-    local len=math.max(15,math.min(62,math.floor((width-132)/7)))
     local owner=item.grouped and "" or ("<span style='color:"..MUTED.."'>"..
         esc(row.id=="@" and "JA" or row.owner).."</span>")
     local meta=owner..(owner~="" and "&nbsp;&nbsp;·&nbsp;&nbsp;" or "")
         .."<span style='color:"..MUTED.."'>szacowany czas</span>"
-    return "<table width='100%' cellspacing='0' cellpadding='0'><tr>"
-        .."<td><span style='color:"..TEXT..";font-size:11px'><b>"
-        ..esc(short(row.item.name,len)).."</b></span></td>"
-        .."<td align='right' width='90'><span style='font-size:11px'>"
-        ..rich_time(row.seconds).."</span></td></tr></table>"
+    -- Tylko nazwa: odcinamy jej KONIEC, nigdy poczatek. Czas ma swoja
+    -- fizycznie oddzielona, zakotwiczona do prawej etykiete.
+    return "<div style='font-size:11px;color:"..TEXT.."'><b>"
+        ..esc(short(row.item.name,M.name_char_limit(width))).."</b></div>"
         .."<div style='font-size:9px;color:"..MUTED.."'>"..meta.."</div>"
 end
 
@@ -246,7 +261,7 @@ function M:render()
     local view=self:display_rows()
     self._visible_rows=view
     local count=#self:rows()
-    local width=window_width()
+    local width=window_width(self)
     self.header:setStyleSheet(style(SURFACE,ACCENT,"11px","4px 9px"))
     self.header:echo("<div><b><span style='color:"..ACCENT.."'>✦&nbsp; MAGIA</span></b>"
         .."</div><div style='font-size:9px;color:"..MUTED
@@ -271,39 +286,87 @@ function M:render()
     for i,item in ipairs(view) do
         local label=self.row_labels[i]
         if not label then
-            label=Geyser.Label:new({name="CVIP_Magia_V2_Row_"..i,
-                x="0px",y=y.."px",width="100%",height=row_height(item).."px"},self.body)
+            label=Geyser.Label:new({name="CVIP_Magia_V3_Row_"..i,
+                x="0px",y=y.."px",width="100%-16px",
+                height=row_height(item).."px"},self.body)
             local index=i
-            label:setClickCallback(function()
+            local click=function()
                 local selected=M._visible_rows and M._visible_rows[index]
                 if selected and selected.kind=="item" then M:report()
                 else M:toggle_mode() end
-            end)
+            end
+            label:setClickCallback(click)
             self.row_labels[i]=label
+            -- Dwie niezalezne kolumny. Czas jest przy prawej krawedzi
+            -- (z miejscem na pasek przewijania), nie moze go wyprzec
+            -- nazwa przedmiotu ani rozciagajaca sie tabela HTML.
+            local name=Geyser.Label:new({name="CVIP_Magia_V3_Name_"..i,
+                x="3px",y=y.."px",width="-155px",
+                height=ROW_H.."px"},self.body)
+            local time=Geyser.Label:new({name="CVIP_Magia_V3_Time_"..i,
+                x="-135px",y=y.."px",width="107px",
+                height=ROW_H.."px"},self.body)
+            name:setClickCallback(click)
+            time:setClickCallback(click)
+            self.name_labels[i]=name
+            self.time_labels[i]=time
         end
+        local name=self.name_labels[i]
+        local time=self.time_labels[i]
         label:move("0px",y.."px")
-        label:resize("100%",row_height(item).."px")
+        label:resize("100%-16px",row_height(item).."px")
         if item.kind=="group" then
             label:setStyleSheet(style(BG,ACCENT,"10px","4px 9px"))
             label:echo("<span style='color:"..ACCENT.."'><b>"..esc(item.title)
                 .."</b></span>")
+            name:hide();time:hide()
         elseif item.kind=="missing" then
             label:setStyleSheet(style(SURFACE,DIVIDER,"10px","5px 9px"))
             label:echo("<div style='color:"..MUTED.."'>"..esc(item.title)..
                 "</div><div style='font-size:9px;color:"..MUTED.."'>"..
                 esc(item.detail).."</div>")
+            name:hide();time:hide()
         else
             local edge=self:color(item.row.seconds)
             label:setStyleSheet(style(i%2==0 and BG or SURFACE,edge,"11px","5px 9px"))
-            label:echo(item_html(self,item,width))
+            label:echo("")
+            name:move("3px",y.."px")
+            name:resize("-155px",ROW_H.."px")
+            name:setStyleSheet("background-color:transparent;border:none;padding:5px 1px 2px 7px;"
+                .."font-family:'DejaVu Sans Mono','Consolas',monospace;")
+            name:echo(item_html(self,item,width))
+            name:show()
+            time:move("-135px",y.."px")
+            time:resize("107px",ROW_H.."px")
+            time:setStyleSheet("background-color:transparent;border:none;padding:7px 0px 0px 0px;"
+                .."font-family:'DejaVu Sans Mono','Consolas',monospace;")
+            time:echo("<div align='right' style='font-size:11px'>"
+                ..rich_time(item.row.item).."</div>")
+            time:show()
             tooltip(label,item.row.owner.." • "..item.row.item.name..
-                " • "..M.format(item.row.seconds))
+                " • "..self:format_item(item.row.item))
         end
         label:show()
         y=y+row_height(item)
     end
-    for i=#view+1,#self.row_labels do self.row_labels[i]:hide() end
-    -- Qt/Geyser ScrollBox scrolluje zawartosc; nie zmieniamy
-    -- natywnej geometrii ani pozycji dokowania przy odswiezaniu.
+    for i=#view+1,#self.row_labels do
+        self.row_labels[i]:hide()
+        if self.name_labels[i] then self.name_labels[i]:hide() end
+        if self.time_labels[i] then self.time_labels[i]:hide() end
+    end
+    -- Osobne etykiety nazw/czasow sa kotwiczone w Geyser do rodzica.
+    -- Zdarzenie zmiany rozmiaru sluzy tylko do przeliczenia skrotu nazwy.
 end
+
+-- Mudlet wysyla ten event dla natywnego okna oddzielnie od glownego.
+-- Debounce: nie renderuj po kazdym pikselu podczas przeciagania.
+U.replace_handler(M,"magia_resize","sysUserWindowResizeEvent",function(_,height,width,name)
+    if name~=WINDOW_NAME or not M.win then return end
+    M._window_width=tonumber(width) or nil
+    if M._resize_timer then pcall(killTimer,M._resize_timer) end
+    M._resize_timer=tempTimer(0.07,function()
+        M._resize_timer=nil
+        if M.win then M:render() end
+    end)
+end)
 return M
