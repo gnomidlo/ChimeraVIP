@@ -88,6 +88,11 @@ assert(W:consume('      oplacone: 11 srebrnych i 5 miedzianych monet -- starczy 
 assert(W:consume('                czyli ok. 1 h 33 min sluzby przy tobie'))
 assert(W:consume(''))
 assert(W:consume('   3. Rethkal'))
+-- The debt-only variant reported by the user: there is no 'stawka'.
+assert(W:consume('      DLUG: 2 miedziane monety'))
+assert(W:consume(''))
+-- Separate synthetic variant without paid time, still parsed safely.
+assert(W:consume('   4. Testowy'))
 assert(W:consume('      stawka:   6 srebrnych i 8 miedzianych monet za dobe (48 minut sluzby)'))
 assert(W:consume(''))
 assert(W:consume('   5. Xisstan'))
@@ -104,6 +109,14 @@ assert(not W.armed and not W.capture)
 local mixed=table.concat(output)
 assert(mixed:find('Rakthar',1,true) and mixed:find('Rethkal',1,true))
 assert(mixed:find('Xisstan',1,true) and mixed:find('Isskana',1,true))
+assert(mixed:find('Testowy',1,true))
+-- Rate is deliberately unknown, not inferred from the outstanding debt.
+local debt_row
+for text in mixed:gmatch('[^\n]+') do
+    if text:find('Rethkal',1,true) then debt_row=text;break end
+end
+assert(debt_row and debt_row:find('DLUG 2m',1,true),
+    "debt-only member must retain amount without a rate")
 assert(mixed:find('brak oplaty',1,true),"missing oplacone must not abort report")
 assert(mixed:find('DLUG',1,true),"real debt must be listed in compact report")
 assert(mixed:find('2m',1,true),"debt amount should be formatted")
