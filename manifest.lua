@@ -104,7 +104,7 @@ return {
         "src/ui/module_controls.lua"
     },
     file_meta = {
-        ["src/features/magia_window.lua"] = {hash="612fa12f5d2ab193dd85ed2db4903dab11c5cd23", size=13014},
+        ["src/features/magia_window.lua"] = {hash="7877c0e267a3de74ee3f78bba2fac3a43cde69ed", size=13343},
         ["src/features/magia.lua"] = {hash="b26d9d612630361387810590bdb57ae49647b55f", size=13146},
         ["src/features/retainer_wages.lua"] = {hash="8e81ea5bfa2cc5e80c31f95c20f232ac6c66ff08", size=5826},
         ["src/features/friends.lua"] = {hash="987d550451a4ab99f9d99ad06cd04156543148e7", size=6956},
