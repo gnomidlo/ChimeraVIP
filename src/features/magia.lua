@@ -122,29 +122,59 @@ function M:finish_capture()
     if not c then return end
     self.capture=nil
     self:clear_timeout()
-    if c.names==#c.items then
+    local valid=c.names==#c.items
+    if valid then
         self:commit(c.owner,c.items)
     else
         note("Niepelna odpowiedz "..c.owner.name.." — nie zmieniam zapisanych przedmiotow.",p().yellow)
     end
-    if self.current then self.current=nil;self:next_task() end
+    if self.current and c.queued then
+        self.current=nil
+        self:next_task()
+    elseif self.current then
+        -- Niezalezna odpowiedz 'efekty' gracza nie moze anulowac
+        -- oczekujacego rozkazu skierowanego do pacholka.
+        self:timeout(8)
+    end
 end
 function M:next_task()
     if self.capture or self.current then return end
     local task=self.queue and table.remove(self.queue,1)
-    if not task then self.queue=nil;self:render();return end
+    if not task then
+        self.queue=nil
+        if self.scan_active then
+            self.scan_active=false
+            local report={}
+            for _,id in ipairs(self.scanned_ids or {}) do
+                local row=self.data.owners[id]
+                local label=id=="@" and "JA" or (row and row.name or id)
+                if not row or (row.last_scan or 0)<(self.scan_started or 0) then
+                    report[#report+1]=label..": brak nowego odczytu"
+                else
+                    report[#report+1]=label..": "..#(row.items or {}).." szt."
+                end
+            end
+            note("Skan zakonczony | "..table.concat(report," | "))
+        end
+        self:render()
+        return
+    end
     self.current=task
     send(task.id=="@" and "efekty" or ("parozkaz "..task.id.." efekty"),false)
-    self:timeout(6)
+    self:timeout(12)
 end
 function M:scan()
     if self.current or self.capture or self.queue then
         note("Skan juz trwa.",p().yellow);return false
     end
     local retainers=self:retainers()
+    self.scan_started=now()
+    self.scan_active=true
+    self.scanned_ids={"@"}
     self.queue={{id="@",name=self:self_name(),self=true}}
     for _,r in ipairs(retainers) do
         self.queue[#self.queue+1]={id=tostring(r.id),name=r.name,self=false}
+        self.scanned_ids[#self.scanned_ids+1]=tostring(r.id)
     end
     self:show_window()
     note("Skanuje "..(#retainers+1).." postaci.")
@@ -153,18 +183,22 @@ function M:scan()
 end
 function M:on_line(raw)
     local s=tostring(raw or ""):gsub("\r$","")
-    local possessive=s:match("^Magiczne przedmioty, ktore (%a+) na sobie:%s*$")
+    -- Wlasne efekty moga przyjsc rowniez bez /magia sprawdz.
+    -- Rozpoznawaj naglowek niezaleznie od poprzedzajacych bialych znakow.
+    local possessive=s:match("^%s*Magiczne przedmioty, ktore (%a+) na sobie:%s*$")
     if possessive=="masz" or possessive=="ma" then
         if self.capture then self:finish_capture() end
-        local owner=self.current
-        if owner and ((owner.self and possessive~="masz")
-            or (not owner.self and possessive~="ma")) then return end
-        if not owner and possessive=="masz" then
+        local owner,queued
+        if possessive=="masz" then
             owner={id="@",name=self:self_name(),self=true}
+            queued=self.current and self.current.self or false
+        elseif self.current and not self.current.self then
+            owner=self.current
+            queued=true
         end
         if not owner then return end
-        self.capture={owner=owner,items={},names=0}
-        self:timeout(3)
+        self.capture={owner=owner,items={},names=0,queued=queued}
+        self:timeout(5)
         return
     end
     local capture=self.capture
@@ -179,15 +213,17 @@ function M:on_line(raw)
             capture.items[#capture.items+1]=capture.pending
             capture.pending=nil
         end
-        self:timeout(3)
+        self:timeout(5)
         return
     end
-    -- Dokladnie dwa wciecia oznaczaja nazwe; opis Dzialanie ma trzy.
-    local name=s:match("^  (%S.-)%s*$")
-    if name then
+    -- Na roznych profilach efekt moze miec 1-3 wciecia (takze tab).
+    -- Klucze opisu nie sa przedmiotami, a kazdy przedmiot wymaga czasu.
+    local name=s:match("^%s+([^%s].-)%s*$")
+    if name and not name:match("^Dzialanie:")
+        and not name:match("^Rozsypie sie") then
         capture.names=capture.names+1
         capture.pending={name=U.trim(name)}
-        self:timeout(3)
+        self:timeout(5)
         return
     end
     if s:match("^%S") then self:finish_capture() end
@@ -261,6 +297,7 @@ function M:cleanup()
     if self.tick then pcall(killTimer,self.tick) end;self.tick=nil
     self:clear_timeout()
     self.capture=nil;self.current=nil;self.queue=nil
+    self.scan_active=false
 end
 M:cleanup()
 if not M.loaded then M:load_data();M.loaded=true end
@@ -279,6 +316,7 @@ M.alias_ids[1]=tempAlias("^/magia(?:\\s+(.*))?\\s*$",function()
 end)
 U.replace_handler(M,"disconnect","sysDisconnectionEvent",function()
     M:clear_timeout();M.capture=nil;M.current=nil;M.queue=nil
+    M.scan_active=false
 end)
 U.replace_handler(M,"exit","sysExitEvent",function()
     M:save()
