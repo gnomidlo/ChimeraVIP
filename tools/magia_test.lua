@@ -187,6 +187,7 @@ assert(report:find("Uzzarnia: 6 szt.",1,true))
 M:alarms_tick()
 local one_warning=table.concat(printed)
 assert(one_warning:find("lada chwila",1,true),"imminent alarm should name urgency")
+
 -- UI smoke test: native UserWindow owns nested Geyser labels and ScrollBox.
 local function widget()
     local item={visible=false}
@@ -260,4 +261,56 @@ timers[M._resize_timer].callback()
 assert(M._window_width==630 and M.time_labels[1].text==time_before)
 M:hide_window()
 assert(not M.win.visible)
+-- Server-confirmed disintegration (capitalized nominative) must immediately
+-- remove a UNIQUE tracked item, save/update widgets, and leave others intact.
+local before_death=#M:rows()
+assert(before_death==14)
+M:on_line("Zakorkowana szklana buteleczka rozpada sie w pyl!")
+assert(#M.data.owners["@"].items==3,"unique shattered object removed from self")
+assert(#M:rows()==before_death-1)
+for _,item in ipairs(M.data.owners["@"].items) do
+    assert(U.normalize(item.name)~="zakorkowana szklana buteleczka")
+end
+M:on_line("Zakorkowana szklana buteleczka rozpada sie w pyl!")
+assert(#M:rows()==before_death-1,"duplicate disappearance must not delete other items")
+assert(table.concat(printed):find("Rozpad potwierdzony:",1,true))
+
+-- The same ring can exist on several retainers, and the text lacks an ID.
+-- Refuse to attribute such an event to the wrong teammate.
+local before_one=#M.data.owners["npc-1"].items
+local before_two=#M.data.owners["npc-2"].items
+M:on_line("Matowy pierscien rozpada sie w pyl!")
+assert(#M.data.owners["npc-1"].items==before_one)
+assert(#M.data.owners["npc-2"].items==before_two)
+assert(table.concat(printed):find("nazwa wystepuje u kilku",1,true))
+
+-- Two copies carried by just one member: decrement one copy, preferring the
+-- shortest estimate, without deleting its second ring.
+local other_owner=M.data.owners["npc-2"].items
+M.data.owners["npc-2"].items={
+    other_owner[1],other_owner[2],other_owner[3],other_owner[4]
+}
+M:on_line("Matowy pierscien rozpada sie w pyl!")
+assert(#M.data.owners["npc-1"].items==before_one-1)
+local remaining_ring
+for _,item in ipairs(M.data.owners["npc-1"].items) do
+    if item.name=="matowy pierscien" then remaining_ring=item end
+end
+assert(remaining_ring and remaining_ring.seconds==15*3600,
+    "heuristic must remove the earliest-expiring duplicate")
+
+-- The parser must not restore an item from a stale effects snapshot that
+-- was being captured when the server confirmed its disintegration.
+M.capture={
+    owner={id="@",name="Veesa"},
+    names=1,items={{name="kamienny olbrzymi miecz",expiry=os.time()+24*3600}},
+}
+M:on_line("Kamienny olbrzymi miecz rozpada sie w pyl!")
+assert(M.capture.invalidated,"destroyed during capture must invalidate snapshot")
+M:finish_capture()
+for _,item in ipairs(M.data.owners["@"].items) do
+    assert(U.normalize(item.name)~="kamienny olbrzymi miecz",
+        "stale snapshot cannot re-add destroyed object")
+end
+
 print("Magia tests: PASS")

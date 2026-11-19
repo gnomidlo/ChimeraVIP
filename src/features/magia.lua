@@ -1,4 +1,4 @@
--- ChimeraVIP 0.194 / Magia: czasy rozpadu z komendy "efekty".
+-- ChimeraVIP 0.195 / Magia: czasy rozpadu z komendy "efekty".
 -- Brak gagowania, brak wnioskowania o zniszczeniu na podstawie zegara.
 chimera_vip=chimera_vip or {}
 local C,U=chimera_vip,chimera_vip.util
@@ -133,7 +133,12 @@ function M:finish_capture()
     self.capture=nil
     self:clear_timeout()
     local valid=c.names==#c.items
-    if valid then
+    if c.invalidated then
+        -- Przedmiot rozpadl sie podczas odczytu. Nie mozemy zapisac
+        -- migawki, ktora moglaby go ponownie dodac do bazy.
+        note("Wyposazenie "..c.owner.name.." zmienilo sie podczas odczytu. "..
+            "Zachowuje aktualny stan; sprawdz ponownie /magia sprawdz.",p().yellow)
+    elseif valid then
         self:commit(c.owner,c.items)
     else
         note("Niepelna odpowiedz "..c.owner.name.." — nie zmieniam zapisanych przedmiotow.",p().yellow)
@@ -191,8 +196,73 @@ function M:scan()
     self:next_task()
     return true
 end
+-- Gra potwierdza zniszczenie, a nie tylko przewidywany termin.
+-- Komunikat nie ma ID obiektu ani wlasciciela. Jesli rozpoznajemy
+-- wiecej niz jednego wlasciciela tej nazwy, nie zgadujemy, u kogo
+-- cos zniknelo. Identyczne kopie u jednej postaci dopasowujemy
+-- do najkrotszej przewidywanej trwalosci.
+function M:on_destroyed(name)
+    name=U.trim(name)
+    local wanted=U.normalize(name)
+    if wanted=="" then return false end
+
+    local matches,owners={},{}
+    local present=self:present()
+    for id,owner in pairs(self.data.owners or {}) do
+        if present[id] and type(owner.items)=="table" then
+            for index,item in ipairs(owner.items) do
+                if U.normalize(item.name)==wanted then
+                    matches[#matches+1]={
+                        id=id,owner=owner,index=index,item=item,
+                        remaining=self:remaining(item)
+                    }
+                    owners[id]=true
+                end
+            end
+        end
+    end
+    if #matches==0 then return false end
+
+    local owner_count=0
+    for _ in pairs(owners) do owner_count=owner_count+1 end
+    if owner_count>1 then
+        -- Podobne przedmioty u wielu osob: rozpad jest pewny,
+        -- ale jego przypisanie po samej nazwie byloby zgadywaniem.
+        note("Rozpadl sie '"..name.."', ale nazwa wystepuje u kilku "..
+            "czlonkow druzyny. Nie usuwam zadnego; /magia sprawdz.",
+            p().yellow)
+        return false
+    end
+
+    table.sort(matches,function(a,b)
+        if a.remaining==b.remaining then return a.index<b.index end
+        return a.remaining<b.remaining
+    end)
+    local selected=matches[1]
+    if self.capture and tostring(self.capture.owner.id)==selected.id then
+        -- Nie pozwol, by skan w toku przywrocil rozpadniety przedmiot.
+        self.capture.invalidated=true
+    end
+
+    table.remove(selected.owner.items,selected.index)
+    selected.owner.last_change=now()
+    self:save()
+    self:render()
+    local extra=#matches>1 and
+        " (identyczne kopie: wybrano najkrotsza trwalosc; warto sprawdzic efekty)"
+        or ""
+    note("Rozpad potwierdzony: "..name.." ("..(selected.id=="@" and "JA"
+        or selected.owner.name).."). Usunieto z monitoringu."..extra,p().rose)
+    return true
+end
+
 function M:on_line(raw)
     local s=tostring(raw or ""):gsub("\r$","")
+    local destroyed=s:match("^%s*(.-)%s+rozpada sie w pyl!%s*$")
+    if destroyed and destroyed~="" then
+        self:on_destroyed(destroyed)
+        return
+    end
     -- Wlasne efekty moga przyjsc rowniez bez /magia sprawdz.
     -- Rozpoznawaj naglowek niezaleznie od poprzedzajacych bialych znakow.
     local possessive=s:match("^%s*Magiczne przedmioty, ktore (%a+) na sobie:%s*$")

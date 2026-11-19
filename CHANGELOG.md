@@ -1,3 +1,11 @@
+## 0.195 — Potwierdzony rozpad magicznego przedmiotu
+
+- Moduł Magia rozpoznaje komunikat `Zakorkowana szklana buteleczka rozpada sie w pyl!` (i analogiczne nazwy) i natychmiast usuwa rozpadnięty przedmiot z monitoringu, zapisując zmianę i odświeżając okno.
+- Dopasowanie nazwy ignoruje wielkość liter. Jeżeli dwie postaci mają przedmiot o tej samej nazwie, nie zgadujemy właściciela: zamiast tego informujemy o niejednoznaczności i proponujemy `/magia sprawdz`.
+- Gdy jedna postać ma dwie identyczne sztuki, usuwamy tylko jedną — o najkrótszym szacowanym czasie, wyraźnie sygnalizując przybliżone dopasowanie.
+- Rozpad w trakcie przechwytywania `efekty` unieważnia nieaktualną migawkę, aby skan nie dodał zniszczonego przedmiotu ponownie.
+- Bez ingerencji w okienko Kondycji; nie ukrywamy oryginalnych komunikatów gry.
+
 ## 0.194 — "lada chwila" i czytelny czas w oknie Magia
 
 - W `/magia sprawdz` odczytywane są także magiczne przedmioty z komunikatem `Rozsypie sie w pyl lada chwila.`; nie kasujemy pełnych odczytów z powodu braku liczby godzin. Ten stan jest krytyczny, ale nie oznacza arbitralnego terminu rozpadu.
