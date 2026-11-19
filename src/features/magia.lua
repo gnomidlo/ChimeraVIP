@@ -34,7 +34,7 @@ function M.format(seconds)
     if not seconds then return "?" end
     if seconds<=0 then return "czas uplynal?" end
     local minutes=math.ceil(seconds/60)
-    if minutes>=1440 then return "~"..math.floor(minutes/1440).."d "..math.floor(minutes%1440/60).."h" end
+    if minutes>=4320 then return "~"..math.floor(minutes/1440).."d "..math.floor(minutes%1440/60).."h" end
     if minutes>=60 then
         local hrs=math.floor(minutes/60)
         return "~"..hrs.."h"..(minutes%60>0 and " "..minutes%60.."m" or "")
