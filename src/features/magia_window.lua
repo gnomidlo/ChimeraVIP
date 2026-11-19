@@ -66,7 +66,7 @@ function M:display_rows()
     if self.data.mode=="compact" then
         -- Kompakt to skrot calej druzyny, a nie 4 najkrotsze przedmioty
         -- jednej postaci. W szczegolnosci nie gubimy wlasnego ekwipunku.
-        local first={},used={}
+        local first,used={},{}
         local order={"@"}
         for _,r in ipairs(self:retainers()) do order[#order+1]=tostring(r.id) end
         local unique={}
@@ -232,6 +232,7 @@ end
 function M:render()
     if not (self.win and self.body and self.header) then return end
     local view=self:display_rows()
+    self._visible_rows=view
     local count=#self:rows()
     local width=window_width()
     self.header:setStyleSheet(style(SURFACE,ACCENT,"11px","4px 9px"))
@@ -260,8 +261,10 @@ function M:render()
         if not label then
             label=Geyser.Label:new({name="CVIP_Magia_V2_Row_"..i,
                 x="0px",y=y.."px",width="100%",height=row_height(item).."px"},self.body)
+            local index=i
             label:setClickCallback(function()
-                if item.kind=="item" then M:report()
+                local selected=M._visible_rows and M._visible_rows[index]
+                if selected and selected.kind=="item" then M:report()
                 else M:toggle_mode() end
             end)
             self.row_labels[i]=label
