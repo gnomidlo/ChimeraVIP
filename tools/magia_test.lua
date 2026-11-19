@@ -94,12 +94,23 @@ parse_lines({
 })
 assert(#M.data.owners["npc-2"].items==1,"incomplete data must not replace prior results")
 assert(M:shortest("@")~=nil)
+-- New compact view must include JA despite several urgent retainer items.
+M.data.mode="compact"
+local display
+-- Test manual self 'efekty' header that is indented by the client.
+M:on_line("   Magiczne przedmioty, ktore masz na sobie:")
+M:on_line("  kamienny olbrzymi miecz")
+M:on_line("   Rozsypie sie w pyl za okolo 25 godzin.")
+M:on_line("Kradziez zycia:")
+assert(#M.data.owners["@"].items==1,"own manual effects should update JA")
 -- UI smoke test: native UserWindow owns nested Geyser labels and ScrollBox.
 local function widget()
     local item={visible=false}
     function item:show() self.visible=true end
     function item:hide() self.visible=false end
     function item:move(x,y) self.x=x;self.y=y end
+    function item:resize(w,h) self.width=w;self.height=h end
+    function item:delete() self.deleted=true end
     function item:resize(w,h) self.w=w;self.h=h end
     function item:setStyleSheet(v) self.css=v end
     function item:setClickCallback(fn) self.click=fn end
@@ -123,10 +134,24 @@ Geyser={
 assert(loadfile("src/features/magia_window.lua"))
 dofile("src/features/magia_window.lua")
 assert(M:show_window() and M.win.native)
+assert(M.win.props.autoDock==false and M.win.props.restoreLayout==true)
 assert(M.win.visible and M.data.mode=="compact")
+display=M:display_rows()
+local found_self=false
+for _,row in ipairs(display) do
+    if row.kind=="item" and row.row.id=="@" then found_self=true end
+end
+assert(found_self,"compact window must include own magic even with urgent retainer items")
+assert(M.header.text:find("MAGIA",1,true))
+assert(M.row_labels[1].text:find("<table",1,true),"Arka-style Qt rich text row")
+assert(M.header.css:find("border%-left"),"thin accent stripe")
 assert(M.body and #M.row_labels==4,"compact view should list 4 urgent items")
 M:set_mode("full")
 assert(M.data.mode=="full" and #M.row_labels>=9)
+assert(M:display_rows()[1].title=="TWOJA POSTAC")
+local original=M.win
+M._window_design=1 -- upgrade in a running Mudlet keeps native dock
+assert(M:show_window() and M.win==original and M._window_design==2)
 M:hide_window()
 assert(not M.win.visible)
 print("Magia tests: PASS")
