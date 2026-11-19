@@ -164,7 +164,7 @@ function M:on_line(raw)
         end
         if not owner then return end
         self.capture={owner=owner,items={},names=0}
-        if self.current then self:timeout(3) end
+        self:timeout(3)
         return
     end
     local capture=self.capture
@@ -179,7 +179,7 @@ function M:on_line(raw)
             capture.items[#capture.items+1]=capture.pending
             capture.pending=nil
         end
-        if self.current then self:timeout(3) end
+        self:timeout(3)
         return
     end
     -- Dokladnie dwa wciecia oznaczaja nazwe; opis Dzialanie ma trzy.
@@ -187,7 +187,7 @@ function M:on_line(raw)
     if name then
         capture.names=capture.names+1
         capture.pending={name=U.trim(name)}
-        if self.current then self:timeout(3) end
+        self:timeout(3)
         return
     end
     if s:match("^%S") then self:finish_capture() end
