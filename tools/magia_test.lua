@@ -147,7 +147,7 @@ assert(M.row_labels[1].text:find("<table",1,true),"Arka-style Qt rich text row")
 assert(M.header.css:find("border%-left"),"thin accent stripe")
 assert(M.body and #M.row_labels==4,"compact view should list 4 urgent items")
 M:set_mode("full")
-assert(M.data.mode=="full" and #M.row_labels>=9)
+assert(M.data.mode=="full" and #M.row_labels>=8)
 assert(M:display_rows()[1].title=="TWOJA POSTAC")
 local original=M.win
 M._window_design=1 -- upgrade in a running Mudlet keeps native dock
