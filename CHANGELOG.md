@@ -1,3 +1,12 @@
+## 0.193 — Magia: wlasny ekwipunek, estetyczne UserWindow i niezmienne Kondycje
+
+- Całkowicie cofnięto znacznik magii z okna Kondycje. Ten ważny panel pozostaje w oryginalnym układzie 0.191.
+- Nowy, spokojny wizualnie interfejs Magia na podstawie okna Zlecenia w Arka: smukłe paski akcentu, przygaszone powierzchnie i dwupoziomowe wiersze Qt.
+- Widok kompaktowy rezerwuje miejsce na własną postać i pokazuje najpilniejszy przedmiot każdego właściciela, zanim wypełni pozostałe sloty.
+- Widok pełny grupuje po właścicielach i przewija kompletną listę; oba wykorzystują natywne, przesuwalne i skalowalne UserWindow.
+- Odpowiedzi `efekty` postaci są rozpoznawane także przy dodatkowych wcięciach i poza skanem; komunikat końcowy skanu pokazuje liczbę odczytanych przedmiotów każdego członka drużyny.
+- Aktualizacja nie wymusza ponownego położenia okna Mudleta.
+
 ## 0.192 — Magia i trwałość magicznego wyposażenia
 
 - `OCENA | MAGIA` pokazuje szacowany czas rozpadu (`trwalosc: ~25h`) bez powtarzania informacji o zaklęciu.
