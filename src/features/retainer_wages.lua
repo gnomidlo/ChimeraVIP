@@ -205,6 +205,8 @@ function W:consume(text)
         end
     end
     if is_header then
+        -- A failed capture still needs to restore its original header.
+        c.raw[#c.raw+1]="Zold twoich pacholkow:"
         -- The previous unrelated MUD line may not have a trailing newline.
         -- Deleting the header must not glue it to the previous "DLUG".
         if U.gag_line() then
