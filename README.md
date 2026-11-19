@@ -395,3 +395,5 @@ Szczegółowy opis przejścia oraz zabezpieczeń: `docs/CHIMERA5_MIGRATION.md`.
 
 Czasy `za okolo ...` są przybliżone; skrypt ich nie traktuje jako potwierdzenia zniszczenia. Do potwierdzenia pozostaje, czy rozpad postępuje po wylogowaniu.
 
+
+**Ważne (0.193):** Czas magii wyświetla wyłącznie okno `/magia okno` lub raport `/magia`. Okno Kondycje pozostaje bez zmian. Widok kompaktowy gwarantuje informację o stanie własnej postaci, a pełny grupuje całe magiczne wyposażenie drużyny. Projekt okna korzysta z estetyki modułu Zlecenia w Arka (oddzielne natywne UserWindow z zawartością Geysera).
