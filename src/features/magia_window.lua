@@ -86,8 +86,13 @@ function M:display_rows()
         local own_known=false
         for _,v in ipairs(first) do if v.row.id=="@" then own_known=true end end
         if not own_known then
+            local own=self.data.owners["@"]
+            local scanned=own and (own.last_scan or 0)>0
             displays[#displays+1]={kind="missing",owner="JA",
-                title="Brak odczytu twojej magii",detail="Wykonaj /magia sprawdz"}
+                title=scanned and "JA · brak magicznego wyposazenia"
+                    or "JA · brak odczytu magii",
+                detail=scanned and "Ostatni skan nie wykazal magii"
+                    or "Wykonaj /magia sprawdz"}
         end
         -- Po jednym najwazniejszym przedmiocie na wlasciciela, potem
         -- wolne miejsca uzupelniamy wedlug czasu (bez powielania).
