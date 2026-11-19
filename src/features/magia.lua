@@ -230,8 +230,8 @@ function M:on_line(raw)
     end
     -- Na roznych profilach efekt moze miec 1-3 wciecia (takze tab).
     -- Klucze opisu nie sa przedmiotami, a kazdy przedmiot wymaga czasu.
-    local name=s:match("^%s+([^%s].-)%s*$")
-    if name and not name:match("^Dzialanie:")
+    local indent,name=s:match("^(%s+)(%S.-)%s*$")
+    if name and #indent<=3 and not name:match("^Dzialanie:")
         and not name:match("^Rozsypie sie") then
         capture.names=capture.names+1
         capture.pending={name=U.trim(name)}
