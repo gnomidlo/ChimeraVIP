@@ -37,7 +37,7 @@ function M.format(seconds)
     if minutes>=4320 then return "~"..math.floor(minutes/1440).."d "..math.floor(minutes%1440/60).."h" end
     if minutes>=60 then
         local hrs=math.floor(minutes/60)
-        return "~"..hrs.."h"..(minutes%60>0 and " "..minutes%60.."m" or "")
+        return "~"..hrs.."h"..(minutes%60>0 and " "..(minutes%60).."m" or "")
     end
     return "~"..minutes.."m"
 end
