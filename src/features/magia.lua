@@ -153,8 +153,8 @@ function M:scan()
 end
 function M:on_line(raw)
     local s=tostring(raw or ""):gsub("\r$","")
-    local possessive=s:match("^Magiczne przedmioty, ktore (masz|ma) na sobie:%s*$")
-    if possessive then
+    local possessive=s:match("^Magiczne przedmioty, ktore (%a+) na sobie:%s*$")
+    if possessive=="masz" or possessive=="ma" then
         if self.capture then self:finish_capture() end
         local owner=self.current
         if owner and ((owner.self and possessive~="masz")
