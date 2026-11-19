@@ -397,3 +397,5 @@ Czasy `za okolo ...` są przybliżone; skrypt ich nie traktuje jako potwierdzeni
 
 
 **Ważne (0.193):** Czas magii wyświetla wyłącznie okno `/magia okno` lub raport `/magia`. Okno Kondycje pozostaje bez zmian. Widok kompaktowy gwarantuje informację o stanie własnej postaci, a pełny grupuje całe magiczne wyposażenie drużyny. Projekt okna korzysta z estetyki modułu Zlecenia w Arka (oddzielne natywne UserWindow z zawartością Geysera).
+
+**Magia 0.194:** komunikat `Rozsypie sie w pyl lada chwila.` jest interpretowany jako osobny, krytyczny stan bez fikcyjnego odliczania. Podczas zmiany szerokości okna nazwa przedmiotu skraca się od prawej, a czas jest w osobnej, zakotwiczonej kolumnie i nie powinien być obcinany. Kondycje pozostają nietknięte.

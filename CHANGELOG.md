@@ -1,3 +1,10 @@
+## 0.194 — "lada chwila" i czytelny czas w oknie Magia
+
+- W `/magia sprawdz` odczytywane są także magiczne przedmioty z komunikatem `Rozsypie sie w pyl lada chwila.`; nie kasujemy pełnych odczytów z powodu braku liczby godzin. Ten stan jest krytyczny, ale nie oznacza arbitralnego terminu rozpadu.
+- Skan całej drużyny nie traci identycznych pierścieni; dodano test odpowiadający logowi z 4+4+6 przedmiotami.
+- Okno Magia ma teraz dwie oddzielne kolumny Geysera: początek nazwy i stale widoczny, przytwierdzony do prawej czas. Zwężanie okna skraca końcówkę nazwy, natomiast kolumna czasu zachowuje pełną wartość (`lada chwila`, `~24h` itd.).
+- `sysUserWindowResizeEvent` uruchamia opóźnione przeliczenie nazwy; nie zmienia pozycji ani rozmiaru natywnego UserWindow. Okno Kondycje bez zmian.
+
 ## 0.193 — Magia: wlasny ekwipunek, estetyczne UserWindow i niezmienne Kondycje
 
 - Całkowicie cofnięto znacznik magii z okna Kondycje. Ten ważny panel pozostaje w oryginalnym układzie 0.191.

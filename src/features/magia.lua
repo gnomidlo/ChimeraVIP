@@ -1,4 +1,4 @@
--- ChimeraVIP 0.192 / Magia: czasy rozpadu z komendy "efekty".
+-- ChimeraVIP 0.194 / Magia: czasy rozpadu z komendy "efekty".
 -- Brak gagowania, brak wnioskowania o zniszczeniu na podstawie zegara.
 chimera_vip=chimera_vip or {}
 local C,U=chimera_vip,chimera_vip.util
@@ -41,7 +41,16 @@ function M.format(seconds)
     end
     return "~"..minutes.."m"
 end
-function M:remaining(item) return (tonumber(item.expiry) or 0)-now() end
+-- "Lada chwila" nie jest terminem liczbowym. Wyroznijmy go osobno:
+-- bez wymyslania godziny rozpadu i bez liczenia wstecz od zera.
+function M:remaining(item)
+    if item.imminent then return 0 end
+    return (tonumber(item.expiry) or 0)-now()
+end
+function M:format_item(item)
+    if item.imminent then return "lada chwila" end
+    return self.format(self:remaining(item))
+end
 function M:color(seconds)
     if seconds<=3600 then return p().rose end
     if seconds<=10800 then return p().peach end
@@ -89,6 +98,7 @@ function M:commit(owner,items)
         for i,prev in ipairs(old and old.items or {}) do
             local delta=math.abs((entry.expiry or 0)-(prev.expiry or 0))
             if not used[i] and U.normalize(prev.name)==U.normalize(entry.name)
+                and (prev.imminent==true)==(entry.imminent==true)
                 and (not diff or delta<diff) then best,diff=i,delta end
         end
         entry.warned={}
@@ -203,12 +213,14 @@ function M:on_line(raw)
     end
     local capture=self.capture
     if not capture then return end
-    local duration=s:match("^%s+Rozsypie sie w pyl za okolo (.+)%.%s*$")
-    if duration then
-        local seconds=self.parse_duration(duration)
-        if seconds and capture.pending then
+    local duration=s:match("^%s*Rozsypie sie w pyl za okolo (.+)%.%s*$")
+    local imminent=s:match("^%s*Rozsypie sie w pyl lada chwila%.%s*$")~=nil
+    if duration or imminent then
+        local seconds=duration and self.parse_duration(duration) or nil
+        if capture.pending and (seconds or imminent) then
+            capture.pending.imminent=imminent
             capture.pending.seconds=seconds
-            capture.pending.expiry=now()+seconds
+            capture.pending.expiry=seconds and (now()+seconds) or nil
             capture.pending.observed=now()
             capture.items[#capture.items+1]=capture.pending
             capture.pending=nil
@@ -218,8 +230,8 @@ function M:on_line(raw)
     end
     -- Na roznych profilach efekt moze miec 1-3 wciecia (takze tab).
     -- Klucze opisu nie sa przedmiotami, a kazdy przedmiot wymaga czasu.
-    local name=s:match("^%s+([^%s].-)%s*$")
-    if name and not name:match("^Dzialanie:")
+    local indent,name=s:match("^(%s+)(%S.-)%s*$")
+    if name and #indent<=3 and not name:match("^Dzialanie:")
         and not name:match("^Rozsypie sie") then
         capture.names=capture.names+1
         capture.pending={name=U.trim(name)}
@@ -251,10 +263,11 @@ function M:shortest(id)
     if not owner or not owner.items or #owner.items==0 then return nil end
     local shortest
     for _,item in ipairs(owner.items) do
-        local seconds=self:remaining(item)
-        if not shortest or seconds<shortest then shortest=seconds end
+        if not shortest or self:remaining(item)<self:remaining(shortest) then
+            shortest=item
+        end
     end
-    return shortest and self.format(shortest) or nil
+    return shortest and self:format_item(shortest) or nil
 end
 function M:alarms_tick()
     if self.data.alarms==false then return end
@@ -264,14 +277,17 @@ function M:alarms_tick()
         if present[id] and now()-(owner.last_scan or 0)<12*3600 then
             for _,item in ipairs(owner.items or {}) do
                 local sec=self:remaining(item)
-                local threshold=sec>0 and (sec<=1800 and 30 or sec<=3600 and 60
-                    or sec<=10800 and 180) or nil
-                if threshold then
+                -- 0 = osobny alarm dla "lada chwila"; nie tworzymy
+                -- fikcyjnego licznika do rozpadu.
+                local threshold=item.imminent and 0 or
+                    (sec>0 and (sec<=1800 and 30 or sec<=3600 and 60
+                    or sec<=10800 and 180) or nil)
+                if threshold~=nil then
                     item.warned=item.warned or {}
                     if not item.warned[threshold] then
                         item.warned[threshold]=true
                         modified=true
-                        note(owner.name..": "..item.name.." — "..self.format(sec)..
+                        note(owner.name..": "..item.name.." — "..self:format_item(item)..
                             " (szacunek).",self:color(sec))
                     end
                 end
@@ -285,7 +301,7 @@ function M:report()
     hecho("\n"..p().lavender.."MAGIA — WYPOSAZENIE ("..#rows..")")
     if #rows==0 then hecho("\n  "..p().text_muted.."Brak danych. /magia sprawdz\n");return end
     for _,r in ipairs(rows) do
-        hecho("\n  "..self:color(r.seconds)..self.format(r.seconds).."  "
+        hecho("\n  "..self:color(r.seconds)..self:format_item(r.item).."  "
             ..p().text_muted..r.owner.."  "..p().text..r.item.name)
     end
     hecho("\n"..p().text_muted.."Czasy przyblizone. /magia sprawdz | /magia okno\n")

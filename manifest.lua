@@ -1,10 +1,11 @@
 return {
     name = "ChimeraVIP",
-    version = "0.193",
+    version = "0.194",
     schema = 2,
     tested_upstream = "5.0.1",
     raw_base = "https://raw.githubusercontent.com/gnomidlo/ChimeraVIP/main/",
     changes = {
+        "0.194: magia czyta lada chwila i wszystkie przedmioty; czas pozostaje widoczny przy zwezaniu okna",
         "0.193: Magia - poprawiony odczyt wlasnych efektow, nowe okno inspirowane Arka",
         "Kondycje bez wskaznikow magii, widok kompaktowy pokazuje wszystkich wlascicieli",
         "0.192: /magia sprawdz - monitoring magii druzyny, UserWindow i alarmy",
@@ -104,8 +105,8 @@ return {
         "src/ui/module_controls.lua"
     },
     file_meta = {
-        ["src/features/magia_window.lua"] = {hash="7877c0e267a3de74ee3f78bba2fac3a43cde69ed", size=13343},
-        ["src/features/magia.lua"] = {hash="b26d9d612630361387810590bdb57ae49647b55f", size=13146},
+        ["src/features/magia_window.lua"] = {hash="c0a2097387a273bdcb86edaaf8cb1e3a61a5e25b", size=16332},
+        ["src/features/magia.lua"] = {hash="83c8c067d379f400f2bdaf43fe9a34d3148a5bd2", size=13912},
         ["src/features/retainer_wages.lua"] = {hash="8e81ea5bfa2cc5e80c31f95c20f232ac6c66ff08", size=5826},
         ["src/features/friends.lua"] = {hash="987d550451a4ab99f9d99ad06cd04156543148e7", size=6956},
         ["plugins/chimeravip_ui/theme.lua"] = {hash="d8a3932eb18dea27aec6e547cb2ba24957069a4f", size=3467},
@@ -115,7 +116,7 @@ return {
         ["plugins/chimeravip_ui/layout.lua"] = {hash="6cdc696a44e25ee7a4ff0c717b83e562e0067f99", size=5016},
         ["loader.lua"] = {hash="1381414d89e55d2fad70beb8f42e48098d4b1802", size=4501},
         ["src/init.lua"] = {hash="c8ed33e8e74f94a433f14c34c5e78bcf9e0d9751", size=3532},
-        ["src/core/bootstrap.lua"] = {hash="abd08be9295e940b715fb7619eca6394b72c6ea2", size=2063},
+        ["src/core/bootstrap.lua"] = {hash="9e6f521702777b93098e74fda55ce5cea5829407", size=2063},
         ["src/core/safety.lua"] = {hash="ab4fca47f610a24ec88b8dad7aedab9baf507578", size=3239},
         ["src/core/util.lua"] = {hash="7561cd9259be9ff0ce74228e9048eef0b5aba280", size=6686},
         ["src/core/hash.lua"] = {hash="362c18bf131c9939d03b59dd50568d66de8f6a5e", size=2118},
