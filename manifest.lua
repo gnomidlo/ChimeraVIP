@@ -113,7 +113,7 @@ return {
         ["plugins/chimeravip_ui/layout.lua"] = {hash="6cdc696a44e25ee7a4ff0c717b83e562e0067f99", size=5016},
         ["loader.lua"] = {hash="1381414d89e55d2fad70beb8f42e48098d4b1802", size=4501},
         ["src/init.lua"] = {hash="c8ed33e8e74f94a433f14c34c5e78bcf9e0d9751", size=3532},
-        ["src/core/bootstrap.lua"] = {hash="86b4a7a02791692235d6bbb06e09c29e31eb5383", size=2063},
+        ["src/core/bootstrap.lua"] = {hash="00214d88a3edb8fffd67a2ea224dbc41e6992704", size=2063},
         ["src/core/safety.lua"] = {hash="ab4fca47f610a24ec88b8dad7aedab9baf507578", size=3239},
         ["src/core/util.lua"] = {hash="7561cd9259be9ff0ce74228e9048eef0b5aba280", size=6686},
         ["src/core/hash.lua"] = {hash="362c18bf131c9939d03b59dd50568d66de8f6a5e", size=2118},
