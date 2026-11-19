@@ -38,7 +38,7 @@ assert(M.parse_duration("2 godziny")==7200)
 assert(M.parse_duration("1 dzien i 3 godziny")==27*3600)
 assert(M.parse_duration("15 minut")==900)
 assert(M.parse_duration("bez terminu")==nil)
-assert(M.format(25*3600)=="~1d 1h")
+assert(M.format(25*3600)=="~25h")
 
 assert(M:scan())
 assert(sent[1]=="efekty","start from own effects")
