@@ -103,7 +103,7 @@ return {
     },
     file_meta = {
         ["src/features/magia_window.lua"] = {hash="954658ed6b06873d3890f4462dce23475efdfbe2", size=5384},
-        ["src/features/magia.lua"] = {hash="34147f694ab8437f021974e4c9cb24a4b6fa62e9", size=11690},
+        ["src/features/magia.lua"] = {hash="0d7ebd17334a800bcf680666d9e3b3e86b62cabe", size=11692},
         ["src/features/retainer_wages.lua"] = {hash="8e81ea5bfa2cc5e80c31f95c20f232ac6c66ff08", size=5826},
         ["src/features/friends.lua"] = {hash="987d550451a4ab99f9d99ad06cd04156543148e7", size=6956},
         ["plugins/chimeravip_ui/theme.lua"] = {hash="d8a3932eb18dea27aec6e547cb2ba24957069a4f", size=3467},
