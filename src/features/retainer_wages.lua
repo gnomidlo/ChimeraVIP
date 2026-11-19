@@ -1,5 +1,5 @@
 -- ChimeraVIP 0.196 / retainer wages: compact "pazold" report.
--- Reports may omit "oplacone" for an unpaid retainer, or show "DLUG".
+-- Reports may omit "oplacone", and an indebted retainer may have only DLUG.
 -- Never treat these normal variants as a failed capture.
 local C=chimera_vip
 local U=C.util
@@ -61,7 +61,13 @@ function W:render(rows)
     local widths={1,10,8,8,9}
     local cells,intervals,seen={},{},{}
     for _,r in ipairs(rows) do
-        local rate,rate_rich=self:money(r.rate)
+        local rate,rate_rich
+        if r.rate then
+            rate,rate_rich=self:money(r.rate)
+        else
+            -- A debt-only retainer can have no published rate.
+            rate,rate_rich="-",P.text_muted.."-"
+        end
         local paid,paid_rich,remaining,remaining_rich
         if r.debt then
             local debt,debt_rich=self:money(r.debt)
@@ -126,7 +132,8 @@ local function remaining(text)
     return text:match("^%s*czyli ok%. (.+) sluzby przy tobie%s*$")
 end
 local function close_row(c)
-    if not c.row or not c.row.rate then return false end
+    -- A debt-only row is complete without a 'stawka' line.
+    if not c.row or (not c.row.rate and not c.row.debt) then return false end
     c.rows[#c.rows+1]=c.row
     c.row=nil
     c.state="row"
@@ -176,8 +183,20 @@ function W:consume(text)
             c.state="rate"
         elseif c.state=="rate" then
             local amount,interval=rate(text)
-            if not amount then self:reset(true);return false end
-            c.row.rate=amount;c.row.interval=interval;c.state="paid"
+            local owed=debt(text)
+            if amount then
+                c.row.rate=amount
+                c.row.interval=interval
+                c.state="paid"
+            elseif owed then
+                -- Server can skip the rate altogether and print only DLUG.
+                c.row.debt=owed
+                close_row(c)
+            elseif text=="" then
+                -- Optional separator before a debt-only line.
+            else
+                self:reset(true);return false
+            end
         elseif c.state=="paid" then
             local amount=paid(text)
             local owed=debt(text)
