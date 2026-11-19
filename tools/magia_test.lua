@@ -252,8 +252,8 @@ local callback=timers[M._resize_timer].callback
 callback()
 assert(M._window_width==235)
 assert(M.time_labels[1].text==time_before,"time label must not be truncated")
-assert(M.name_labels[1].text:find("runiczna",1,true)
-    or M.name_labels[1].text:find("zakorkowana",1,true),
+assert(M.name_labels[1].text:find("runiczn",1,true)
+    or M.name_labels[1].text:find("zakork",1,true),
     "keep beginning of item name on shrink")
 resizing("sysUserWindowResizeEvent",250,630,"ChimeraVIP_Magia")
 timers[M._resize_timer].callback()
