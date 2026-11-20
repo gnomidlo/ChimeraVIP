@@ -314,13 +314,19 @@ function S:print_skill(skill, previous, has_total_column)
         end
         cell(string.format("%10s", value), hint, color)
         cell(string.format("%8s", skill.theory or "--"), skill.theory_level or "Nie dotyczy", P.blue)
-        local exercises = skill.exercises and (skill.exercises .. "/" .. skill.required) or "--"
+        local exercises, exercise_hint, exercise_color = "--", "Brak danych o cwiczeniach", P.text_muted
+        if skill.exercises ~= nil and skill.required and skill.required > 0 then
+            local progress = skill.exercises / skill.required * 100
+            exercises = format_percent(progress)
+            exercise_hint = string.format("Cwiczenia: %d/%d (%.2f%%)", skill.exercises, skill.required, progress)
+            exercise_color = value_color(progress, P)
+        end
         local bonus = skill.bonus and string.format("%+d", skill.bonus) or "--"
         local total = skill.total and tostring(skill.total) or "--"
         hecho(P.lavender .. string.format("%8s", bonus)
-            .. (has_total_column and (P.mint .. string.format("%8s", total)) or "")
-            .. P.text_muted .. string.format("%12s", exercises)
-            .. (skill.untrained and (P.yellow .. "  do wytrenowania") or "")
+            .. (has_total_column and (P.mint .. string.format("%8s", total)) or ""))
+        cell(string.format("%12s", exercises), exercise_hint, exercise_color)
+        hecho((skill.untrained and (P.yellow .. "  do wytrenowania") or "")
             .. "  " .. delta_text(delta, (skill.theory or skill.numeric) and "" or "%", P))
         return
     end
