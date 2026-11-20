@@ -147,7 +147,7 @@ return {
         ["src/features/report_actions.lua"] = {hash="fd94ede283c639df08b8316e286f3bc3d694555b", size=552},
         ["src/features/context_action.lua"] = {hash="88d4af9563e3874443dc8f8835632ad1c7041481", size=5663},
         ["src/features/containers.lua"] = {hash="8b7ac23518a81c077c759733817ca6cfd3606242", size=7941},
-        ["src/features/skills_view.lua"] = {hash="c227735341aedc3017e3e3e457d56c9efc246d71", size=26445},
+        ["src/features/skills_view.lua"] = {hash="c253cc0e07231b508bd6aed214b4617ba31a2932", size=26845},
         ["src/features/character_sheet.lua"] = {hash="592268a9ae0a5a5db68bcdb6551d51037c840761", size=5611},
         ["src/features/milestones.lua"] = {hash="d64c0ba31b7599a0fb4a3b7d0de06090dc61dd1c", size=18764},
         ["src/features/retainer_progress.lua"] = {hash="8aa0930be8f286029f812d0e41d9018a357bb403", size=13991},

@@ -81,10 +81,13 @@ for _, clickable in ipairs({false, true}) do
             .. string.format('%10s%8s%8s%12s', level, theory, bonus, exercises)
     end
     assert(rendered:find(row('', 'praktyka', 'teoria', 'premia', 'cwiczenia'), 1, true))
-    assert(rendered:find(row('bronie drzewcowe', '30', '65', '--', '154/281'), 1, true))
+    assert(rendered:find(row('bronie drzewcowe', '30', '65', '--', '54.8%'), 1, true))
     assert(rendered:find(row('opieka nad zwierzetami', '74%', '--', '--', '--'), 1, true))
     assert(rendered:find(row('tropienie', '75%', '--', '--', '--'), 1, true))
-    if clickable then assert(table.concat(hints):find('doskonale', 1, true)) end
+    if clickable then
+        assert(table.concat(hints):find('doskonale', 1, true))
+        assert(table.concat(hints):find('Cwiczenia: 154/281', 1, true))
+    end
 end
 print('Mixed skill column alignment and tooltips: PASS')
 local c0 = S:skill_color({value=0, theory=40})
@@ -98,6 +101,17 @@ assert(S:skill_color({value=50, theory=40}) == c100)
 assert(S:skill_color({value=-1, theory=40}) == c0)
 local neutral, percent = S:skill_color({value=0, theory=0})
 assert(neutral == chimera_vip.util.palette().text_muted and percent == nil)
+local exercise_cells, exercise_hints = {}, {}
+hecho = function() end
+hechoLink = function(value, _, hint)
+    exercise_cells[#exercise_cells+1] = value
+    exercise_hints[#exercise_hints+1] = hint
+end
+S:print_skill({name='miecze', value=50, theory=55, level='Poziom: 50', exercises=2, required=385})
+assert(table.concat(exercise_cells):find('0.52%%') ~= nil)
+assert(table.concat(exercise_hints):find('Cwiczenia: 2/385', 1, true))
+S:print_skill({name='sztylety', value=30, theory=55, level='Poziom: 30', exercises=0, required=285})
+assert(table.concat(exercise_cells):find('0%%') ~= nil)
 print('Pastel practice/theory scale: PASS')
 local cells = {}
 hechoLink = function(text, _, hint, use_format)
@@ -111,9 +125,9 @@ end
 render(30, 40)
 assert(cells[1] == c75 .. string.format('%10s', '30'))
 render(30, 100)
-assert(cells[3] == c30 .. string.format('%10s', '30'))
+assert(cells[4] == c30 .. string.format('%10s', '30'))
 render(40, 40)
-assert(cells[5] == c100 .. string.format('%10s', '40'))
+assert(cells[7] == c100 .. string.format('%10s', '40'))
 print('Rendered tooltip links carry their own colors: PASS')
 S:start_skills()
 local rows = {
@@ -301,7 +315,7 @@ local new_table_rendered = table.concat(new_table_output):gsub('#%x%x%x%x%x%x', 
 assert(new_table_rendered:find('   razem', 1, true))
 assert(new_table_rendered:find('parowanie', 1, true))
 assert(new_table_rendered:find(string.format('%10s%8s%8s%8s%12s',
-    '45', '45', '+7', '52', '1/439'), 1, true))
+    '45', '45', '+7', '52', '0.23%'), 1, true))
 assert(new_table_rendered:find(string.format('%10s%8s%8s%8s%12s',
     '50', '50', '--', '50', '--'), 1, true))
 assert(new_table_rendered:find('Zielarstwo', 1, true))
@@ -320,5 +334,5 @@ hecho = function(text) old_table_output[#old_table_output+1] = text end
 S:finish_skills()
 local old_table_rendered = table.concat(old_table_output):gsub('#%x%x%x%x%x%x', '')
 assert(not old_table_rendered:find('razem', 1, true))
-assert(old_table_rendered:find(string.format('%10s%8s%8s%12s', '72', '75', '+7', '0/439'), 1, true))
+assert(old_table_rendered:find(string.format('%10s%8s%8s%12s', '72', '75', '+7', '0%'), 1, true))
 print('Legacy skills header and single bonus value: PASS')
