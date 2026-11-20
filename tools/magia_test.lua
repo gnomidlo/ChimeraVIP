@@ -261,8 +261,8 @@ M:set_mode("full")
 assert(M.data.mode=="full" and #M.row_labels>=17)
 assert(M:display_rows()[1].title=="TWOJA POSTAC")
 local original=M.win
-M._window_design=3 -- upgrade in a running Mudlet keeps native dock
-assert(M:show_window() and M.win==original and M._window_design==4)
+M._window_design=4 -- upgrade in a running Mudlet keeps native dock
+assert(M:show_window() and M.win==original and M._window_design==5)
 -- Resize must re-truncate the name FROM THE END while the rightmost
 -- lifetime label retains its full value, even in narrow windows.
 assert(M.name_char_limit(235)<M.name_char_limit(630))
