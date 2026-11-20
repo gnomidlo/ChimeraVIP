@@ -1,11 +1,11 @@
--- ChimeraVIP 0.197 / Magic UserWindow
+-- ChimeraVIP 0.198 / Magic UserWindow
 -- Samodzielne natywne okno Mudleta. Styl na podstawie le/ui.lua i
 -- le/zlecenia.lua (Arka): cienki akcent, spokojne powierzchnie, Qt rich text.
 -- Brak Geyser overlay na glownej konsoli; brak zmian w Kondycjach.
 local M=chimera_vip.magia
 local U=chimera_vip.util
 
-local DESIGN=4
+local DESIGN=5
 local WINDOW_NAME="ChimeraVIP_Magia"
 local ACCENT="#B6A2E1"
 local BG="#101216"
@@ -36,16 +36,18 @@ local function short(value,max_chars)
     if #chars<=max_chars then return table.concat(chars) end
     return table.concat(chars,"",1,math.max(1,max_chars-1)).."…"
 end
-local function window_width(self)
-    -- sysUserWindowResizeEvent daje aktualna szerokosc docka. Jesli
-    -- nie bylo jeszcze resize, zapytaj Mudleta o natywny rozmiar okna.
-    local cached=tonumber(self._window_width)
-    if cached and cached>0 then return cached end
-    if type(getUserWindowSize)=="function" then
-        local ok,w=pcall(getUserWindowSize,WINDOW_NAME)
-        if ok and type(w)=="number" and w>0 then return w end
+local function window_size(self)
+    -- sysUserWindowResizeEvent gives us width AND height in a live client.
+    -- During first creation we can also use the native UserWindow dimensions.
+    local width,height=tonumber(self._window_width),tonumber(self._window_height)
+    if type(getUserWindowSize)=="function" and (not width or not height) then
+        local ok,w,h=pcall(getUserWindowSize,WINDOW_NAME)
+        if ok then
+            if not width and type(w)=="number" and w>0 then width=w end
+            if not height and type(h)=="number" and h>0 then height=h end
+        end
     end
-    return 360
+    return width or 360,height or 262
 end
 -- Minimalne poziome miejsce dla pierwszych liter nazwy po odjeciu
 -- stalej kolumny czasu i paska przewijania. NIGDY nie ucinaj od lewej.
@@ -184,12 +186,12 @@ function M:show_window()
     if self._window_design~=DESIGN or not self.body then
         self:clear_old_content()
         local w=self.win
-        -- Native window and ScrollBox otherwise expose Mudlet's default
-        -- pure black whenever the user makes the dock taller than its rows.
-        self.window_bg=Geyser.Label:new({name="CVIP_Magia_V4_Background",
-            x="0px",y="0px",width="100%",height="100%"},w)
-        self.window_bg:setStyleSheet("background-color:"..BG..";border:none;padding:0px;")
-        self.window_bg:echo("")
+        -- Root cause of the blank list in 0.197: opaque, full-size QLabel
+        -- backgrounds were stacked over the ScrollBox children in Mudlet.
+        -- Set the native background directly; never cover the list with
+        -- a full-screen Geyser.Label.
+        self.window_bg=nil
+        if type(w.setColor)=="function" then pcall(w.setColor,w,BG) end
         if type(setBackgroundColor)=="function" then
             pcall(setBackgroundColor,WINDOW_NAME,16,18,22,255)
         end
@@ -202,12 +204,15 @@ function M:show_window()
         self.body=Geyser.ScrollBox:new({name="CVIP_Magia_V2_List",
             x="0px",y=HEADER_H.."px",width="100%",
             height="-"..(HEADER_H+FOOTER_H).."px"},w)
-        -- Covers unused space INSIDE the scroll area when only 1-3 items
-        -- exist; rows are layered on top of this label.
-        self.body_bg=Geyser.Label:new({name="CVIP_Magia_V4_ListBackground",
-            x="0px",y="0px",width="100%",height="100%"},self.body)
-        self.body_bg:setStyleSheet("background-color:"..SURFACE..";border:none;padding:0px;")
+        -- Filler starts BELOW the final row, never at y=0.
+        -- An opaque full-height label in a ScrollBox can hide all content
+        -- despite the child widget order (this happened in 0.197).
+        self.body_bg=Geyser.Label:new({name="CVIP_Magia_V5_ListFiller",
+            x="0px",y="0px",width="100%",height="1px"},self.body)
+        self.body_bg:setStyleSheet("background-color:"..SURFACE..
+            ";border:none;padding:0px;")
         self.body_bg:echo("")
+        self.body_bg:hide()
         self.footer=Geyser.Label:new({name="CVIP_Magia_V2_Footer",
             x="0px",y="-"..FOOTER_H.."px",width="100%",
             height=FOOTER_H.."px"},w)
@@ -261,7 +266,7 @@ function M:render()
     local view=self:display_rows()
     self._visible_rows=view
     local count=#self:rows()
-    local width=window_width(self)
+    local width,height=window_size(self)
     self.header:setStyleSheet(style(SURFACE,ACCENT,"11px","4px 9px"))
     self.header:echo("<div><b><span style='color:"..ACCENT.."'>✦&nbsp; MAGIA</span></b>"
         .."</div><div style='font-size:9px;color:"..MUTED
@@ -291,7 +296,7 @@ function M:render()
         local label=self.row_labels[i]
         if not label then
             label=Geyser.Label:new({name="CVIP_Magia_V3_Row_"..i,
-                x="0px",y=y.."px",width="100%-16px",
+                x="0px",y=y.."px",width="-16px",
                 height=row_height(item).."px"},self.body)
             local index=i
             local click=function()
@@ -319,7 +324,7 @@ function M:render()
         local name=self.name_labels[i]
         local time=self.time_labels[i]
         label:move("0px",y.."px")
-        label:resize("100%-16px",row_height(item).."px")
+        label:resize("-16px",row_height(item).."px")
         if item.kind=="group" then
             label:setStyleSheet(style(BG,ACCENT,"10px","4px 9px"))
             label:echo("<span style='color:"..ACCENT.."'><b>"..esc(item.title)
@@ -351,7 +356,16 @@ function M:render()
             tooltip(label,item.row.owner.." • "..item.row.item.name..
                 " • "..self:format_item(item.row.item))
         end
+        -- Z-order matters in native Qt ScrollBox: the background row first,
+        -- then the independent title/lifetime labels ABOVE the row.
         label:show()
+        if type(label.raise)=="function" then label:raise() end
+        if item.kind=="item" then
+            name:show()
+            time:show()
+            if type(name.raise)=="function" then name:raise() end
+            if type(time.raise)=="function" then time:raise() end
+        end
         y=y+row_height(item)
     end
     for i=#view+1,#self.row_labels do
@@ -359,9 +373,21 @@ function M:render()
         if self.name_labels[i] then self.name_labels[i]:hide() end
         if self.time_labels[i] then self.time_labels[i]:hide() end
     end
-    -- Etykiety nazw i czasu sa kotwiczone wewnatrz natywnego okna.
-    -- Warstwa tla zajmuje caly obszar niezaleznie od liczby wierszy,
-    -- a stopka pozostaje widoczna i klikalna przy dowolnej wysokosci.
+    -- Fill ONLY the genuinely unused area below the last item, so a
+    -- native resize cannot introduce a large dark gap AND a background
+    -- label can never obscure a name or lifetime.
+    if self.body_bg then
+        local viewport_height=math.max(0,height-HEADER_H-FOOTER_H)
+        local empty_height=viewport_height-y
+        if empty_height>0 then
+            self.body_bg:move("0px",y.."px")
+            self.body_bg:resize("100%",empty_height.."px")
+            self.body_bg:show()
+            if type(self.body_bg.lower)=="function" then self.body_bg:lower() end
+        else
+            self.body_bg:hide()
+        end
+    end
 end
 
 -- Mudlet wysyla ten event dla natywnego okna oddzielnie od glownego.
@@ -369,6 +395,7 @@ end
 U.replace_handler(M,"magia_resize","sysUserWindowResizeEvent",function(_,height,width,name)
     if name~=WINDOW_NAME or not M.win then return end
     M._window_width=tonumber(width) or nil
+    M._window_height=tonumber(height) or nil
     if M._resize_timer then pcall(killTimer,M._resize_timer) end
     M._resize_timer=tempTimer(0.07,function()
         M._resize_timer=nil
