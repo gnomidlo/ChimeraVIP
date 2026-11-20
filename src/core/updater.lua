@@ -188,7 +188,7 @@ function UP:fetch_manifest(install,quiet)
             elseif install then
                 -- Same version is not necessarily a fully deployed installation:
                 -- 0.178 -> 0.179 uses the old updater for its first install.
-                UP:sync_plugins(true)
+                UP:sync_plugins(false)
             elseif not quiet then out("Masz aktualna wersje "..tostring(C.version)..".","aquamarine") end
         end
     end)
@@ -196,7 +196,10 @@ function UP:fetch_manifest(install,quiet)
     downloadFile(commit_path,"https://api.github.com/repos/gnomidlo/ChimeraVIP/commits/main")
 end
 function UP:check(quiet) return self:fetch_manifest(false,quiet) end
-function UP:update() return self:fetch_manifest(true,false) end
+function UP:update()
+    out("Sprawdzam aktualizacje ChimeraVIP...", "light_grey")
+    return self:fetch_manifest(true,false)
+end
 
 function UP:verify_file(path,meta)
     if type(meta)~="table" or type(meta.hash)~="string" or not tonumber(meta.size) then return false,"brak metadanych" end
