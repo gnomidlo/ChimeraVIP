@@ -405,3 +405,5 @@ Czasy `za okolo ...` są przybliżone; skrypt ich nie traktuje jako potwierdzeni
 **Pazold 0.196:** kompaktowy raport rozpoznaje także pachołków bez wiersza `oplacone` oraz wariant `DLUG: ...`, także bez wiersza `stawka`. Zniknięcie informacji o opłaceniu nie przerywa już całej tabeli. Poprawiono także sklejanie nagłówka z poprzednim komunikatem `DLUG`.
 
 **Magia 0.197:** tryb kompaktowy pokazuje cztery magiczne przedmioty, których rozpad jest najbliższy w całej drużynie, bez uprzywilejowania właściciela. Czas ma własną, wąską kolumnę, a niewykorzystana część okna jest wypełniona kolorem motywu. Stopka pokazuje liczbę przedmiotów i stan skanu.
+
+**Magia 0.198:** poprawiono pusty panel mimo poprawnego skanu. Wypełnienie tła znajduje się tylko poniżej ostatniego wiersza; tekst i czas są jawnie ustawiane ponad tłem wierszy. Licznik przedmiotów oraz tryby kompakt/pełny pozostają bez zmian.
