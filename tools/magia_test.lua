@@ -197,6 +197,9 @@ local function widget()
     local item={visible=false}
     function item:show() self.visible=true end
     function item:hide() self.visible=false end
+    function item:raise() self.z_raise=(self.z_raise or 0)+1 end
+    function item:lower() self.z_lower=(self.z_lower or 0)+1 end
+    function item:setColor(bg) self.native_bg=bg end
     function item:move(x,y) self.x=x;self.y=y end
     function item:resize(w,h) self.width=w;self.height=h end
     function item:delete() self.deleted=true end
@@ -237,10 +240,17 @@ assert(M.name_labels[1].text:find("<div",1,true),"item name has its own label")
 assert(M.time_labels[1].props.x=="-107px","time column pinned to right")
 assert(M.time_labels[1].props.width=="90px","compact time width must fit lada chwila")
 assert(M.name_labels[1].props.width=="-120px","name takes freed time-column space")
-assert(M.window_bg and M.window_bg.css:find("#101216",1,true),
-    "entire UserWindow should have a neutral themed background")
+assert(M.window_bg==nil,"full UserWindow overlay must not cover all rows")
+assert(M.win.native_bg=="#101216","native window has a themed background")
 assert(M.body_bg and M.body_bg.css:find("#171A21",1,true),
-    "unused scroll-area space must not expose default black")
+    "unused scroll-area space should be colored")
+assert(not M.body_bg.visible,"filler hidden when 4 item rows fill compact viewport")
+assert(M.row_labels[1].visible and M.name_labels[1].visible
+    and M.time_labels[1].visible,"labels must actually be shown, not just echoed")
+assert((M.name_labels[1].z_raise or 0)>0 and (M.time_labels[1].z_raise or 0)>0,
+    "text labels explicitly raised above row background")
+assert(M.row_labels[1].props.width=="-16px",
+    "Geyser uses negative pixel width to anchor to right edge")
 assert(M.footer and M.footer.visible and M.footer.text:find("przedm.",1,true),
     "bottom area must show scan status and item count")
 assert(#background_calls>=1 and background_calls[1].name=="ChimeraVIP_Magia",
@@ -263,7 +273,7 @@ local time_before=M.time_labels[1].text
 resizing("sysUserWindowResizeEvent",250,235,"ChimeraVIP_Magia")
 local callback=timers[M._resize_timer].callback
 callback()
-assert(M._window_width==235)
+assert(M._window_width==235 and M._window_height==250)
 assert(M.time_labels[1].text==time_before,"time label must not be truncated")
 assert(M.name_labels[1].text:find("runiczn",1,true)
     or M.name_labels[1].text:find("zakork",1,true),
@@ -271,6 +281,18 @@ assert(M.name_labels[1].text:find("runiczn",1,true)
 resizing("sysUserWindowResizeEvent",250,630,"ChimeraVIP_Magia")
 timers[M._resize_timer].callback()
 assert(M._window_width==630 and M.time_labels[1].text==time_before)
+-- When the user makes the UserWindow taller, the filler begins BELOW rows:
+-- it must never be a fullscreen overlay across the actual item texts.
+resizing("sysUserWindowResizeEvent",550,630,"ChimeraVIP_Magia")
+timers[M._resize_timer].callback()
+assert(M.body_bg.visible)
+assert(M.body_bg.y=="192px","filler must start after 4 compact rows")
+assert(M.body_bg.height=="287px","filler covers only the remaining viewport")
+assert((M.body_bg.z_lower or 0)>0,"filler should be below row widgets")
+assert(M.name_labels[1].visible and M.time_labels[1].visible)
+resizing("sysUserWindowResizeEvent",250,630,"ChimeraVIP_Magia")
+timers[M._resize_timer].callback()
+assert(not M.body_bg.visible,"no unnecessary filler once rows fill viewport")
 
 -- Compact mode prioritizes global urgency: do not reserve an item row for
 -- JA when all four soonest-to-expire objects belong to other people.
@@ -348,5 +370,41 @@ for _,item in ipairs(M.data.owners["@"].items) do
     assert(U.normalize(item.name)~="kamienny olbrzymi miecz",
         "stale snapshot cannot re-add destroyed object")
 end
+
+-- Reproduce live case of 10 detected items, including long owner names.
+-- The scanned database works; both UI modes must render visible content.
+local stamp=os.time()
+M.data.owners={
+    ["@"]={name="Xochitl",last_scan=stamp,items={
+        {name="kosciana zakrwawiona wlocznia",expiry=stamp+43*3600}}},
+    ["npc-1"]={name="Zathrika",last_scan=stamp,items={
+        {name="matowy pierscien",expiry=stamp+10*3600},
+        {name="matowy pierscien",expiry=stamp+24*3600},
+        {name="blyszczacy runiczny scimitar",expiry=stamp+29*3600},
+        {name="lsniacy runiczny scimitar",expiry=stamp+29*3600}}},
+    ["npc-2"]={name="Uzzarna",last_scan=stamp,items={
+        {name="matowy pierscien",expiry=stamp+3*3600},
+        {name="azurowy koscistobialy amulet",expiry=stamp+15*3600},
+        {name="runiczna dziobata przylbica",expiry=stamp+22*3600},
+        {name="okragla poswiecona tarcza",expiry=stamp+29*3600},
+        {name="runiczna rycerska zbroja plytowa",expiry=stamp+29*3600}}},
+}
+M.data.mode="compact"
+assert(#M:rows()==10)
+assert(M:show_window())
+assert(#M:display_rows()==4 and M:display_rows()[1].row.owner=="Uzzarna")
+assert(M.name_labels[1].visible and M.time_labels[1].visible)
+assert(M.name_labels[1].text:find("matowy pierscien",1,true))
+assert(M.time_labels[1].text:find("~3h",1,true))
+M:set_mode("full")
+assert(#M:display_rows()==13,"3 owners + 10 magic items")
+for i,row in ipairs(M:display_rows()) do
+    assert(M.row_labels[i].visible,"full row must be visible: "..i)
+    if row.kind=="item" then
+        assert(M.name_labels[i].visible and M.time_labels[i].visible,
+            "full item contents must be above background: "..i)
+    end
+end
+assert(M.footer.visible and M.footer.text:find("10 przedm.",1,true))
 
 print("Magia tests: PASS")
