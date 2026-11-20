@@ -125,9 +125,9 @@ end
 render(30, 40)
 assert(cells[1] == c75 .. string.format('%10s', '30'))
 render(30, 100)
-assert(cells[3] == c30 .. string.format('%10s', '30'))
+assert(cells[4] == c30 .. string.format('%10s', '30'))
 render(40, 40)
-assert(cells[5] == c100 .. string.format('%10s', '40'))
+assert(cells[7] == c100 .. string.format('%10s', '40'))
 print('Rendered tooltip links carry their own colors: PASS')
 S:start_skills()
 local rows = {
