@@ -403,3 +403,5 @@ Czasy `za okolo ...` są przybliżone; skrypt ich nie traktuje jako potwierdzeni
 **Magia 0.195:** komunikat `<Nazwa> rozpada sie w pyl!` potwierdza rozpad i usuwa pasujący przedmiot z monitora. Przy kilku właścicielach jednakowo nazwanych przedmiotów nie usuwamy niczego w ciemno — wymagany jest kolejny odczyt `/magia sprawdz`. Przy kilku kopiach u jednej postaci wybieramy sztukę o najkrótszej przewidywanej trwałości.
 
 **Pazold 0.196:** kompaktowy raport rozpoznaje także pachołków bez wiersza `oplacone` oraz wariant `DLUG: ...`, także bez wiersza `stawka`. Zniknięcie informacji o opłaceniu nie przerywa już całej tabeli. Poprawiono także sklejanie nagłówka z poprzednim komunikatem `DLUG`.
+
+**Magia 0.197:** tryb kompaktowy pokazuje cztery magiczne przedmioty, których rozpad jest najbliższy w całej drużynie, bez uprzywilejowania właściciela. Czas ma własną, wąską kolumnę, a niewykorzystana część okna jest wypełniona kolorem motywu. Stopka pokazuje liczbę przedmiotów i stan skanu.
