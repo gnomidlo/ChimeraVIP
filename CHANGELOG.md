@@ -1,3 +1,11 @@
+## 0.198 — Magia: naprawa pustego okna po 0.197
+
+- Usunięto pełnowymiarowe, kryjące warstwy QLabel mogące zasłaniać zawartość ScrollBox w Mudlecie. Zamiast nich używamy natywnego tła UserWindow i niewielkiej warstwy wypełniającej wyłącznie przestrzeń **poniżej** przedmiotów.
+- Jawny porządek warstw: tło wiersza, widoczna nazwa, widoczny czas. Nie zmieniamy logiki zbierania ani sortowania magii.
+- Poprawiono szerokość wierszy zgodnie ze składnią Geysera (wartość ujemna kotwiczona do prawej krawędzi).
+- Rozszerzono testy o dokładnie dziesięć wykrytych przedmiotów (1+5+4), pełny i skrócony tryb, widoczność nazw/czasów, zmiany wysokości i tło, które nie zakrywa elementów.
+- Bez zmian w Kondycjach.
+
 ## 0.197 — Magia: pilnosc, kolumna czasu i tlo okna
 
 - Widok kompaktowy pokazuje **cztery przedmioty z najkrótszym szacowanym czasem w całej drużynie**. Nie rezerwuje pierwszego miejsca dla własnej postaci; kolejność wynika z pozostałego czasu, nie z właściciela.
