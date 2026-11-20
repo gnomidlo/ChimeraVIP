@@ -7,7 +7,8 @@ function tempTimer(_,fn) local n=new_id(); timers[n]=fn; return n end
 function killTimer(n) timers[n]=nil end
 function tempAlias() return 1 end
 function killAlias() end
-function cecho() end
+local messages={}
+function cecho(value) messages[#messages+1]=tostring(value) end
 function raiseEvent() end
 function getMudletHomeDir() return root end
 local function emit(event,...)
@@ -55,6 +56,7 @@ local function reset()
     write(root..'/fixture.lua','return 1\n'); write(root..'/installed_manifest.lua','return {version="0.110"}\n')
 end
 reset(); corrupt=true; UP:update()
+assert(table.concat(messages):find('Sprawdzam aktualizacje ChimeraVIP',1,true))
 assert(UP.mode==nil and read(root..'/fixture.lua')=='return 1\n','corrupt download installed')
 assert(read(root..'/VERSION')=='0.110\n')
 print('PASS same-size corruption rejected before replacement')
@@ -127,7 +129,9 @@ assert(restarts==1 and UP.activation_pending==false,
     "One successful plugin repair should trigger one official restart")
 chimera_vip.chimera5.sync=function() return true,0 end
 previous_requests=#requests
+messages={}
 UP:update()
+assert(table.concat(messages):find('i wtyczki sa aktualne',1,true), 'same-version update was silent')
 assert(#requests==previous_requests+2 and restarts==1,
     "Synchronized plugin deployment must not restart Chimera")
 chimera_vip.chimera5.sync=function() return false,"simulated plugin failure" end
