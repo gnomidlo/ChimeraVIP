@@ -20,6 +20,10 @@ function registerAnonymousEventHandler(name,callback)
 end
 function killAnonymousEventHandler() end
 function send(s) sent[#sent+1]=s end
+local background_calls={}
+function setBackgroundColor(name,r,g,b,a)
+    background_calls[#background_calls+1]={name=name,r=r,g=g,b=b,a=a}
+end
 
 chimera_vip={root_dir="/tmp/cvip-magia-test"}
 dofile("src/core/util.lua")
@@ -230,17 +234,25 @@ end
 assert(found_self,"compact window must include own magic even with urgent retainer items")
 assert(M.header.text:find("MAGIA",1,true))
 assert(M.name_labels[1].text:find("<div",1,true),"item name has its own label")
-assert(M.time_labels[1].props.x=="-135px","time column pinned to right")
-assert(M.time_labels[1].props.width=="107px","time width must be constant")
-assert(M.name_labels[1].props.width=="-155px","name leaves room for right time")
+assert(M.time_labels[1].props.x=="-107px","time column pinned to right")
+assert(M.time_labels[1].props.width=="90px","compact time width must fit lada chwila")
+assert(M.name_labels[1].props.width=="-120px","name takes freed time-column space")
+assert(M.window_bg and M.window_bg.css:find("#101216",1,true),
+    "entire UserWindow should have a neutral themed background")
+assert(M.body_bg and M.body_bg.css:find("#171A21",1,true),
+    "unused scroll-area space must not expose default black")
+assert(M.footer and M.footer.visible and M.footer.text:find("przedm.",1,true),
+    "bottom area must show scan status and item count")
+assert(#background_calls>=1 and background_calls[1].name=="ChimeraVIP_Magia",
+    "set the native UserWindow background, never the main console")
 assert(M.header.css:find("border%-left"),"thin accent stripe")
 assert(M.body and #M.row_labels==4,"compact view should list 4 urgent items")
 M:set_mode("full")
 assert(M.data.mode=="full" and #M.row_labels>=17)
 assert(M:display_rows()[1].title=="TWOJA POSTAC")
 local original=M.win
-M._window_design=2 -- upgrade in a running Mudlet keeps native dock
-assert(M:show_window() and M.win==original and M._window_design==3)
+M._window_design=3 -- upgrade in a running Mudlet keeps native dock
+assert(M:show_window() and M.win==original and M._window_design==4)
 -- Resize must re-truncate the name FROM THE END while the rightmost
 -- lifetime label retains its full value, even in narrow windows.
 assert(M.name_char_limit(235)<M.name_char_limit(630))
@@ -259,6 +271,30 @@ assert(M.name_labels[1].text:find("runiczn",1,true)
 resizing("sysUserWindowResizeEvent",250,630,"ChimeraVIP_Magia")
 timers[M._resize_timer].callback()
 assert(M._window_width==630 and M.time_labels[1].text==time_before)
+
+-- Compact mode prioritizes global urgency: do not reserve an item row for
+-- JA when all four soonest-to-expire objects belong to other people.
+local saved={}
+for _,item in ipairs(M.data.owners["@"].items) do
+    saved[#saved+1]={item=item,expiry=item.expiry,imminent=item.imminent}
+    item.imminent=false
+    item.expiry=os.time()+40*3600
+end
+local compact=M:display_rows()
+assert(#compact==4)
+local last=-math.huge
+for i,entry in ipairs(compact) do
+    assert(entry.kind=="item")
+    assert(entry.row.id~="@","do not reserve a slot for non-urgent JA")
+    assert(entry.row.seconds>=last,"compact view is globally ascending by expiry")
+    last=entry.row.seconds
+end
+assert(compact[1].row.item.imminent,"imminent should be shown first")
+assert(compact[1].row.id=="npc-1")
+for _,v in ipairs(saved) do
+    v.item.expiry=v.expiry
+    v.item.imminent=v.imminent
+end
 M:hide_window()
 assert(not M.win.visible)
 -- Server-confirmed disintegration (capitalized nominative) must immediately

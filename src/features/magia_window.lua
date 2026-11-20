@@ -1,11 +1,11 @@
--- ChimeraVIP 0.194 / Magic UserWindow
+-- ChimeraVIP 0.197 / Magic UserWindow
 -- Samodzielne natywne okno Mudleta. Styl na podstawie le/ui.lua i
 -- le/zlecenia.lua (Arka): cienki akcent, spokojne powierzchnie, Qt rich text.
 -- Brak Geyser overlay na glownej konsoli; brak zmian w Kondycjach.
 local M=chimera_vip.magia
 local U=chimera_vip.util
 
-local DESIGN=3
+local DESIGN=4
 local WINDOW_NAME="ChimeraVIP_Magia"
 local ACCENT="#B6A2E1"
 local BG="#101216"
@@ -17,6 +17,13 @@ local HEADER_H=43
 local FOOTER_H=28
 local ROW_H=48
 local SECTION_H=28
+-- Reserve only enough space for "lada chwila" at 11px + gutter and scrollbar.
+-- Layout: [beginning of item name, growing] [lifetime, fixed to the right].
+local TIME_WIDTH=90
+local TIME_RIGHT=17
+local NAME_GAP=13
+local NAME_RESERVED=TIME_WIDTH+TIME_RIGHT+NAME_GAP
+local function negpx(n) return "-"..n.."px" end
 
 local function esc(value)
     return U.escape_html(value)
@@ -43,7 +50,8 @@ end
 -- Minimalne poziome miejsce dla pierwszych liter nazwy po odjeciu
 -- stalej kolumny czasu i paska przewijania. NIGDY nie ucinaj od lewej.
 function M.name_char_limit(width)
-    return math.max(1,math.min(96,math.floor(((tonumber(width) or 360)-172)/7.5)))
+    return math.max(1,math.min(96,
+        math.floor(((tonumber(width) or 360)-NAME_RESERVED-18)/7.5)))
 end
 local function style(bg,edge,font_size,padding)
     return "background-color:"..bg..";border:none;border-left:3px solid "
@@ -57,9 +65,14 @@ local function button_style()
         ..DIVIDER..";padding:0px;font-family:'Consolas',monospace;font-size:14px;"
 end
 local function rich_time(item)
-    local color=M:color(M:remaining(item))
+    local remaining=M:remaining(item)
+    local color=M:color(remaining)
+    local content=M:format_item(item)
+    -- The elapsed approximation is NOT confirmation of destruction.
+    -- Keep the longer wording in textual reports, but fit the right column.
+    if remaining<=0 and not item.imminent then content="po czasie?" end
     return "<span style='color:"..color.."'><b>"..
-        esc(M:format_item(item)).."</b></span>"
+        esc(content).."</b></span>"
 end
 local function tooltip(widget,message)
     if type(setLabelToolTip)=="function" then
@@ -74,52 +87,23 @@ function M:display_rows()
     local present=self:present()
     local displays={}
     if self.data.mode=="compact" then
-        -- Kompakt to skrot calej druzyny, a nie 4 najkrotsze przedmioty
-        -- jednej postaci. W szczegolnosci nie gubimy wlasnego ekwipunku.
-        local first,used={},{}
-        local order={"@"}
-        for _,r in ipairs(self:retainers()) do order[#order+1]=tostring(r.id) end
-        local unique={}
-        for _,id in ipairs(order) do
-            if present[id] and not unique[id] then
-                unique[id]=true
-                for i,row in ipairs(rows) do
-                    if row.id==id then
-                        first[#first+1]={row=row,index=i}
-                        used[i]=true
-                        break
-                    end
-                end
-            end
+        -- The compact list is a GLOBAL countdown: four items nearest to
+        -- disintegration across the entire party, regardless of owner.
+        -- M:rows() already orders by remaining time (including "lada chwila").
+        for i=1,math.min(4,#rows) do
+            displays[#displays+1]={kind="item",row=rows[i]}
         end
-        -- Jezeli pacholkow jest wiecej niz miejsc, pokaz tych z
-        -- najkrotsza trwaloscia, nie pierwszych alfabetycznie.
-        table.sort(first,function(a,b)
-            if a.row.id=="@" then return true end
-            if b.row.id=="@" then return false end
-            return a.row.seconds<b.row.seconds
-        end)
-        -- Rezerwuj miejsce dla JA nawet jesli odczyt jeszcze nie dotarl.
-        local own_known=false
-        for _,v in ipairs(first) do if v.row.id=="@" then own_known=true end end
-        if not own_known then
-            local own=self.data.owners["@"]
-            local scanned=own and (own.last_scan or 0)>0
+        -- Missing own scan is informational, never more important than
+        -- a known urgent item. Show it only when a free slot exists.
+        if #displays<4 and not self.data.owners["@"] then
             displays[#displays+1]={kind="missing",owner="JA",
-                title=scanned and "JA · brak magicznego wyposazenia"
-                    or "JA · brak odczytu magii",
-                detail=scanned and "Ostatni skan nie wykazal magii"
-                    or "Wykonaj /magia sprawdz"}
+                title="JA · brak odczytu magii",
+                detail="Wykonaj /magia sprawdz"}
         end
-        -- Po jednym najwazniejszym przedmiocie na wlasciciela, potem
-        -- wolne miejsca uzupelniamy wedlug czasu (bez powielania).
-        for _,v in ipairs(first) do
-            if #displays>=4 then break end
-            displays[#displays+1]={kind="item",row=v.row}
-        end
-        for i,row in ipairs(rows) do
-            if #displays>=4 then break end
-            if not used[i] then displays[#displays+1]={kind="item",row=row} end
+        if #displays==0 then
+            displays[1]={kind="missing",owner="JA",
+                title="Brak magicznych przedmiotow",
+                detail="Kliknij ↻, aby sprawdzic"}
         end
     else
         -- Pelny widok grupuje wszystkie przedmioty, w tym dwa pierscienie
@@ -169,12 +153,12 @@ function M:clear_old_content()
         end
     end
     for _,widget in ipairs({self.header,self.scan_button,self.mode_button,
-                            self.footer,self.body}) do
+                            self.footer,self.body_bg,self.body,self.window_bg}) do
         if widget and type(widget.delete)=="function" then pcall(widget.delete,widget)
         elseif widget and type(widget.hide)=="function" then pcall(widget.hide,widget) end
     end
     self.header=nil;self.scan_button=nil;self.mode_button=nil
-    self.footer=nil;self.body=nil
+    self.footer=nil;self.body=nil;self.body_bg=nil;self.window_bg=nil
     self.row_labels=nil;self.name_labels=nil;self.time_labels=nil
 end
 
@@ -200,6 +184,15 @@ function M:show_window()
     if self._window_design~=DESIGN or not self.body then
         self:clear_old_content()
         local w=self.win
+        -- Native window and ScrollBox otherwise expose Mudlet's default
+        -- pure black whenever the user makes the dock taller than its rows.
+        self.window_bg=Geyser.Label:new({name="CVIP_Magia_V4_Background",
+            x="0px",y="0px",width="100%",height="100%"},w)
+        self.window_bg:setStyleSheet("background-color:"..BG..";border:none;padding:0px;")
+        self.window_bg:echo("")
+        if type(setBackgroundColor)=="function" then
+            pcall(setBackgroundColor,WINDOW_NAME,16,18,22,255)
+        end
         self.header=Geyser.Label:new({name="CVIP_Magia_V2_Header",
             x="0px",y="0px",width="100%",height=HEADER_H.."px"},w)
         self.scan_button=Geyser.Label:new({name="CVIP_Magia_V2_Scan",
@@ -209,6 +202,12 @@ function M:show_window()
         self.body=Geyser.ScrollBox:new({name="CVIP_Magia_V2_List",
             x="0px",y=HEADER_H.."px",width="100%",
             height="-"..(HEADER_H+FOOTER_H).."px"},w)
+        -- Covers unused space INSIDE the scroll area when only 1-3 items
+        -- exist; rows are layered on top of this label.
+        self.body_bg=Geyser.Label:new({name="CVIP_Magia_V4_ListBackground",
+            x="0px",y="0px",width="100%",height="100%"},self.body)
+        self.body_bg:setStyleSheet("background-color:"..SURFACE..";border:none;padding:0px;")
+        self.body_bg:echo("")
         self.footer=Geyser.Label:new({name="CVIP_Magia_V2_Footer",
             x="0px",y="-"..FOOTER_H.."px",width="100%",
             height=FOOTER_H.."px"},w)
@@ -220,6 +219,7 @@ function M:show_window()
         self.scan_button:setClickCallback(function() M:scan() end)
         self.mode_button:setClickCallback(function() M:toggle_mode() end)
         self.footer:setClickCallback(function() M:scan() end)
+        if type(self.footer.raise)=="function" then self.footer:raise() end
         tooltip(self.scan_button,"Sprawdz magie calej druzyny")
         tooltip(self.mode_button,"Przelacz widok kompaktowy/pelny")
     end
@@ -248,7 +248,7 @@ local function item_html(self,item,width)
     local owner=item.grouped and "" or ("<span style='color:"..MUTED.."'>"..
         esc(row.id=="@" and "JA" or row.owner).."</span>")
     local meta=owner..(owner~="" and "&nbsp;&nbsp;·&nbsp;&nbsp;" or "")
-        .."<span style='color:"..MUTED.."'>szacowany czas</span>"
+        .."<span style='color:"..MUTED.."'>czas orientacyjny</span>"
     -- Tylko nazwa: odcinamy jej KONIEC, nigdy poczatek. Czas ma swoja
     -- fizycznie oddzielona, zakotwiczona do prawej etykiete.
     return "<div style='font-size:11px;color:"..TEXT.."'><b>"
@@ -276,12 +276,16 @@ function M:render()
     for id,owner in pairs(self.data.owners) do
         if present[id] then last=math.max(last,tonumber(owner.last_scan) or 0) end
     end
-    self.footer:setStyleSheet(style(SURFACE,SURFACE,"10px","4px 9px"))
+    self.footer:setStyleSheet("background-color:"..SURFACE..";border:none;"
+        .."border-top:1px solid "..DIVIDER..";padding:4px 9px;"
+        .."font-family:'DejaVu Sans Mono','Consolas',monospace;font-size:10px;")
     local status=self.current and "<span style='color:"..ACCENT.."'>SKANOWANIE...</span>"
         or "<span style='color:"..MUTED.."'>"
         ..(last>0 and ("skan "..os.date("%H:%M",last)) or "brak skanu").."</span>"
     self.footer:echo("<span style='color:"..MUTED.."'>"..count..
         " przedm.</span> &nbsp;&nbsp;·&nbsp;&nbsp; "..status)
+    self.footer:show()
+    if type(self.footer.raise)=="function" then self.footer:raise() end
     local y=0
     for i,item in ipairs(view) do
         local label=self.row_labels[i]
@@ -301,10 +305,11 @@ function M:render()
             -- (z miejscem na pasek przewijania), nie moze go wyprzec
             -- nazwa przedmiotu ani rozciagajaca sie tabela HTML.
             local name=Geyser.Label:new({name="CVIP_Magia_V3_Name_"..i,
-                x="3px",y=y.."px",width="-155px",
+                x="3px",y=y.."px",width=negpx(NAME_RESERVED),
                 height=ROW_H.."px"},self.body)
             local time=Geyser.Label:new({name="CVIP_Magia_V3_Time_"..i,
-                x="-135px",y=y.."px",width="107px",
+                x=negpx(TIME_WIDTH+TIME_RIGHT),y=y.."px",
+                width=TIME_WIDTH.."px",
                 height=ROW_H.."px"},self.body)
             name:setClickCallback(click)
             time:setClickCallback(click)
@@ -331,13 +336,13 @@ function M:render()
             label:setStyleSheet(style(i%2==0 and BG or SURFACE,edge,"11px","5px 9px"))
             label:echo("")
             name:move("3px",y.."px")
-            name:resize("-155px",ROW_H.."px")
+            name:resize(negpx(NAME_RESERVED),ROW_H.."px")
             name:setStyleSheet("background-color:transparent;border:none;padding:5px 1px 2px 7px;"
                 .."font-family:'DejaVu Sans Mono','Consolas',monospace;")
             name:echo(item_html(self,item,width))
             name:show()
-            time:move("-135px",y.."px")
-            time:resize("107px",ROW_H.."px")
+            time:move(negpx(TIME_WIDTH+TIME_RIGHT),y.."px")
+            time:resize(TIME_WIDTH.."px",ROW_H.."px")
             time:setStyleSheet("background-color:transparent;border:none;padding:7px 0px 0px 0px;"
                 .."font-family:'DejaVu Sans Mono','Consolas',monospace;")
             time:echo("<div align='right' style='font-size:11px'>"
@@ -354,8 +359,9 @@ function M:render()
         if self.name_labels[i] then self.name_labels[i]:hide() end
         if self.time_labels[i] then self.time_labels[i]:hide() end
     end
-    -- Osobne etykiety nazw/czasow sa kotwiczone w Geyser do rodzica.
-    -- Zdarzenie zmiany rozmiaru sluzy tylko do przeliczenia skrotu nazwy.
+    -- Etykiety nazw i czasu sa kotwiczone wewnatrz natywnego okna.
+    -- Warstwa tla zajmuje caly obszar niezaleznie od liczby wierszy,
+    -- a stopka pozostaje widoczna i klikalna przy dowolnej wysokosci.
 end
 
 -- Mudlet wysyla ten event dla natywnego okna oddzielnie od glownego.

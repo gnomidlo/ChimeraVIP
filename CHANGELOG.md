@@ -1,3 +1,10 @@
+## 0.197 — Magia: pilnosc, kolumna czasu i tlo okna
+
+- Widok kompaktowy pokazuje **cztery przedmioty z najkrótszym szacowanym czasem w całej drużynie**. Nie rezerwuje pierwszego miejsca dla własnej postaci; kolejność wynika z pozostałego czasu, nie z właściciela.
+- Kolumna czasu jest węższa (90 px); nadal mieści „lada chwila” i krótkie określenie przekroczonego terminu („po czasie?”). Odzyskaną przestrzeń dostaje nazwa przedmiotu, przycinana od końca przy zwężaniu UserWindow.
+- Niewypełnioną część ScrollBox i natywnego UserWindow pokrywa spójne ciemne tło zamiast czystej czerni. Stopka z liczbą przedmiotów i godziną ostatniego skanu pozostaje widoczna i klikalna.
+- Nienaruszone Kondycje, parser magii, odliczanie, skanowanie pachołków i ustawienia rozmiaru okna.
+
 ## 0.196 — Pazold: brak oplaty i dlug bez psucia tabeli
 
 - Zwarty widok `pazold` obsługuje pachołków, dla których po `stawka` nie pojawia się `oplacone` ani `czyli ok.` (w tabeli `brak oplaty` bez zgadywania salda).

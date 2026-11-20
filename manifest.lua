@@ -1,10 +1,11 @@
 return {
     name = "ChimeraVIP",
-    version = "0.196",
+    version = "0.197",
     schema = 2,
     tested_upstream = "5.0.1",
     raw_base = "https://raw.githubusercontent.com/gnomidlo/ChimeraVIP/main/",
     changes = {
+        "0.197: Magia sortuje 4 najpilniejsze globalnie, zwęża czas i wypelnia czarne tlo",
         "0.196: pazold obsluguje DLUG bez stawki, brak oplacone i sklejone komunikaty",
         "0.195: /magia rozpoznaje potwierdzony rozpad i usuwa przedmiot ze sledzenia",
         "0.194: magia czyta lada chwila i wszystkie przedmioty; czas pozostaje widoczny przy zwezaniu okna",
@@ -107,7 +108,7 @@ return {
         "src/ui/module_controls.lua"
     },
     file_meta = {
-        ["src/features/magia_window.lua"] = {hash="c0a2097387a273bdcb86edaaf8cb1e3a61a5e25b", size=16332},
+        ["src/features/magia_window.lua"] = {hash="35547781994a6225cb856f8ffbcd44dc607c4927", size=17203},
         ["src/features/magia.lua"] = {hash="082de50b308e4392b61948c1f45961f46d14b096", size=16673},
         ["src/features/retainer_wages.lua"] = {hash="6db1d938e3752cdb09c9009fb9f53cb169aa9ecd", size=9846},
         ["src/features/friends.lua"] = {hash="987d550451a4ab99f9d99ad06cd04156543148e7", size=6956},
@@ -118,7 +119,7 @@ return {
         ["plugins/chimeravip_ui/layout.lua"] = {hash="6cdc696a44e25ee7a4ff0c717b83e562e0067f99", size=5016},
         ["loader.lua"] = {hash="1381414d89e55d2fad70beb8f42e48098d4b1802", size=4501},
         ["src/init.lua"] = {hash="c8ed33e8e74f94a433f14c34c5e78bcf9e0d9751", size=3532},
-        ["src/core/bootstrap.lua"] = {hash="d426dbd8a716d3915d585170524e5365405a616e", size=2063},
+        ["src/core/bootstrap.lua"] = {hash="459b871bafb3f98b328b5e4d43ce394d10a86e79", size=2063},
         ["src/core/safety.lua"] = {hash="ab4fca47f610a24ec88b8dad7aedab9baf507578", size=3239},
         ["src/core/util.lua"] = {hash="7561cd9259be9ff0ce74228e9048eef0b5aba280", size=6686},
         ["src/core/hash.lua"] = {hash="362c18bf131c9939d03b59dd50568d66de8f6a5e", size=2118},
