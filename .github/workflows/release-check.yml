@@ -59,6 +59,8 @@ jobs:
         run: lua5.1 tools/blacksmith_test.lua
       - name: Test tactical marks and alias ownership
         run: lua5.1 tools/tactical_test.lua
+      - name: Test formation highlights
+        run: lua5.1 tools/formation_test.lua
       - name: Test friends parsing, persistence and lifecycle
         run: lua5.1 tools/friends_test.lua
       - name: Test compact retainer wages and report recovery
