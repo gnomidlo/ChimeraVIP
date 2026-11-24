@@ -411,3 +411,7 @@ Czasy `za okolo ...` są przybliżone; skrypt ich nie traktuje jako potwierdzeni
 ### Oznaczenia szyku
 
 Opcjonalne kolorowanie manewrow: `/szyk kolory`, `/szyk podglad`, `/szyk on`, `/szyk off`. Cztery niezalezne kolory zapisywane w profilu. Wylacz stare lokalne triggery `szyk+` i `szyk-`, aby uniknac podwojnego formatowania.
+
+### Bestiariusz
+
+`/boss dodaj troll` pobiera pelna odmiane NPC z serwera; `/boss` otwiera liste, `/boss pomoc` pokazuje komendy. Nawigacja wykorzystuje oficjalne `/idz` i aktualny hash pokoju; instancje sa blokowane. Notatka: `/boss notatka nazwa | tekst`.

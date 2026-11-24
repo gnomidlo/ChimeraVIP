@@ -67,3 +67,5 @@ jobs:
         run: lua5.1 tools/retainer_wages_test.lua
       - name: Test palista multiword professions and specializations
         run: lua5.1 tools/retainer_progress_test.lua
+      - name: Test bestiary parsing and mapper safety
+        run: lua5.1 tools/bestiary_test.lua
