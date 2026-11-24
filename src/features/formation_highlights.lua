@@ -58,7 +58,9 @@ function F:parse(s,g)
         local x,y=body:find(" przed twoimi ciosami",b)
         if x and y~=#body and body:sub(y+1)~="." then x=nil end
         if not x then x,y=body:find(" przed ciosami ",b) end
-        if not x then return end
+        if x and x<b then return end
+        if not x or (not failed and body:sub(-1)~=".") then return end
+        if body:sub(x,x)~=" " then return end
         add(start,b-1)
         if body:sub(b+1,x-1)=="cie" then add(b+1,x-1) end
         add(x+1,body:sub(y,y)==" " and y-1 or y)
