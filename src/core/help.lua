@@ -90,6 +90,7 @@ function H:register_defaults()
 end
 
 H.catalog = {
+    {"/szyk pomoc",       "Szyk",          "kolory manewrow i przelacznik"},
     {"/ui pomoc",         "Interfejs",     "motyw, Quiet Footer i układ UI"},
     {"/walka pomoc",      "Kolory walki",  "prefiksy siły obrażeń i integracja walki"},
     {"/wsparcie pomoc",   "Auto-wsparcie", "automatyczne podążanie za celem lidera"},
