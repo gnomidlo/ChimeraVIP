@@ -1,3 +1,7 @@
+## 0.201
+
+- Bestiariusz: /boss, pelne odmiany NPC, trudnosc, notatki i nawigacja po hashach mapy.
+
 ## 0.198 — Magia: naprawa pustego okna po 0.197
 
 - Usunięto pełnowymiarowe, kryjące warstwy QLabel mogące zasłaniać zawartość ScrollBox w Mudlecie. Zamiast nich używamy natywnego tła UserWindow i niewielkiej warstwy wypełniającej wyłącznie przestrzeń **poniżej** przedmiotów.
