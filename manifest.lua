@@ -112,7 +112,7 @@ return {
         "src/ui/module_controls.lua"
     },
     file_meta = {
-        ["src/features/formation_highlights.lua"] = {hash="8f32a726cd8746ea9d7b23554baaf61112381fbd", size=7218},
+        ["src/features/formation_highlights.lua"] = {hash="7fa045830f3e3c4d1bfb2885d2b69e60f59785cd", size=7339},
         ["src/features/magia_window.lua"] = {hash="c0be87f0c81253715d50b8a5ac41ae0208d7e299", size=18348},
         ["src/features/magia.lua"] = {hash="082de50b308e4392b61948c1f45961f46d14b096", size=16673},
         ["src/features/retainer_wages.lua"] = {hash="6db1d938e3752cdb09c9009fb9f53cb169aa9ecd", size=9846},
