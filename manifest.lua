@@ -1,10 +1,11 @@
 return {
     name = "ChimeraVIP",
-    version = "0.199",
+    version = "0.200",
     schema = 2,
     tested_upstream = "5.0.1",
     raw_base = "https://raw.githubusercontent.com/gnomidlo/ChimeraVIP/main/",
     changes = {
+        "0.200: opcjonalne oznaczenia szyku i cztery konfigurowalne kolory",
         "0.199: umiejetnosci - cwiczenia procentowo z podpowiedzia punktowa; widoczny wynik aktualizacji",
         "0.198: Magia - naprawiono pusta liste po dodaniu pelnoekranowych warstw tla",
         "0.197: Magia sortuje 4 najpilniejsze globalnie, zwęża czas i wypelnia czarne tlo",
@@ -62,6 +63,7 @@ return {
     files = {
         "src/features/retainer_wages.lua",
         "src/features/friends.lua",
+        "src/features/formation_highlights.lua",
         "plugins/chimeravip_ui/theme.lua",
         "plugins/chimeravip_ui/actions.lua",
         "plugins/chimeravip_ui/conditions.lua",
@@ -110,6 +112,7 @@ return {
         "src/ui/module_controls.lua"
     },
     file_meta = {
+        ["src/features/formation_highlights.lua"] = {hash="8f32a726cd8746ea9d7b23554baaf61112381fbd", size=7218},
         ["src/features/magia_window.lua"] = {hash="c0be87f0c81253715d50b8a5ac41ae0208d7e299", size=18348},
         ["src/features/magia.lua"] = {hash="082de50b308e4392b61948c1f45961f46d14b096", size=16673},
         ["src/features/retainer_wages.lua"] = {hash="6db1d938e3752cdb09c9009fb9f53cb169aa9ecd", size=9846},
@@ -120,8 +123,8 @@ return {
         ["plugins/chimeravip_ui/footer.lua"] = {hash="9bc9c95c65cb487c7a7f3e9a6a7a1f3424519559", size=28412},
         ["plugins/chimeravip_ui/layout.lua"] = {hash="6cdc696a44e25ee7a4ff0c717b83e562e0067f99", size=5016},
         ["loader.lua"] = {hash="1381414d89e55d2fad70beb8f42e48098d4b1802", size=4501},
-        ["src/init.lua"] = {hash="c8ed33e8e74f94a433f14c34c5e78bcf9e0d9751", size=3532},
-        ["src/core/bootstrap.lua"] = {hash="0aa805232deba68eb170f83c8ccb8b6f0025ba77", size=2063},
+        ["src/init.lua"] = {hash="e75a0fcff0fae78d2cbef3925ad37a997d19ad8e", size=3578},
+        ["src/core/bootstrap.lua"] = {hash="74b5a13bbcc6e0cfe6f8ae3dedbe361cccb54851", size=2063},
         ["src/core/safety.lua"] = {hash="ab4fca47f610a24ec88b8dad7aedab9baf507578", size=3239},
         ["src/core/util.lua"] = {hash="7561cd9259be9ff0ce74228e9048eef0b5aba280", size=6686},
         ["src/core/hash.lua"] = {hash="362c18bf131c9939d03b59dd50568d66de8f6a5e", size=2118},
@@ -130,7 +133,7 @@ return {
         ["plugins/chimera_vip_bridge/init.lua"] = {hash="fca58a6712376c4ba29843674f11c0e89e4540f0", size=2254},
         ["plugins/chimeravip_ui/init.lua"] = {hash="65ccb4c9d43a1277d3ee1fedf400d9614c96e1a9", size=9360},
         ["src/core/settings.lua"] = {hash="6ced30f0cf7e4da179db5f93b6f037e6fcd479d3", size=10693},
-        ["src/core/help.lua"] = {hash="a60818efbe0226e35feaecd63a662ca23c813f49", size=9629},
+        ["src/core/help.lua"] = {hash="5002306d1348c30c1232b2c6a1624666a216d43d", size=9706},
         ["src/core/updater.lua"] = {hash="9c0de1e973ebffdc4b4a997a301d3d894b98f5cd", size=29011},
         ["src/theme/pastel.lua"] = {hash="8a2a99420ec51a9b4191a03f98bdb452ffdc4a5a", size=6265},
         ["src/ui/quiet_footer.lua"] = {hash="e45f7bdcf4d7142cf5c810e53fda0514a9166cc3", size=18753},
