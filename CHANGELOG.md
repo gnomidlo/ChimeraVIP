@@ -1,3 +1,7 @@
+## 0.202
+
+- Cechy: usunieto znaczniki skali opisowej [x/y] z obu widokow; wartosci cech i postepy bez zmian.
+
 ## 0.201
 
 - Bestiariusz: /boss, pelne odmiany NPC, trudnosc, notatki i nawigacja po hashach mapy.
