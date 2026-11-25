@@ -25,6 +25,13 @@ assert(snapshot.physical_average == 120)
 assert(snapshot.mental_average == 90)
 assert(snapshot.total == 600 and snapshot.average == 100)
 
+assert(ST:clean_stat_description("ekwilibrystyczna [9/48]") == "ekwilibrystyczna")
+assert(ST:clean_stat_description("wszechwiedzaca [8/47]") == "wszechwiedzaca")
+assert(ST:clean_stat_description("mocarna") == "mocarna")
+assert(ST:clean_stat_description("heroiczny [ 10 / 49 ]") == "heroiczny")
+assert(ST:clean_stat_description("[9/48] genialna") == "genialna")
+assert(ST:clean_stat_description("boska [+1]") == "boska [+1]")
+
 local plain = {lavender="", mint="", text_muted="", blue=""}
 local rendered = ST:average_line(snapshot, plain)
 assert(rendered == "  SREDNIA: 100.0 (fizyczne: 120.0 | mentalne: 90.0)")

@@ -62,6 +62,7 @@ ST.stat_trigger_id = tempRegexTrigger(
             "^[ \t]*([%a]+):[ \t]*(.-)[ \t]+(%d+)[ \t]+brak[ \t]+(%d+)[ \t]+exp"
         )
         if not raw_stat then return end
+        desc = ST:clean_stat_description(desc)
 
         local stat = raw_stat:sub(1, 1):upper() .. raw_stat:sub(2):lower()
         local val = tonumber(val_str) or 0
